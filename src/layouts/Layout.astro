@@ -1,0 +1,26 @@
+---
+import "../styles/global.css";
+import ThemeScript from "../components/ThemeScript.astro";
+
+type Props = {
+	title?: string;
+};
+
+const { title = "Cédric Gourville portfolio | Home" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- <link rel="preload" href="/fonts/Humane-Variable.ttf" as="font" type="font/ttf" crossorigin /> -->
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <ThemeScript />
+  </head>
+  <body class="bg-background text-foreground font-body font-light">
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,35 @@
+---
+const WORDS = [
+  "web",
+  "passionate",
+  "crafting",
+  "building",
+  "innovating",
+  "accessibility",
+  "performance",
+  "responsive",
+  "collaborative",
+];
+---
+
+<div class="overflow-clip w-full">
+  <div
+    class="flex w-max gap-4 ps-4 animate-marquee font-heading text-xl uppercase variation-700"
+  >
+    {WORDS.map((word) => <span class="w-auto">{word}</span>)}
+    {
+      WORDS.map((word) => (
+        <span aria-hidden="true" class="w-auto">
+          {word}
+        </span>
+      ))
+    }
+    {
+      WORDS.map((word) => (
+        <span aria-hidden="true" class="w-auto">
+          {word}
+        </span>
+      ))
+    }
+  </div>
+</div>

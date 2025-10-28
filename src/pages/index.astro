@@ -1,0 +1,59 @@
+---
+import Header from "../components/Header.astro";
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout>
+  <Header />
+
+  <section class="min-h-dvh grid place-items-center" id="home">
+    <div class="w-3/4 h-2/3 border border-dashed relative bg-background">
+      <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
+      <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+      <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
+      <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+
+      <canvas id="splash-wave-canvas" class="size-full"></canvas>
+    </div>
+  </section>
+
+  <section class="sticky top-0 min-h-dvh px-4 grid place-items-center">
+    <div class="w-3/4 h-2/3 border border-dashed relative bg-background">
+      <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
+      <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+      <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
+      <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+
+      <canvas id="wave-canvas" class="size-full"></canvas>
+    </div>
+  </section>
+
+  <div class="panel">
+    <section class="min-h-dvh px-4 grid place-items-center border" id="projects" data-wave-text="WORKS"></section>
+  </div>
+
+  <div class="panel">
+    <section class="min-h-dvh px-4 grid place-items-center border" id="projects" data-wave-text="PROJECTS"></section>
+  </div>
+
+  <div class="panel">
+    <section class="min-h-dvh px-4 grid place-items-center border" id="about" data-wave-text="ABOUT"></section>
+  </div>
+
+  <footer class="min-h-dvh px-4 grid place-items-center" id="contact">
+    <h2 class="font-body text-9xl tracking-tighter">Contact</h2>
+  </footer>
+</Layout>
+
+<script>
+  import { SplashWaveScene } from "../lib/canvas-2d/splash-wave";
+  import { WaveScene } from "../lib/wave/wave-scene";
+
+  const canvas = document.getElementById("splash-wave-canvas") as HTMLCanvasElement;
+  const splash = new SplashWaveScene(canvas);
+  splash.mount();
+
+  const waveCanvas = document.getElementById("wave-canvas") as HTMLCanvasElement;
+  const wave = new WaveScene(waveCanvas);
+  wave.start();
+</script>

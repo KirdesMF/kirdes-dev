@@ -1,0 +1,210 @@
+---
+
+---
+
+<div class="grid grid-rows-[1fr_auto] h-dvh">
+  <canvas id="wave-canvas" class="size-full block row-start-1 row-end-3 col-start-1"></canvas>
+  <div class="flex gap-10 px-4 py-14 items-center justify-center row-start-2 col-start-1">
+    <div class="grid gap-2">
+      <div
+        class="size-20 grid place-items-center border-b border-e relative shadow-[5px_5px_0px] grid-pattern-10"
+      >
+        <div
+          class="absolute size-5 border-t border-s top-0 start-0 grid place-items-center bg-background"
+        >
+          <p class="text-xs leading-0">A</p>
+        </div>
+        <div
+          class="border rounded-full size-12 shadow-[2px_2px_0px] bg-background grid items-center cursor-pointer"
+          data-wave="knob-amp"
+        >
+          <span class="border h-px w-1/2"></span>
+        </div>
+      </div>
+      <input type="range" min="10" max="160" step="20" value="10" data-wave="input-amp" />
+    </div>
+
+    <div class="grid gap-2">
+      <div
+        class="size-20 grid place-items-center border-b border-e relative shadow-[5px_5px_0px] grid-pattern-10"
+      >
+        <div
+          class="absolute size-5 border-t border-s top-0 start-0 grid place-items-center bg-background"
+        >
+          <p class="text-xs leading-0">F</p>
+        </div>
+        <div
+          class="border rounded-full size-12 shadow-[2px_2px_0px] grid items-center bg-background cursor-pointer"
+          data-wave="knob-freq"
+        >
+          <span class="border h-px w-1/2"></span>
+        </div>
+      </div>
+      <input
+        type="range"
+        min="0.001"
+        max="0.01"
+        step="0.001"
+        value="0.002"
+        data-wave="input-freq"
+      />
+    </div>
+
+    <div class="grid gap-2">
+      <div
+        class="size-20 grid place-items-center border-b border-e relative shadow-[5px_5px_0px] grid-pattern-10"
+      >
+        <div
+          class="absolute size-5 border-t border-s top-0 start-0 grid place-items-center bg-background"
+        >
+          <p class="text-xs leading-0">S</p>
+        </div>
+        <div
+          class="border rounded-full size-12 shadow-[2px_2px_0px] grid items-center bg-background cursor-pointer relative"
+          data-wave="knob-speed"
+        >
+          <span class="border h-px w-1/2"></span>
+        </div>
+      </div>
+      <input type="range" min="0" max="5" step="0.1" value="1" data-wave="input-speed" />
+    </div>
+  </div>
+</div>
+
+<script>
+  import gsap from "gsap";
+  import { WaveScene } from "../lib/wave/wave-scene";
+
+  const inputAmplitude = document.querySelector('[data-wave="input-amp"]') as HTMLInputElement;
+  const knobAmplitude = document.querySelector('[data-wave="knob-amp"]') as HTMLElement;
+  const inputFrequency = document.querySelector('[data-wave="input-freq"]') as HTMLInputElement;
+  const knobFrequency = document.querySelector('[data-wave="knob-freq"]') as HTMLElement;
+  const inputSpeed = document.querySelector('[data-wave="input-speed"]') as HTMLInputElement;
+  const knobSpeed = document.querySelector('[data-wave="knob-speed"]') as HTMLElement;
+
+  const params = { phase: 0, frequency: 0.002, amplitude: 10, dashShift: 0, speed: 1 };
+
+  // init wave scene
+  const canvas = document.getElementById("wave-canvas") as HTMLCanvasElement;
+  const scene = new WaveScene(canvas, params);
+
+  // animation loop
+  let isRunning = false;
+
+  function start() {
+    if (!isRunning) {
+      gsap.ticker.add(scene.render);
+      isRunning = true;
+    }
+  }
+
+  function stop() {
+    if (isRunning) {
+      gsap.ticker.remove(scene.render);
+      isRunning = false;
+    }
+  }
+
+  start();
+
+  // Fonction pour convertir une valeur en angle de rotation (-135° à +135°)
+  function valueToAngle(value: number, min: number, max: number) {
+    const normalized = (value - min) / (max - min);
+    return normalized * 270 - 135;
+  }
+
+  // Fonction pour calculer l'angle entre le centre du knob et la souris
+  function getAngle(e: MouseEvent, element: HTMLElement) {
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const x = e.clientX - centerX;
+    const y = e.clientY - centerY;
+
+    return Math.atan2(y, x) * (180 / Math.PI) + 90;
+  }
+
+  // Fonction pour convertir un angle en valeur
+  function angleToValue(angle: number, min: number, max: number) {
+    let normalizedAngle = angle % 360;
+    if (normalizedAngle > 135) normalizedAngle = 135;
+    if (normalizedAngle < -135) normalizedAngle = -135;
+
+    const normalized = (normalizedAngle + 135) / 270;
+    return min + normalized * (max - min);
+  }
+
+  // Setup pour chaque contrôle
+  function setupKnobControl(
+    knob: HTMLElement,
+    input: HTMLInputElement,
+    onUpdate?: (value: number) => void,
+  ) {
+    let isDragging = false;
+    const min = parseFloat(input.min);
+    const max = parseFloat(input.max);
+    const step = parseFloat(input.step);
+
+    // Initialiser
+    const initialValue = parseFloat(input.value);
+    knob.style.transform = `rotate(${valueToAngle(initialValue, min, max)}deg)`;
+
+    // Drag du knob
+    knob.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      e.preventDefault();
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+
+      const angle = getAngle(e, knob);
+      let value = angleToValue(angle, min, max);
+
+      // Arrondir selon le step
+      value = Math.round(value / step) * step;
+      value = Math.max(min, Math.min(max, value));
+
+      input.value = value.toString();
+      knob.style.transform = `rotate(${valueToAngle(value, min, max)}deg)`;
+
+      if (onUpdate) onUpdate(value);
+    });
+
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+
+    // Synchroniser l'input avec le knob
+    input.addEventListener("change", (event) => {
+      const value = parseFloat((event.target as HTMLInputElement).value);
+      knob.style.transform = `rotate(${valueToAngle(value, min, max)}deg)`;
+      if (onUpdate) onUpdate(value);
+    });
+  }
+
+  // Setup des contrôles
+  setupKnobControl(knobAmplitude, inputAmplitude, (value) => {
+    gsap.to(params, { amplitude: value });
+  });
+
+  setupKnobControl(knobFrequency, inputFrequency, (value) => {
+    gsap.to(params, { frequency: value });
+  });
+
+  setupKnobControl(knobSpeed, inputSpeed, (value) => {
+    params.speed = value;
+  });
+
+  // pause when page is hidden
+  document.addEventListener("visibilitychange", () => {
+    document.hidden ? stop() : start();
+  });
+
+  // clean up on page unload
+  window.addEventListener("beforeunload", () => {
+    stop();
+    scene.dispose();
+  });
+</script>

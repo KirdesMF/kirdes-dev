@@ -1,0 +1,27 @@
+---
+const content = "About";
+---
+
+<div class="grid overflow-hidden place-items-center font-satoshi variation-800">
+  <div class="col-1 row-1 grid w-[800px] place-content-center">
+    <div class="w-svw h-svh grid place-content-center -rotate-25 -z-10">
+      {Array.from({ length: 4 }, () => <span class="leading-[0.85]  text-[200px]">{content}</span>)}
+    </div>
+  </div>
+
+  <div
+    class="col-1 row-1 grid rounded-2xl overflow-hidden size-[450px] bg-background place-content-center inset-shadow-cutout"
+  >
+    <div class="w-svw h-svh grid place-content-center rotate-25 opacity-85">
+      {Array.from({ length: 4 }, () => <span class="leading-[0.85]  text-[200px]">{content}</span>)}
+    </div>
+  </div>
+
+  <div
+    class="col-1 row-1 grid rounded-2xl overflow-hidden size-[250px] bg-background place-content-center inset-shadow-cutout-deep z-10"
+  >
+    <div class="w-svw h-svh grid place-content-center rotate-50 opacity-75">
+      {Array.from({ length: 4 }, () => <span class="leading-[0.85] text-[200px]">{content}</span>)}
+    </div>
+  </div>
+</div>
