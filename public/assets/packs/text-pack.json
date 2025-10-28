@@ -8,7 +8,7 @@
     "lineHeightPx": 51
   },
   "atlas": {
-    "image": "/assets/msdf/fonts/commissioner-800.png",
+    "image": "/assets/msdf/fonts/commissioner-800-0.png",
     "width": 2048,
     "height": 2048,
     "chars": {

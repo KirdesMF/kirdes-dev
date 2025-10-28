@@ -1,6 +1,6 @@
 // tools/scripts/build-font-atlas.ts
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 
 async function loadGenerator() {
 	// @ts-expect-error
@@ -87,7 +87,7 @@ async function main() {
 		charset,
 	});
 
-	await new Promise<void>((done, fail) => {
+	await new Promise<void>((_, fail) => {
 		generateBMFont(
 			fontPath,
 			{
@@ -114,18 +114,23 @@ async function main() {
 			) => {
 				if (err) return fail(err);
 				try {
-					// Noms stables des pages: outBase-0.png, -1.png, ...
+					// 1) Forcer les noms des pages: outBase-0.png, -1.png, ...
+					const baseName = basename(outBase); // "commissioner-800"
+					const pageNames: string[] = [];
 					for (let i = 0; i < textures.length; i++) {
+						const pageName = `${baseName}-${i}.png`;
 						const pagePath = resolve(`${outBase}-${i}.png`);
 						await writeFile(pagePath, textures[i].texture);
 						console.log("🖼️  écrit:", pagePath);
+						pageNames.push(pageName);
 					}
-					// Nom stable du JSON: outBase.json
-					const jsonPath = resolve(`${outBase}.json`);
-					await writeFile(jsonPath, font.data);
-					console.log("📄  écrit:", jsonPath);
 
-					done();
+					// 2) Réécrire le JSON pour y mettre nos pages forçées
+					const bm = JSON.parse(font.data.toString("utf8"));
+					bm.pages = pageNames; // <<< clé essentielle
+					const jsonPath = resolve(`${outBase}.json`);
+					await writeFile(jsonPath, JSON.stringify(bm, null, 2), "utf8");
+					console.log("📄  écrit:", jsonPath);
 				} catch (e) {
 					fail(e);
 				}

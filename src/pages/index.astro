@@ -28,17 +28,9 @@ import Layout from "../layouts/Layout.astro";
     </div>
   </section>
 
-  <div class="panel">
-    <section class="min-h-dvh px-4 grid place-items-center border" id="projects" data-wave-text="WORKS"></section>
-  </div>
-
-  <div class="panel">
-    <section class="min-h-dvh px-4 grid place-items-center border" id="projects" data-wave-text="PROJECTS"></section>
-  </div>
-
-  <div class="panel">
-    <section class="min-h-dvh px-4 grid place-items-center border" id="about" data-wave-text="ABOUT"></section>
-  </div>
+  <section class="min-h-dvh px-4 grid place-items-center" id="projects" data-wave-text="WORKS"></section>
+  <section class="min-h-dvh px-4 grid place-items-center" id="projects" data-wave-text="PROJECTS"></section>
+  <section class="min-h-dvh px-4 grid place-items-center" id="about" data-wave-text="ABOUT"></section>
 
   <footer class="min-h-dvh px-4 grid place-items-center" id="contact">
     <h2 class="font-body text-9xl tracking-tighter">Contact</h2>
@@ -47,13 +39,13 @@ import Layout from "../layouts/Layout.astro";
 
 <script>
   import { SplashWaveScene } from "../lib/canvas-2d/splash-wave";
-  import { WaveScene } from "../lib/wave/wave-scene";
+  import { WaveScene } from "../lib/wave-text/wave-scene";
 
   const canvas = document.getElementById("splash-wave-canvas") as HTMLCanvasElement;
   const splash = new SplashWaveScene(canvas);
   splash.mount();
 
   const waveCanvas = document.getElementById("wave-canvas") as HTMLCanvasElement;
-  const wave = new WaveScene(waveCanvas);
-  wave.start();
+  const scene = new WaveScene({ canvas: waveCanvas });
+  scene.start();
 </script>

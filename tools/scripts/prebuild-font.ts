@@ -1,3 +1,4 @@
+// tools/scripts/prebuild-font.ts
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import opentype from "opentype.js";
@@ -174,7 +175,6 @@ async function main() {
 	};
 
 	const atlasJsonPath = resolve(process.cwd(), `${cfg.outBase}.json`);
-	resolve(process.cwd(), `${cfg.outBase}.png`);
 	const bmRaw = await readFile(atlasJsonPath, "utf8");
 	const bm = JSON.parse(bmRaw) as BMJson;
 
@@ -199,7 +199,7 @@ async function main() {
 
 	for (const ch of charset) {
 		const g = font.charToGlyph(ch);
-		// Points on/off + polylines flatten (en px @ sizeRef)
+		// Points on/off + polylignes flatten (en px @ sizeRef)
 		const contours: GlyphContour[] = [];
 		const polylines: number[][] = [];
 
@@ -269,7 +269,15 @@ async function main() {
 	// 4) Atlas: remapper chars -> UV + metrics utiles
 	const scaleW = bm.common.scaleW;
 	const scaleH = bm.common.scaleH;
-	const atlasImage = toPublicUrl(`${cfg.outBase}.png`);
+
+	// ⚠️ lire le vrai nom de la page depuis le JSON BMFont
+	const firstPage = bm.pages?.[0];
+	if (!firstPage) {
+		throw new Error("BMFont JSON has no pages[] entry");
+	}
+	const pageAbs = resolve(process.cwd(), dirname(cfg.outBase), firstPage);
+	const atlasImage = toPublicUrl(pageAbs);
+
 	const chars: Record<string, unknown> = {};
 	for (const c of bm.chars) {
 		const ch = String.fromCodePoint(c.id);
@@ -340,7 +348,7 @@ async function main() {
 			lineHeightPx: Math.round(bm.common.lineHeight),
 		},
 		atlas: {
-			image: atlasImage,
+			image: atlasImage, // ← maintenant correct (…-0.png)
 			width: scaleW,
 			height: scaleH,
 			chars,
