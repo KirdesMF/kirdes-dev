@@ -1,5 +1,6 @@
 import { gsap } from "gsap";
 import { getGL2, isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
+import { SparklesText } from "./sparkles-text";
 import { WaveLine, type WaveLineParams } from "./wave-line";
 import { WaveText } from "./wave-text";
 
@@ -16,6 +17,7 @@ export class WaveScene {
 
 	private line: WaveLine;
 	private text: WaveText;
+	private sparklesText: SparklesText;
 
 	private phase = 0; // interne (rad)
 	public params: WavePublicParams; // tweeneable/public
@@ -30,7 +32,7 @@ export class WaveScene {
 	private maxDPRCap = isLikelyMobile() ? 1.5 : 2.0;
 	private basePointCount = isLikelyMobile() ? 768 : 1024;
 
-	public constructor(args: {
+	constructor(args: {
 		canvas: HTMLCanvasElement;
 		initial?: Partial<WavePublicParams>;
 	}) {
@@ -39,16 +41,25 @@ export class WaveScene {
 		this.gl = getGL2({ canvas });
 
 		this.params = {
-			amplitude: 60,
+			amplitude: 120,
 			frequency: 0.002,
-			speed: 1,
+			speed: 2,
 			color: [1, 1, 1, 1],
 			...initial,
 		};
 
 		this.line = new WaveLine(this.gl, this.basePointCount);
-
 		this.text = new WaveText(this.gl);
+		this.sparklesText = new SparklesText(this.gl, {
+			quadWidth: Math.min(this.canvas.width * 0.9, 1400),
+			quadHeight: Math.min(this.canvas.height * 0.6, 550),
+			sideMarginPx: 60,
+			liftFromLinePx: 50, // vers la wave
+			topSizesPx: isLikelyMobile() ? [18, 12] : [26, 18], // [left, right]
+			bottomSizesPx: isLikelyMobile() ? [18, 12] : [26, 18], // [left, right]
+			color: "#ffffff",
+			texSize: 64,
+		});
 
 		const mediaPRM = window.matchMedia("(prefers-reduced-motion: reduce)");
 		this.reduceMotion = mediaPRM.matches;
@@ -95,11 +106,30 @@ export class WaveScene {
 	private resizeTextQuad() {
 		const w = Math.min(this.canvas.width * 0.9, 1400);
 		const h = Math.min(this.canvas.height * 0.6, 550);
+
+		// 1) on (re)calibre le quad du texte
 		this.text.resizeQuad({
 			width: w,
 			height: h,
 			gridRes: isLikelyMobile() ? 140 : 200,
 		});
+
+		// 2) on (re)calibre le quad des sparkles
+		this.sparklesText.resizeQuadSize({ width: w, height: h });
+
+		// 3) on transmet la largeur RÉELLE du mot (mesurée) aux sparkles
+		//    => pour que sideMarginPx s’applique depuis le bord du mot, pas le bord du quad
+		// Convert texture-space measurement to a ratio, then to quad-space inside SparklesText
+		const wordPx = this.text.getTextContentWidthPx(); // texture px
+		const texW = this.text.getTextureCanvasWidth(); // texture px
+		this.sparklesText.setTextContentWidthFromTexture(wordPx, texW);
+	}
+
+	private getTextOffset() {
+		return {
+			x: (this.canvas.width - Math.min(this.canvas.width * 0.9, 1400)) * 0.5,
+			y: (this.canvas.height - Math.min(this.canvas.height * 0.6, 550)) * 0.5,
+		};
 	}
 
 	// --- Internal ---
@@ -176,6 +206,15 @@ export class WaveScene {
 				x: (this.canvas.width - Math.min(this.canvas.width * 0.9, 1400)) * 0.5,
 				y: (this.canvas.height - Math.min(this.canvas.height * 0.6, 550)) * 0.5,
 			},
+		});
+
+		const ofs = this.getTextOffset();
+		this.sparklesText.render({
+			resolution: { width: this.canvas.width, height: this.canvas.height },
+			phase: this.phase,
+			amplitude: this.params.amplitude,
+			frequency: this.params.frequency,
+			offset: ofs,
 		});
 
 		this.line.render({

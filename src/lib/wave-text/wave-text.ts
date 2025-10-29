@@ -1,4 +1,3 @@
-// wave-text.ts
 import { createProgram } from "./_utils";
 
 export type WaveTextConfig = {
@@ -109,9 +108,9 @@ export class WaveText {
 	private uFreq: WebGLUniformLocation;
 	private uOffset: WebGLUniformLocation;
 
-	private config: WaveTextConfig;
+	public config: WaveTextConfig;
 
-	public constructor(
+	constructor(
 		gl: WebGL2RenderingContext,
 		config: Partial<WaveTextConfig> = {},
 	) {
@@ -120,7 +119,7 @@ export class WaveText {
 
 		this.config = {
 			text: "WORKS",
-			fontCSS: "800 360px Commissioner Variable, sans-serif",
+			fontCSS: "800 240px Commissioner Variable, sans-serif",
 			color: "#ffffff",
 			lineSpacingPx: 20,
 			letterSpacingPx: -15,
@@ -150,7 +149,7 @@ export class WaveText {
 		// init GL resources
 		this.createTexture();
 		this.createMesh(this.quadW, this.quadH, this.config.gridRes);
-		void this.loadFontAndUpload();
+		this.loadFontAndUpload();
 	}
 
 	private async loadFontAndUpload(): Promise<void> {
@@ -178,6 +177,25 @@ export class WaveText {
 		}
 		this.drawTextToCanvas();
 		this.uploadTexture(true);
+	}
+
+	public getTextureCanvasWidth(): number {
+		return this.textCanvas.width; // equals this.texW
+	}
+
+	public getTextContentWidthPx(): number {
+		const ctx = this.textCtx;
+		const text = this.config.text;
+		if (!text) return 0;
+
+		// Police/align identiques au rendu
+		ctx.font = this.config.fontCSS;
+		ctx.letterSpacing = `${this.config.letterSpacingPx}px`;
+
+		// measureText (ne compte pas le letter-spacing)
+		const m = ctx.measureText(text);
+		const extra = Math.max(0, text.length - 1) * this.config.letterSpacingPx;
+		return Math.max(0, m.width + extra);
 	}
 
 	// --- public controls ---
