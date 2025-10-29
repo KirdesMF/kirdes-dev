@@ -1,5 +1,6 @@
 import { gsap } from "gsap";
 import { getGL2, isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
+import { LensOverlay, type LensUniforms } from "./lens-overlay";
 import { SparklesField } from "./sparkles-field";
 import { SparklesText } from "./sparkles-text";
 import { WaveLine, type WaveLineParams } from "./wave-line";
@@ -20,6 +21,14 @@ export class WaveScene {
 	private text: WaveText;
 	private sparklesText: SparklesText;
 	private sparklesField: SparklesField;
+	private lensOverlay: LensOverlay;
+
+	private lens: Omit<LensUniforms, "resolution"> = {
+		centerPx: { x: 0, y: 0 },
+		radiusPx: 0,
+		featherPx: 5,
+		colorRing: [1, 1, 1, 1],
+	};
 
 	private mouseTarget = { x: 0, y: 0 }; // [-1..1]
 	private mouseLerp = { x: 0, y: 0 };
@@ -56,6 +65,7 @@ export class WaveScene {
 			...initial,
 		};
 
+		this.lensOverlay = new LensOverlay(this.gl);
 		this.line = new WaveLine(this.gl, this.basePointCount);
 		this.text = new WaveText(this.gl);
 		this.sparklesText = new SparklesText(this.gl, {
@@ -84,6 +94,7 @@ export class WaveScene {
 			this.reduceMotion = ev.matches;
 		});
 
+		this.canvas.addEventListener("pointerenter", this.onPointerEnter);
 		this.canvas.addEventListener("pointermove", this.onPointerMove, {
 			passive: true,
 		});
@@ -122,8 +133,11 @@ export class WaveScene {
 
 	public dispose(): void {
 		this.stop();
+		this.canvas.removeEventListener("pointerenter", this.onPointerEnter);
 		this.canvas.removeEventListener("pointermove", this.onPointerMove);
 		this.canvas.removeEventListener("pointerleave", this.onPointerLeave);
+
+		this.lensOverlay.dispose();
 		this.line.dispose();
 		this.sparklesField.dispose();
 		this.sparklesText.dispose();
@@ -160,13 +174,31 @@ export class WaveScene {
 
 	private onPointerMove = (e: PointerEvent) => {
 		const rect = this.canvas.getBoundingClientRect();
+
+		// lens
+		const sx = this.canvas.width / rect.width;
+		const sy = this.canvas.height / rect.height;
+		this.lens.centerPx.x = (e.clientX - rect.left) * sx;
+		this.lens.centerPx.y = this.canvas.height - (e.clientY - rect.top) * sy;
+
+		// parallax field
 		const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
 		const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
 		this.mouseTarget.x = Math.max(-1, Math.min(1, nx));
 		this.mouseTarget.y = Math.max(-1, Math.min(1, ny));
 	};
 
+	private onPointerEnter = () => {
+		// show lens
+		gsap.to(this.lens, { radiusPx: 200, duration: 0.2, ease: "power2.out" });
+	};
+
 	private onPointerLeave = () => {
+		// hide lens
+		// gsap.to(this.lens, { radiusPx: 0, duration: 0.2, ease: "power2.in" });
+		this.lens.radiusPx = 0;
+
+		// parallax field
 		// 1) remets la cible à zéro (le lerp naturel va y retourner)
 		this.mouseTarget.x = 0;
 		this.mouseTarget.y = 0;
@@ -251,6 +283,11 @@ export class WaveScene {
 			resolution: { width: this.canvas.width, height: this.canvas.height },
 			parallax: { x: this.mouseLerp.x, y: this.mouseLerp.y },
 			reduceMotion: this.reduceMotion,
+			lens: {
+				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
+				radiusPx: this.lens.radiusPx,
+				featherPx: this.lens.featherPx,
+			},
 		});
 
 		const lineParams: WaveLineParams = {
@@ -269,6 +306,11 @@ export class WaveScene {
 				x: (this.canvas.width - Math.min(this.canvas.width * 0.9, 1400)) * 0.5,
 				y: (this.canvas.height - Math.min(this.canvas.height * 0.6, 550)) * 0.5,
 			},
+			lens: {
+				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
+				radiusPx: this.lens.radiusPx,
+				featherPx: this.lens.featherPx,
+			},
 		});
 
 		const ofs = this.getTextOffset();
@@ -278,11 +320,29 @@ export class WaveScene {
 			amplitude: this.params.amplitude,
 			frequency: this.params.frequency,
 			offset: ofs,
+			lens: {
+				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
+				radiusPx: this.lens.radiusPx,
+				featherPx: this.lens.featherPx,
+			},
 		});
 
 		this.line.render({
 			resolution: { width: this.canvas.width, height: this.canvas.height },
 			params: lineParams,
+			lens: {
+				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
+				radiusPx: this.lens.radiusPx,
+				featherPx: this.lens.featherPx,
+			},
+		});
+
+		this.lensOverlay.render({
+			resolution: { width: this.canvas.width, height: this.canvas.height },
+			centerPx: this.lens.centerPx,
+			radiusPx: this.lens.radiusPx,
+			featherPx: this.lens.featherPx,
+			colorRing: this.lens.colorRing,
 		});
 	}
 }

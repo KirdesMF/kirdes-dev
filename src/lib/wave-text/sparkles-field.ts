@@ -45,6 +45,9 @@ const FS = `#version 300 es
   uniform float u_alphaMin;      // alpha pour les plus petits
   uniform float u_alphaMax;      // alpha pour les plus grands
   uniform float u_depthBias;     // combien la profondeur réduit l’alpha (0..1)
+  uniform vec2  u_lensCenterPx;
+  uniform float u_lensRadiusPx;
+  uniform float u_lensFeatherPx;
 
   in vec2 v_uv;
   flat in float v_sizePx;
@@ -69,6 +72,18 @@ const FS = `#version 300 es
     float alpha = alphaSize * depthAtten;
 
     outColor = vec4(c.rgb, c.a * alpha);
+
+    // masque lentille
+    float d = distance(gl_FragCoord.xy, u_lensCenterPx);
+    float m = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx, u_lensRadiusPx + u_lensFeatherPx, d);
+
+    // motif dashed (écran) — ajuste la fréquence si tu veux
+    float dash = step(0.5, fract(gl_FragCoord.x * 0.05));
+
+    // hors lentille: inchangé, dans lentille: alpha modifié par dash
+    alpha = mix(outColor.a, outColor.a * dash, m);
+    if (alpha < 0.01) discard;
+    outColor = vec4(outColor.rgb, alpha);
   }
 `;
 
@@ -89,6 +104,11 @@ export type SparklesFieldUniforms = {
 	resolution: { width: number; height: number };
 	parallax: { x: number; y: number }; // [-1..1] relatif au centre du canvas
 	reduceMotion?: boolean;
+	lens: {
+		centerPx: { x: number; y: number };
+		radiusPx: number;
+		featherPx: number;
+	};
 };
 
 function rng(seed: number) {
@@ -219,6 +239,19 @@ export class SparklesField {
 			uniforms.resolution.height,
 		);
 
+		gl.uniform2f(
+			gl.getUniformLocation(this.program, "u_lensCenterPx"),
+			uniforms.lens?.centerPx.x ?? -9999,
+			uniforms.lens?.centerPx.y ?? -9999,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensRadiusPx"),
+			uniforms.lens?.radiusPx ?? 0.0,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensFeatherPx"),
+			uniforms.lens?.featherPx ?? 1.0,
+		);
 		gl.uniform1f(this.uMinSize, this.config.minSizePx);
 		gl.uniform1f(this.uMaxSize, this.config.maxSizePx);
 		gl.uniform1f(this.uAlphaMin, this.config.alphaMin ?? 0.15);

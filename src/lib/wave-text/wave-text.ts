@@ -16,6 +16,11 @@ export type WaveUniforms = {
 	amplitude: number;
 	frequency: number;
 	offset: { x: number; y: number };
+	lens: {
+		centerPx: { x: number; y: number };
+		radiusPx: number;
+		featherPx: number;
+	};
 };
 
 const VS = `#version 300 es
@@ -60,13 +65,61 @@ const FS = `#version 300 es
   precision mediump float;
 
   uniform sampler2D u_tex;
+  uniform vec2  u_resolution;
+  uniform vec2  u_lensCenterPx;
+  uniform float u_lensRadiusPx;
+  uniform float u_lensFeatherPx;
+
   in vec2 v_uv;
   out vec4 outColor;
 
+  float smoothCircleMask(vec2 p, vec2 c, float r, float feather) {
+    float d = distance(p, c);
+    return 1.0 - smoothstep(r - feather, r + feather, d);
+  }
+
   void main() {
-    vec4 c = texture(u_tex, v_uv);
-    if (c.a < 0.08) discard;
-    outColor = c;
+    vec4 texel = texture(u_tex, v_uv);
+    if (texel.a < 0.05) discard;
+
+    // Lens mask en coordonnées écran (gl_FragCoord.xy)
+    vec2 fragPx = gl_FragCoord.xy; // déjà en px
+    float m = smoothCircleMask(fragPx, u_lensCenterPx, u_lensRadiusPx, u_lensFeatherPx);
+
+    // Hors lentille -> rendu normal
+    if (m <= 0.001) {
+      outColor = texel;
+      return;
+    }
+
+    // ----- Dans la lentille: outline + hatch -----
+    // Détection de bord (sur la texture alpha)
+    vec2 texelSize = vec2(dFdx(v_uv.x), dFdy(v_uv.y)); // approx screen-texel
+    // 4-neighbors
+    float aC = texel.a;
+    float aL = texture(u_tex, v_uv + vec2(-texelSize.x, 0.0)).a;
+    float aR = texture(u_tex, v_uv + vec2( texelSize.x, 0.0)).a;
+    float aT = texture(u_tex, v_uv + vec2(0.0, -texelSize.y)).a;
+    float aB = texture(u_tex, v_uv + vec2(0.0,  texelSize.y)).a;
+
+    float edge = step(0.1, abs(aC - aL) + abs(aC - aR) + abs(aC - aT) + abs(aC - aB));
+
+    // Hatch diagonales en écran
+    float stripe = step(0.5, fract((fragPx.x + fragPx.y) * 0.02)); // densité ~ 50px
+    float hatchAlpha = texel.a * (1.0 - edge) * (stripe * 0.55);   // rempli mais discret
+    float outlineAlpha = edge * 1.0; // contour net
+
+    vec3 col = vec3(1.0); // blanc (reprend ta teinte si tu veux)
+    vec4 hatch = vec4(col, hatchAlpha);
+    vec4 outline = vec4(col, outlineAlpha);
+
+    // Combine + re-mask par la lentille (m)
+    vec4 wf = (hatch + outline) * m;
+
+    // Petit fail-safe : si rien dans la lentille (extrêmement mince), retombe sur texel
+    if (wf.a < 0.01) wf = texel;
+
+    outColor = wf;
   }
 `;
 
@@ -237,6 +290,19 @@ export class WaveText {
 			this.uRes,
 			uniforms.resolution.width,
 			uniforms.resolution.height,
+		);
+		gl.uniform2f(
+			gl.getUniformLocation(this.program, "u_lensCenterPx"),
+			uniforms.lens?.centerPx.x ?? -9999,
+			uniforms.lens?.centerPx.y ?? -9999,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensRadiusPx"),
+			uniforms.lens?.radiusPx ?? 0.0,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensFeatherPx"),
+			uniforms.lens?.featherPx ?? 1.0,
 		);
 		gl.uniform1f(this.uPhase, uniforms.phase);
 		gl.uniform1f(this.uAmp, uniforms.amplitude);

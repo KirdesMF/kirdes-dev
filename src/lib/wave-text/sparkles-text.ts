@@ -44,6 +44,9 @@ const FS = `#version 300 es
   precision mediump float;
 
   uniform sampler2D u_tex;
+  uniform vec2  u_lensCenterPx;
+  uniform float u_lensRadiusPx;
+  uniform float u_lensFeatherPx;
   in vec2 v_uv;
   out vec4 outColor;
 
@@ -51,6 +54,18 @@ const FS = `#version 300 es
     vec4 c = texture(u_tex, v_uv);
     if (c.a < 0.05) discard;
     outColor = c;
+
+    // masque lentille
+    float d = distance(gl_FragCoord.xy, u_lensCenterPx);
+    float m = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx, u_lensRadiusPx + u_lensFeatherPx, d);
+
+    // motif dashed (écran) — ajuste la fréquence si tu veux
+    float dash = step(0.5, fract(gl_FragCoord.x * 0.05));
+
+    // hors lentille: inchangé, dans lentille: alpha modifié par dash
+    float alpha = mix(outColor.a, outColor.a * dash, m);
+    if (alpha < 0.01) discard;
+    outColor = vec4(outColor.rgb, alpha);
   }
 `;
 
@@ -85,6 +100,11 @@ export type SparklesTextUniforms = {
 	amplitude: number;
 	frequency: number;
 	offset: { x: number; y: number }; // offset du quad texte
+	lens: {
+		centerPx: { x: number; y: number };
+		radiusPx: number;
+		featherPx: number;
+	};
 };
 
 export class SparklesText {
@@ -170,6 +190,19 @@ export class SparklesText {
 			gl.getUniformLocation(this.program, "u_resolution"),
 			uniforms.resolution.width,
 			uniforms.resolution.height,
+		);
+		gl.uniform2f(
+			gl.getUniformLocation(this.program, "u_lensCenterPx"),
+			uniforms.lens?.centerPx.x ?? -9999,
+			uniforms.lens?.centerPx.y ?? -9999,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensRadiusPx"),
+			uniforms.lens?.radiusPx ?? 0.0,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensFeatherPx"),
+			uniforms.lens?.featherPx ?? 1.0,
 		);
 		gl.uniform1f(
 			gl.getUniformLocation(this.program, "u_phase"),

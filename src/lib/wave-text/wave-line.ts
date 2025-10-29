@@ -26,9 +26,24 @@ const FS = `#version 300 es
   precision highp float;
   out vec4 outColor;
   uniform vec4 u_color;
+  uniform vec2  u_lensCenterPx;
+  uniform float u_lensRadiusPx;
+  uniform float u_lensFeatherPx;
 
   void main() {
     outColor = u_color; // ligne pleine
+    vec4 c = u_color;
+
+    // masque lentille
+    float d = distance(gl_FragCoord.xy, u_lensCenterPx);
+    float m = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx, u_lensRadiusPx + u_lensFeatherPx, d);
+
+    // motif dash (écran)
+    float dash = step(0.5, fract(gl_FragCoord.x * 0.04)); // densité à ajuster
+
+    float alpha = mix(c.a, c.a * dash, m);
+    if (alpha < 0.01) discard;
+    outColor = vec4(c.rgb, alpha);
   }
 `;
 
@@ -37,6 +52,16 @@ export type WaveLineParams = {
 	frequency: number; // rad/px
 	phase: number; // rad
 	color: [number, number, number, number]; // RGBA 0..1
+};
+
+export type WaveLineUniforms = {
+	resolution: { width: number; height: number };
+	params: WaveLineParams;
+	lens: {
+		centerPx: { x: number; y: number };
+		radiusPx: number;
+		featherPx: number;
+	};
 };
 
 function getUniform(
@@ -94,15 +119,25 @@ export class WaveLine {
 		this.uColor = getUniform(gl, this.program, "u_color");
 	}
 
-	public render(args: {
-		resolution: { width: number; height: number };
-		params: WaveLineParams;
-	}): void {
+	public render(args: WaveLineUniforms): void {
 		const { resolution, params } = args;
 		const gl = this.gl;
 		gl.useProgram(this.program);
 
 		gl.uniform2f(this.uResolution, resolution.width, resolution.height);
+		gl.uniform2f(
+			gl.getUniformLocation(this.program, "u_lensCenterPx"),
+			args.lens?.centerPx.x ?? -9999,
+			args.lens?.centerPx.y ?? -9999,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensRadiusPx"),
+			args.lens?.radiusPx ?? 0.0,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_lensFeatherPx"),
+			args.lens?.featherPx ?? 1.0,
+		);
 		gl.uniform1f(this.uPhase, params.phase);
 		gl.uniform1f(this.uAmplitude, params.amplitude);
 		gl.uniform1f(this.uFrequency, params.frequency);
