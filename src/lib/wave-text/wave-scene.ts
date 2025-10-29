@@ -1,5 +1,6 @@
 import { gsap } from "gsap";
 import { getGL2, isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
+import { SparklesField } from "./sparkles-field";
 import { SparklesText } from "./sparkles-text";
 import { WaveLine, type WaveLineParams } from "./wave-line";
 import { WaveText } from "./wave-text";
@@ -18,6 +19,10 @@ export class WaveScene {
 	private line: WaveLine;
 	private text: WaveText;
 	private sparklesText: SparklesText;
+	private sparklesField: SparklesField;
+
+	private mouseTarget = { x: 0, y: 0 }; // [-1..1]
+	private mouseLerp = { x: 0, y: 0 };
 
 	private phase = 0; // interne (rad)
 	public params: WavePublicParams; // tweeneable/public
@@ -40,6 +45,9 @@ export class WaveScene {
 		this.canvas = canvas;
 		this.gl = getGL2({ canvas });
 
+		this.gl.enable(this.gl.BLEND);
+		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+
 		this.params = {
 			amplitude: 120,
 			frequency: 0.002,
@@ -61,11 +69,25 @@ export class WaveScene {
 			texSize: 64,
 		});
 
+		this.sparklesField = new SparklesField(this.gl, {
+			count: isLikelyMobile() ? 80 : 100,
+			minSizePx: isLikelyMobile() ? 5 : 6,
+			maxSizePx: isLikelyMobile() ? 10 : 14,
+			parallaxStrengthPx: isLikelyMobile() ? 8 : 50,
+			color: "#ffffff",
+			texSize: 48,
+		});
+
 		const mediaPRM = window.matchMedia("(prefers-reduced-motion: reduce)");
 		this.reduceMotion = mediaPRM.matches;
 		mediaPRM.addEventListener("change", (ev) => {
 			this.reduceMotion = ev.matches;
 		});
+
+		this.canvas.addEventListener("pointermove", this.onPointerMove, {
+			passive: true,
+		});
+		this.canvas.addEventListener("pointerleave", this.onPointerLeave);
 
 		this.resize();
 		this.resizeTextQuad();
@@ -100,7 +122,11 @@ export class WaveScene {
 
 	public dispose(): void {
 		this.stop();
+		this.canvas.removeEventListener("pointermove", this.onPointerMove);
+		this.canvas.removeEventListener("pointerleave", this.onPointerLeave);
 		this.line.dispose();
+		this.sparklesField.dispose();
+		this.sparklesText.dispose();
 	}
 
 	private resizeTextQuad() {
@@ -132,6 +158,28 @@ export class WaveScene {
 		};
 	}
 
+	private onPointerMove = (e: PointerEvent) => {
+		const rect = this.canvas.getBoundingClientRect();
+		const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+		const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+		this.mouseTarget.x = Math.max(-1, Math.min(1, nx));
+		this.mouseTarget.y = Math.max(-1, Math.min(1, ny));
+	};
+
+	private onPointerLeave = () => {
+		// 1) remets la cible à zéro (le lerp naturel va y retourner)
+		this.mouseTarget.x = 0;
+		this.mouseTarget.y = 0;
+
+		// 2) (optionnel) accélère le retour visuel avec un tween direct du lerp
+		gsap.to(this.mouseLerp, {
+			x: 0,
+			y: 0,
+			duration: 1,
+			ease: "elastic.out(1.5, 0.2)",
+		});
+	};
+
 	// --- Internal ---
 	private readonly tick = (): void => {
 		const deltaRatio = gsap.ticker.deltaRatio(60);
@@ -149,6 +197,11 @@ export class WaveScene {
 			: this.params.speed;
 		this.phase += 0.02 * speed * deltaRatio;
 		if (this.phase > Math.PI * 2) this.phase -= Math.PI * 2;
+
+		// lerp doux de la souris
+		const k = 0.12;
+		this.mouseLerp.x += (this.mouseTarget.x - this.mouseLerp.x) * k;
+		this.mouseLerp.y += (this.mouseTarget.y - this.mouseLerp.y) * k;
 
 		this.render();
 	};
@@ -172,6 +225,10 @@ export class WaveScene {
 				this.line = new WaveLine(this.gl, target);
 				this.basePointCount = target;
 				this.resizeTextQuad();
+				this.sparklesField.resize({
+					width: this.canvas.width,
+					height: this.canvas.height,
+				});
 			}
 		}
 		return changed;
@@ -189,6 +246,12 @@ export class WaveScene {
 		// garde-fous ultra simples pour éviter des valeurs négatives
 		const amp = Math.max(0, this.params.amplitude);
 		const freq = Math.max(0, this.params.frequency);
+
+		this.sparklesField.render({
+			resolution: { width: this.canvas.width, height: this.canvas.height },
+			parallax: { x: this.mouseLerp.x, y: this.mouseLerp.y },
+			reduceMotion: this.reduceMotion,
+		});
 
 		const lineParams: WaveLineParams = {
 			amplitude: amp,
