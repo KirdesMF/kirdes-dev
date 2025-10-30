@@ -126,3 +126,28 @@ export function isLikelyMobile(): boolean {
 	const ua = navigator.userAgent.toLowerCase();
 	return /iphone|ipad|ipod|android|mobile/.test(ua);
 }
+
+export type LensParams = {
+	centerPx: { x: number; y: number };
+	radiusPx: number;
+	featherPx: number;
+};
+
+export function sendLensUniforms({
+	gl,
+	program,
+	lens,
+}: {
+	gl: WebGL2RenderingContext;
+	program: WebGLProgram;
+	lens?: LensParams;
+}) {
+	const cx = lens?.centerPx.x ?? -9999;
+	const cy = lens?.centerPx.y ?? -9999;
+	const r = lens?.radiusPx ?? 0.0;
+	const f = lens?.featherPx ?? 1.0;
+
+	gl.uniform2f(gl.getUniformLocation(program, "u_lensCenterPx"), cx, cy);
+	gl.uniform1f(gl.getUniformLocation(program, "u_lensRadiusPx"), r);
+	gl.uniform1f(gl.getUniformLocation(program, "u_lensFeatherPx"), f);
+}

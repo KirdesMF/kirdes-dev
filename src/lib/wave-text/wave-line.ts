@@ -1,5 +1,5 @@
 // wave-line.ts
-import { createBuffer, createProgram } from "./_utils";
+import { createBuffer, createProgram, sendLensUniforms } from "./_utils";
 
 const VS = `#version 300 es
   precision highp float;
@@ -125,19 +125,8 @@ export class WaveLine {
 		gl.useProgram(this.program);
 
 		gl.uniform2f(this.uResolution, resolution.width, resolution.height);
-		gl.uniform2f(
-			gl.getUniformLocation(this.program, "u_lensCenterPx"),
-			args.lens?.centerPx.x ?? -9999,
-			args.lens?.centerPx.y ?? -9999,
-		);
-		gl.uniform1f(
-			gl.getUniformLocation(this.program, "u_lensRadiusPx"),
-			args.lens?.radiusPx ?? 0.0,
-		);
-		gl.uniform1f(
-			gl.getUniformLocation(this.program, "u_lensFeatherPx"),
-			args.lens?.featherPx ?? 1.0,
-		);
+
+		sendLensUniforms({ gl, program: this.program, lens: args.lens });
 		gl.uniform1f(this.uPhase, params.phase);
 		gl.uniform1f(this.uAmplitude, params.amplitude);
 		gl.uniform1f(this.uFrequency, params.frequency);

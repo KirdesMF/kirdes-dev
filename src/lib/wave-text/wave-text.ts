@@ -1,4 +1,4 @@
-import { createProgram } from "./_utils";
+import { createProgram, sendLensUniforms } from "./_utils";
 
 export type WaveTextConfig = {
 	text: string;
@@ -291,19 +291,7 @@ export class WaveText {
 			uniforms.resolution.width,
 			uniforms.resolution.height,
 		);
-		gl.uniform2f(
-			gl.getUniformLocation(this.program, "u_lensCenterPx"),
-			uniforms.lens?.centerPx.x ?? -9999,
-			uniforms.lens?.centerPx.y ?? -9999,
-		);
-		gl.uniform1f(
-			gl.getUniformLocation(this.program, "u_lensRadiusPx"),
-			uniforms.lens?.radiusPx ?? 0.0,
-		);
-		gl.uniform1f(
-			gl.getUniformLocation(this.program, "u_lensFeatherPx"),
-			uniforms.lens?.featherPx ?? 1.0,
-		);
+		sendLensUniforms({ gl, program: this.program, lens: uniforms.lens });
 		gl.uniform1f(this.uPhase, uniforms.phase);
 		gl.uniform1f(this.uAmp, uniforms.amplitude);
 		gl.uniform1f(this.uFreq, uniforms.frequency);

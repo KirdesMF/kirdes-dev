@@ -82,10 +82,10 @@ export class WaveScene {
 		this.sparklesField = new SparklesField(this.gl, {
 			count: isLikelyMobile() ? 80 : 100,
 			minSizePx: isLikelyMobile() ? 5 : 6,
-			maxSizePx: isLikelyMobile() ? 10 : 14,
+			maxSizePx: isLikelyMobile() ? 10 : 25,
 			parallaxStrengthPx: isLikelyMobile() ? 8 : 50,
 			color: "#ffffff",
-			texSize: 48,
+			texSize: 80,
 		});
 
 		const mediaPRM = window.matchMedia("(prefers-reduced-motion: reduce)");
