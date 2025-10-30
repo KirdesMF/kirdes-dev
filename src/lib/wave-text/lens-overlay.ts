@@ -98,7 +98,7 @@ export class LensOverlay {
 			u.featherPx,
 		);
 
-		const fill = u.colorFill ?? [0, 0, 0, 0]; // léger “blueprint”
+		const fill = u.colorFill ?? [0, 0, 0, 0];
 		const ring = u.colorRing ?? [1.0, 1.0, 1.0, 1.0];
 		gl.uniform4f(gl.getUniformLocation(this.program, "u_colorFill"), ...fill);
 		gl.uniform4f(gl.getUniformLocation(this.program, "u_colorRing"), ...ring);
