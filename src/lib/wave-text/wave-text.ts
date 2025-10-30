@@ -1,13 +1,17 @@
+// wave-text.ts
 import { createProgram, sendLensUniforms } from "./_utils";
 
 export type WaveTextConfig = {
 	text: string;
-	fontCSS: string; // ex: "800 260px Arial, sans-serif"
-	color: string; // fill style 2D
-	lineSpacingPx: number; // distance entre haut et miroir
-	letterSpacingPx: number; // letter-spacing CSS
-	gridRes: number; // subdivisions (ex: 200)
-	maxTextureSize?: number; // pour mobile (ex: 2048)
+	fontCSS: string; // ex: "800 300px Commissioner Variable, sans-serif"
+	color: string; // fill color (Canvas2D)
+	letterSpacingPx: number;
+	lineSpacingPx: number; // distance half-top/half-bottom (miroir)
+	gridRes: number;
+	maxTextureSize?: number;
+
+	// Nouveau : épaisseur du contour (en px écran car on le bake dans la texture stroke)
+	strokeWidthPx: number; // ex: 8, 12, 18...
 };
 
 export type WaveUniforms = {
@@ -24,112 +28,104 @@ export type WaveUniforms = {
 };
 
 const VS = `#version 300 es
-  precision highp float;
+precision highp float;
 
-  layout(location=0) in vec2 a_position;
-  layout(location=1) in vec2 a_uv;
+layout(location=0) in vec2 a_position;
+layout(location=1) in vec2 a_uv;
 
-  uniform vec2  u_resolution;
-  uniform float u_phase;
-  uniform float u_amplitude;
-  uniform float u_frequency;
-  uniform vec2  u_offset;
+uniform vec2  u_resolution;
+uniform float u_phase;
+uniform float u_amplitude;
+uniform float u_frequency;
+uniform vec2  u_offset;
 
-  out vec2 v_uv;
+out vec2 v_uv;
 
-  void main() {
-    v_uv = a_uv;
+void main() {
+  v_uv = a_uv;
 
-    vec2 pos = a_position + u_offset;
+  vec2 pos = a_position + u_offset;
 
-    // onde appliquée le long de x
-    float wave = sin(pos.x * u_frequency + u_phase) * u_amplitude;
+  float wave  = sin(pos.x * u_frequency + u_phase) * u_amplitude;
+  float slope = cos(pos.x * u_frequency + u_phase) * u_amplitude * u_frequency;
+  float stretch = sqrt(1.0 + slope * slope);
 
-    // étirement vertical (suivre la pente)
-    float slope   = cos(pos.x * u_frequency + u_phase) * u_amplitude * u_frequency;
-    float stretch = sqrt(1.0 + slope * slope);
+  float baseline = u_resolution.y * 0.5;
+  pos.y = baseline + (pos.y + wave - baseline) * stretch;
 
-    // ancre sur baseline verticale (milieu d'écran)
-    float baseline = u_resolution.y * 0.5;
-    pos.y = baseline + (pos.y + wave - baseline) * stretch;
+  vec2 clip = (pos / u_resolution) * 2.0 - 1.0;
+  clip.y *= -1.0;
 
-    // NDC
-    vec2 clip = (pos / u_resolution) * 2.0 - 1.0;
-    clip.y *= -1.0;
-
-    gl_Position = vec4(clip, 0.0, 1.0);
-  }
+  gl_Position = vec4(clip, 0.0, 1.0);
+}
 `;
 
+// === FS : outside = fill plein ; inside(lens) = outline (stroke-fill) + hatch, sans fill ===
 const FS = `#version 300 es
-  precision mediump float;
+precision mediump float;
 
-  uniform sampler2D u_tex;
-  uniform vec2  u_resolution;
-  uniform vec2  u_lensCenterPx;
-  uniform float u_lensRadiusPx;
-  uniform float u_lensFeatherPx;
+uniform sampler2D u_texFill;
+uniform sampler2D u_texStroke;
 
-  in vec2 v_uv;
-  out vec4 outColor;
+uniform vec2  u_lensCenterPx;
+uniform float u_lensRadiusPx;
+uniform float u_lensFeatherPx;
 
-  float smoothCircleMask(vec2 p, vec2 c, float r, float feather) {
-    float d = distance(p, c);
-    return 1.0 - smoothstep(r - feather, r + feather, d);
-  }
+uniform vec3  u_textColor;     // couleur du contour + hatch
+uniform float u_outlineAlpha;  // opacity du contour
 
-  void main() {
-    vec4 texel = texture(u_tex, v_uv);
-    if (texel.a < 0.05) discard;
+// Hatch
+uniform float u_hatchPeriodPx;
+uniform float u_hatchDuty;
+uniform float u_hatchAlpha;
+uniform float u_hatchAngleDeg;
 
-    // Lens mask en coordonnées écran (gl_FragCoord.xy)
-    vec2 fragPx = gl_FragCoord.xy; // déjà en px
-    float m = smoothCircleMask(fragPx, u_lensCenterPx, u_lensRadiusPx, u_lensFeatherPx);
+in vec2 v_uv;
+out vec4 outColor;
 
-    // Hors lentille -> rendu normal
-    if (m <= 0.001) {
-      outColor = texel;
-      return;
-    }
+void main() {
+  vec4 fillS   = texture(u_texFill,   v_uv);
+  vec4 strokeS = texture(u_texStroke, v_uv);
 
-    // ----- Dans la lentille: outline + hatch -----
-    // Détection de bord (sur la texture alpha)
-    vec2 texelSize = vec2(dFdx(v_uv.x), dFdy(v_uv.y)); // approx screen-texel
-    // 4-neighbors
-    float aC = texel.a;
-    float aL = texture(u_tex, v_uv + vec2(-texelSize.x, 0.0)).a;
-    float aR = texture(u_tex, v_uv + vec2( texelSize.x, 0.0)).a;
-    float aT = texture(u_tex, v_uv + vec2(0.0, -texelSize.y)).a;
-    float aB = texture(u_tex, v_uv + vec2(0.0,  texelSize.y)).a;
+  float aFill   = fillS.a;
+  float aStroke = strokeS.a;
 
-    float edge = step(0.1, abs(aC - aL) + abs(aC - aR) + abs(aC - aT) + abs(aC - aB));
+  // ring = contour pur (stroke sans le plein)
+  float ringA = max(0.0, aStroke - aFill);
 
-    // Hatch diagonales en écran
-    float stripe = step(0.5, fract((fragPx.x + fragPx.y) * 0.02)); // densité ~ 50px
-    float hatchAlpha = texel.a * (1.0 - edge) * (stripe * 0.55);   // rempli mais discret
-    float outlineAlpha = edge * 1.0; // contour net
+  // Lens feather
+  float d   = distance(gl_FragCoord.xy, u_lensCenterPx);
+  float m   = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx,u_lensRadiusPx + u_lensFeatherPx, d);
 
-    vec3 col = vec3(1.0); // blanc (reprend ta teinte si tu veux)
-    vec4 hatch = vec4(col, hatchAlpha);
-    vec4 outline = vec4(col, outlineAlpha);
+  // Outside: fill plein (la couleur vient de la texture 2D déjà colorée)
+  vec4 outside = vec4(fillS.rgb, aFill) * (1.0 - m);
 
-    // Combine + re-mask par la lentille (m)
-    vec4 wf = (hatch + outline) * m;
+  // Hatch (dans la lens), masqué par le corps du texte
+  vec2  q   = gl_FragCoord.xy - u_lensCenterPx;
+  float ang = radians(u_hatchAngleDeg);
+  vec2  r   = mat2(cos(ang), -sin(ang), sin(ang), cos(ang)) * q;
+  float period = max(1.0, u_hatchPeriodPx);
+  float saw = fract(r.x / period);
+  float dash = step(0.0, saw) * step(saw, clamp(u_hatchDuty, 0.0, 1.0));
 
-    // Petit fail-safe : si rien dans la lentille (extrêmement mince), retombe sur texel
-    if (wf.a < 0.01) wf = texel;
+  vec4 outlineCol = vec4(u_textColor, u_outlineAlpha) * ringA;
+  vec4 hatchCol   = vec4(u_textColor, u_hatchAlpha)  * dash * aFill;
 
-    outColor = wf;
-  }
+  vec4 inside = (outlineCol + hatchCol) * m;
+
+  vec4 color = outside + inside;
+  if (color.a < 0.01) discard;
+  outColor = color;
+}
 `;
 
 function getUniform(
 	gl: WebGL2RenderingContext,
 	program: WebGLProgram,
 	name: string,
-): WebGLUniformLocation {
+) {
 	const loc = gl.getUniformLocation(program, name);
-	if (loc === null) throw new Error(`uniform ${name} not found`);
+	if (!loc) throw new Error(`uniform ${name} not found`);
 	return loc;
 }
 
@@ -137,24 +133,29 @@ export class WaveText {
 	private gl: WebGL2RenderingContext;
 	private program: WebGLProgram;
 
-	private tex: WebGLTexture | null = null;
+	private texFill: WebGLTexture | null = null;
+	private texStroke: WebGLTexture | null = null;
+
 	private vao: WebGLVertexArrayObject | null = null;
 	private vboPos: WebGLBuffer | null = null;
 	private vboUV: WebGLBuffer | null = null;
 	private ibo: WebGLBuffer | null = null;
-
 	private meshIndexCount = 0;
 
-	private textCanvas: HTMLCanvasElement;
-	private textCtx: CanvasRenderingContext2D;
+	// Offscreen canvases
+	private canvasFill: HTMLCanvasElement;
+	private ctxFill: CanvasRenderingContext2D;
+	private canvasStroke: HTMLCanvasElement;
+	private ctxStroke: CanvasRenderingContext2D;
 
-	// taille du quad (en pixels scène) et offscreen (texture)
+	// quad & tex sizes
 	private quadW = 1400;
 	private quadH = 550;
 	private texW = 2048;
 	private texH = 1024;
 
-	private uTex: WebGLUniformLocation;
+	private uTexFill: WebGLUniformLocation;
+	private uTexStroke: WebGLUniformLocation;
 	private uRes: WebGLUniformLocation;
 	private uPhase: WebGLUniformLocation;
 	private uAmp: WebGLUniformLocation;
@@ -172,96 +173,97 @@ export class WaveText {
 
 		this.config = {
 			text: "WORKS",
-			fontCSS: "800 240px Commissioner Variable, sans-serif",
+			fontCSS: "800 300px Commissioner Variable, sans-serif",
 			color: "#ffffff",
+			letterSpacingPx: -10,
 			lineSpacingPx: 20,
-			letterSpacingPx: -15,
 			gridRes: 200,
 			maxTextureSize: 2048,
+			strokeWidthPx: 15, // ← épaisseur du ring (en px)
 			...config,
 		};
 
-		// uniforms (avec checks)
-		this.uTex = getUniform(this.gl, this.program, "u_tex");
-		this.uRes = getUniform(this.gl, this.program, "u_resolution");
-		this.uPhase = getUniform(this.gl, this.program, "u_phase");
-		this.uAmp = getUniform(this.gl, this.program, "u_amplitude");
-		this.uFreq = getUniform(this.gl, this.program, "u_frequency");
-		this.uOffset = getUniform(this.gl, this.program, "u_offset");
+		// uniforms
+		this.uTexFill = getUniform(gl, this.program, "u_texFill");
+		this.uTexStroke = getUniform(gl, this.program, "u_texStroke");
+		this.uRes = getUniform(gl, this.program, "u_resolution");
+		this.uPhase = getUniform(gl, this.program, "u_phase");
+		this.uAmp = getUniform(gl, this.program, "u_amplitude");
+		this.uFreq = getUniform(gl, this.program, "u_frequency");
+		this.uOffset = getUniform(gl, this.program, "u_offset");
 
-		// offscreen canvas pour générer la texture texte (sans non-null assertions)
+		// offscreen
 		const maxTex = this.config.maxTextureSize ?? 2048;
-		this.textCanvas = document.createElement("canvas");
-		this.textCanvas.width = this.texW = Math.min(this.texW, maxTex);
-		this.textCanvas.height = this.texH = Math.min(this.texH, maxTex >> 1);
 
-		const ctx = this.textCanvas.getContext("2d");
-		if (!ctx) throw new Error("2D context not available");
-		this.textCtx = ctx;
+		this.canvasFill = document.createElement("canvas");
+		this.canvasFill.width = this.texW = Math.min(this.texW, maxTex);
+		this.canvasFill.height = this.texH = Math.min(this.texH, maxTex >> 1);
+		const ctxF = this.canvasFill.getContext("2d");
+		if (!ctxF) throw new Error("2D context (fill) not available");
+		this.ctxFill = ctxF;
 
-		// init GL resources
-		this.createTexture();
+		this.canvasStroke = document.createElement("canvas");
+		this.canvasStroke.width = this.texW;
+		this.canvasStroke.height = this.texH;
+		const ctxS = this.canvasStroke.getContext("2d");
+		if (!ctxS) throw new Error("2D context (stroke) not available");
+		this.ctxStroke = ctxS;
+
+		// GL resources
+		this.createTextures();
 		this.createMesh(this.quadW, this.quadH, this.config.gridRes);
 		this.loadFontAndUpload();
 	}
 
 	private async loadFontAndUpload(): Promise<void> {
-		const fonts = (
-			document as unknown as {
-				fonts?: {
-					ready?: Promise<void>;
-					load?: (f: string) => Promise<unknown>;
-				};
-			}
-		).fonts;
+		const fonts = document.fonts;
 		if (fonts?.ready) {
 			try {
 				await fonts.ready;
-			} catch {
-				/* no-op */
-			}
+			} catch {}
 		}
 		if (fonts?.load) {
 			try {
 				await fonts.load(this.config.fontCSS);
-			} catch {
-				/* no-op */
-			}
+			} catch {}
 		}
-		this.drawTextToCanvas();
-		this.uploadTexture(true);
+
+		this.drawToCanvases();
+		this.uploadTextures(true);
 	}
 
+	// ————— API utilitaires —————
 	public getTextureCanvasWidth(): number {
-		return this.textCanvas.width; // equals this.texW
+		return this.canvasFill.width;
 	}
 
 	public getTextContentWidthPx(): number {
-		const ctx = this.textCtx;
+		const ctx = this.ctxFill;
 		const text = this.config.text;
 		if (!text) return 0;
-
-		// Police/align identiques au rendu
 		ctx.font = this.config.fontCSS;
 		ctx.letterSpacing = `${this.config.letterSpacingPx}px`;
-
-		// measureText (ne compte pas le letter-spacing)
 		const m = ctx.measureText(text);
 		const extra = Math.max(0, text.length - 1) * this.config.letterSpacingPx;
 		return Math.max(0, m.width + extra);
 	}
 
-	// --- public controls ---
 	public updateText(t: string): void {
 		this.config.text = t;
-		this.drawTextToCanvas();
-		this.uploadTexture(false);
+		this.drawToCanvases();
+		this.uploadTextures(false);
 	}
 
 	public updateColor(cssColor: string): void {
 		this.config.color = cssColor;
-		this.drawTextToCanvas();
-		this.uploadTexture(false);
+		this.drawToCanvases();
+		this.uploadTextures(false);
+	}
+
+	public setStrokeWidthPx(px: number): void {
+		this.config.strokeWidthPx = Math.max(1, px | 0);
+		this.drawToCanvases();
+		this.uploadTextures(false);
 	}
 
 	public resizeQuad(args: {
@@ -277,14 +279,19 @@ export class WaveText {
 		this.createMesh(this.quadW, this.quadH, res);
 	}
 
-	// --- drawing ---
+	// ————— Render —————
 	public render(uniforms: WaveUniforms): void {
 		const gl = this.gl;
 		gl.useProgram(this.program);
 
+		// TEX0 = fill, TEX1 = stroke
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.uniform1i(this.uTex, 0);
+		gl.bindTexture(gl.TEXTURE_2D, this.texFill);
+		gl.uniform1i(this.uTexFill, 0);
+
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.texStroke);
+		gl.uniform1i(this.uTexStroke, 1);
 
 		gl.uniform2f(
 			this.uRes,
@@ -297,6 +304,20 @@ export class WaveText {
 		gl.uniform1f(this.uFreq, uniforms.frequency);
 		gl.uniform2f(this.uOffset, uniforms.offset.x, uniforms.offset.y);
 
+		// Apparence dans la lens
+		gl.uniform3f(
+			gl.getUniformLocation(this.program, "u_textColor"),
+			1.0,
+			1.0,
+			1.0,
+		);
+		gl.uniform1f(gl.getUniformLocation(this.program, "u_outlineAlpha"), 1.0);
+
+		gl.uniform1f(gl.getUniformLocation(this.program, "u_hatchPeriodPx"), 6.0);
+		gl.uniform1f(gl.getUniformLocation(this.program, "u_hatchDuty"), 0.5);
+		gl.uniform1f(gl.getUniformLocation(this.program, "u_hatchAlpha"), 0.75);
+		gl.uniform1f(gl.getUniformLocation(this.program, "u_hatchAngleDeg"), 45.0);
+
 		gl.bindVertexArray(this.vao);
 		gl.drawElements(gl.TRIANGLES, this.meshIndexCount, gl.UNSIGNED_SHORT, 0);
 		gl.bindVertexArray(null);
@@ -308,28 +329,35 @@ export class WaveText {
 		if (this.vboPos) gl.deleteBuffer(this.vboPos);
 		if (this.vboUV) gl.deleteBuffer(this.vboUV);
 		if (this.ibo) gl.deleteBuffer(this.ibo);
-		if (this.tex) gl.deleteTexture(this.tex);
+		if (this.texFill) gl.deleteTexture(this.texFill);
+		if (this.texStroke) gl.deleteTexture(this.texStroke);
 		gl.deleteProgram(this.program);
 	}
 
-	// --- internals ---
-	private createTexture(): void {
+	// ————— Internals —————
+	private createTextures(): void {
 		const gl = this.gl;
-		const t = gl.createTexture();
-		if (!t) throw new Error("texture alloc failed");
-		this.tex = t;
+		const t0 = gl.createTexture();
+		const t1 = gl.createTexture();
+		if (!t0 || !t1) throw new Error("texture alloc failed");
+		this.texFill = t0;
+		this.texStroke = t1;
 
-		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		for (const t of [t0, t1]) {
+			gl.bindTexture(gl.TEXTURE_2D, t);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		}
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 
-	private uploadTexture(initial: boolean): void {
+	private uploadTextures(initial: boolean): void {
 		const gl = this.gl;
-		gl.bindTexture(gl.TEXTURE_2D, this.tex);
+
+		// fill
+		gl.bindTexture(gl.TEXTURE_2D, this.texFill);
 		if (initial) {
 			gl.texImage2D(
 				gl.TEXTURE_2D,
@@ -337,7 +365,7 @@ export class WaveText {
 				gl.RGBA,
 				gl.RGBA,
 				gl.UNSIGNED_BYTE,
-				this.textCanvas,
+				this.canvasFill,
 			);
 		} else {
 			gl.texSubImage2D(
@@ -347,36 +375,82 @@ export class WaveText {
 				0,
 				gl.RGBA,
 				gl.UNSIGNED_BYTE,
-				this.textCanvas,
+				this.canvasFill,
 			);
 		}
+
+		// stroke
+		gl.bindTexture(gl.TEXTURE_2D, this.texStroke);
+		if (initial) {
+			gl.texImage2D(
+				gl.TEXTURE_2D,
+				0,
+				gl.RGBA,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE,
+				this.canvasStroke,
+			);
+		} else {
+			gl.texSubImage2D(
+				gl.TEXTURE_2D,
+				0,
+				0,
+				0,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE,
+				this.canvasStroke,
+			);
+		}
+
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 
-	private drawTextToCanvas(): void {
-		const ctx = this.textCtx;
-		const W = this.textCanvas.width;
-		const H = this.textCanvas.height;
+	private drawToCanvases(): void {
+		const text = this.config.text;
+		const W = this.texW;
+		const H = this.texH;
 
-		ctx.clearRect(0, 0, W, H);
-		ctx.fillStyle = this.config.color;
-		ctx.letterSpacing = `${this.config.letterSpacingPx}px`;
-		ctx.textAlign = "center";
-		ctx.textBaseline = "alphabetic";
-		ctx.font = this.config.fontCSS;
+		// ---- FILL ----
+		const F = this.ctxFill;
+		F.clearRect(0, 0, W, H);
+		F.fillStyle = this.config.color;
+		F.letterSpacing = `${this.config.letterSpacingPx}px`;
+		F.textAlign = "center";
+		F.textBaseline = "alphabetic";
+		F.font = this.config.fontCSS;
 
 		const cx = W * 0.5;
 		const cy = H * 0.5;
 
-		// texte haut (normal)
-		ctx.fillText(this.config.text, cx, cy - this.config.lineSpacingPx);
+		// haut (normal)
+		F.fillText(text, cx, cy - this.config.lineSpacingPx);
+		// bas (miroir)
+		F.save();
+		F.translate(cx, cy + this.config.lineSpacingPx);
+		F.scale(-1, -1);
+		F.fillText(text, 0, 0);
+		F.restore();
 
-		// miroir bas (flip X/Y)
-		ctx.save();
-		ctx.translate(cx, cy + this.config.lineSpacingPx);
-		ctx.scale(-1, -1);
-		ctx.fillText(this.config.text, 0, 0);
-		ctx.restore();
+		// ---- STROKE ----
+		const S = this.ctxStroke;
+		S.clearRect(0, 0, W, H);
+		S.strokeStyle = "rgba(255,255,255,1)"; // la couleur n’a pas d’importance : on n’utilise que l’ALPHA
+		S.lineWidth = Math.max(1, this.config.strokeWidthPx);
+		S.lineJoin = "round";
+		S.miterLimit = 2;
+		S.letterSpacing = `${this.config.letterSpacingPx}px`;
+		S.textAlign = "center";
+		S.textBaseline = "alphabetic";
+		S.font = this.config.fontCSS;
+
+		// haut
+		S.strokeText(text, cx, cy - this.config.lineSpacingPx);
+		// bas (miroir)
+		S.save();
+		S.translate(cx, cy + this.config.lineSpacingPx);
+		S.scale(-1, -1);
+		S.strokeText(text, 0, 0);
+		S.restore();
 	}
 
 	private createMesh(width: number, height: number, gridRes: number): void {

@@ -26,8 +26,9 @@ export class WaveScene {
 	private lens: Omit<LensUniforms, "resolution"> = {
 		centerPx: { x: 0, y: 0 },
 		radiusPx: 0,
-		featherPx: 5,
+		featherPx: 0,
 		colorRing: [1, 1, 1, 1],
+		colorFill: [0, 0, 0, 0],
 	};
 
 	private mouseTarget = { x: 0, y: 0 }; // [-1..1]
@@ -58,8 +59,8 @@ export class WaveScene {
 		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
 		this.params = {
-			amplitude: 120,
-			frequency: 0.002,
+			amplitude: 150,
+			frequency: 0.004,
 			speed: 2,
 			color: [1, 1, 1, 1],
 			...initial,
@@ -72,18 +73,17 @@ export class WaveScene {
 			quadWidth: Math.min(this.canvas.width * 0.9, 1400),
 			quadHeight: Math.min(this.canvas.height * 0.6, 550),
 			sideMarginPx: 60,
-			liftFromLinePx: 50, // vers la wave
-			topSizesPx: isLikelyMobile() ? [18, 12] : [26, 18], // [left, right]
-			bottomSizesPx: isLikelyMobile() ? [18, 12] : [26, 18], // [left, right]
+			liftFromLinePx: 75, // vers la wave
+			topSizesPx: isLikelyMobile() ? [18, 12] : [30, 18], // [left, right]
+			bottomSizesPx: isLikelyMobile() ? [18, 12] : [30, 18], // [left, right]
 			color: "#ffffff",
-			texSize: 64,
 		});
 
 		this.sparklesField = new SparklesField(this.gl, {
-			count: isLikelyMobile() ? 80 : 100,
+			count: isLikelyMobile() ? 30 : 150,
 			minSizePx: isLikelyMobile() ? 5 : 6,
-			maxSizePx: isLikelyMobile() ? 10 : 25,
-			parallaxStrengthPx: isLikelyMobile() ? 8 : 50,
+			maxSizePx: isLikelyMobile() ? 10 : 15,
+			parallaxStrengthPx: isLikelyMobile() ? 8 : 100,
 			color: "#ffffff",
 			texSize: 80,
 		});
@@ -297,22 +297,6 @@ export class WaveScene {
 			color: this.params.color,
 		};
 
-		this.text.render({
-			resolution: { width: this.canvas.width, height: this.canvas.height },
-			phase: this.phase,
-			amplitude: this.params.amplitude,
-			frequency: this.params.frequency,
-			offset: {
-				x: (this.canvas.width - Math.min(this.canvas.width * 0.9, 1400)) * 0.5,
-				y: (this.canvas.height - Math.min(this.canvas.height * 0.6, 550)) * 0.5,
-			},
-			lens: {
-				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
-				radiusPx: this.lens.radiusPx,
-				featherPx: this.lens.featherPx,
-			},
-		});
-
 		const ofs = this.getTextOffset();
 		this.sparklesText.render({
 			resolution: { width: this.canvas.width, height: this.canvas.height },
@@ -343,6 +327,22 @@ export class WaveScene {
 			radiusPx: this.lens.radiusPx,
 			featherPx: this.lens.featherPx,
 			colorRing: this.lens.colorRing,
+		});
+
+		this.text.render({
+			resolution: { width: this.canvas.width, height: this.canvas.height },
+			phase: this.phase,
+			amplitude: this.params.amplitude,
+			frequency: this.params.frequency,
+			offset: {
+				x: (this.canvas.width - Math.min(this.canvas.width * 0.9, 1400)) * 0.5,
+				y: (this.canvas.height - Math.min(this.canvas.height * 0.6, 550)) * 0.5,
+			},
+			lens: {
+				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
+				radiusPx: this.lens.radiusPx,
+				featherPx: this.lens.featherPx,
+			},
 		});
 	}
 }

@@ -194,13 +194,13 @@ export class SparklesField {
 		this.program = createProgram({ gl, vsSource: VS, fsSource: FS });
 
 		this.config = {
-			count: 150,
+			count: 80,
 			minSizePx: 4,
 			maxSizePx: 16,
 			parallaxStrengthPx: 50,
 			color: "#ffffff",
 			texSize: 48,
-			seed: 42, // 0xc0ffee
+			seed: 999, // 0xc0ffee
 			alphaMin: 0.1,
 			alphaMax: 0.8,
 			depthBias: 0.6,

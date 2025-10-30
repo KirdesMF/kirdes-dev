@@ -1,97 +1,139 @@
+// sparkles-text.ts (version sans texture)
+// Rendu: deux traits fins qui se croisent; dans la lens => motif dashed lens-local.
+
+import { get2DContext } from "../canvas-2d/_utils";
 import { createProgram, sendLensUniforms } from "./_utils";
 
+// ---------- Shaders ----------
+
 const VS = `#version 300 es
-  precision highp float;
+precision highp float;
 
-  layout(location=0) in vec2 a_unitPos;      // quad unitaire [-0.5..0.5]^2
-  layout(location=1) in vec2 a_anchorLocal;  // ancre locale (quad texte)
-  layout(location=2) in float a_sizePx;      // taille sprite
+layout(location=0) in vec2 a_unitPos;      // quad unitaire [-0.5..0.5]^2
+layout(location=1) in vec2 a_anchorLocal;  // ancre locale (quad texte)
+layout(location=2) in float a_sizePx;      // taille sprite (px)
 
-  uniform vec2  u_resolution;   // px
-  uniform float u_phase;        // rad
-  uniform float u_amplitude;    // px
-  uniform float u_frequency;    // rad/px
-  uniform vec2  u_offset;       // offset du quad texte (px)
+uniform vec2  u_resolution;   // px
+uniform float u_phase;        // rad
+uniform float u_amplitude;    // px
+uniform float u_frequency;    // rad/px
+uniform vec2  u_offset;       // offset du quad texte (px)
 
-  out vec2 v_uv;
+out vec2 v_uv;
 
-  void main() {
-    // base locale -> espace scène
-    vec2 base = a_anchorLocal + u_offset;
+void main() {
+  // base locale -> espace scène
+  vec2 base = a_anchorLocal + u_offset;
 
-    // onde + "stretch" identiques au texte
-    float wave  = sin(base.x * u_frequency + u_phase) * u_amplitude;
-    float slope = cos(base.x * u_frequency + u_phase) * u_amplitude * u_frequency;
-    float stretch = sqrt(1.0 + slope * slope);
+  // onde + "stretch" identiques au texte
+  float wave  = sin(base.x * u_frequency + u_phase) * u_amplitude;
+  float slope = cos(base.x * u_frequency + u_phase) * u_amplitude * u_frequency;
+  float stretch = sqrt(1.0 + slope * slope);
 
-    float baseline = u_resolution.y * 0.5;
-    float yDeformed = baseline + (base.y + wave - baseline) * stretch;
+  float baseline = u_resolution.y * 0.5;
+  float yDeformed = baseline + (base.y + wave - baseline) * stretch;
 
-    // billboard du sprite autour de la position déformée
-    vec2 spritePx = a_unitPos * a_sizePx;
-    vec2 posPx = vec2(base.x, yDeformed) + spritePx;
+  // billboard du sprite autour de la position déformée
+  vec2 spritePx = a_unitPos * a_sizePx;
+  vec2 posPx = vec2(base.x, yDeformed) + spritePx;
 
-    // NDC
-    vec2 clip = (posPx / u_resolution) * 2.0 - 1.0;
-    clip.y *= -1.0;
+  // NDC
+  vec2 clip = (posPx / u_resolution) * 2.0 - 1.0;
+  clip.y *= -1.0;
 
-    v_uv = a_unitPos * 0.5 + 0.5;
-    gl_Position = vec4(clip, 0.0, 1.0);
-  }
+  v_uv = a_unitPos * 0.5 + 0.5;
+  gl_Position = vec4(clip, 0.0, 1.0);
+}
 `;
 
 const FS = `#version 300 es
-  precision mediump float;
+precision mediump float;
 
-  uniform sampler2D u_tex;
-  uniform vec2  u_lensCenterPx;
-  uniform float u_lensRadiusPx;
-  uniform float u_lensFeatherPx;
-  in vec2 v_uv;
-  out vec4 outColor;
+// Lens
+uniform vec2  u_lensCenterPx;
+uniform float u_lensRadiusPx;
+uniform float u_lensFeatherPx;
 
-  void main() {
-    vec4 c = texture(u_tex, v_uv);
-    if (c.a < 0.05) discard;
-    outColor = c;
+// Apparence
+uniform vec3  u_color;        // ex: vec3(1.0)
+uniform float u_baseAlpha;    // ex: 1.0
 
-    // masque lentille
-    float d = distance(gl_FragCoord.xy, u_lensCenterPx);
-    float m = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx, u_lensRadiusPx + u_lensFeatherPx, d);
+// Dashed (dans la lens seulement)
+uniform float u_dashPeriodPx; // ex: 14.0 (px écran)
+uniform float u_dashDuty;     // ex: 0.55 (0..1)
 
-    // motif dashed (écran) — ajuste la fréquence si tu veux
-    float dash = step(0.5, fract(gl_FragCoord.x * 0.05));
+// Croisillon "fin" (épaisseur en UV du quad unité)
+const float LINE_HALF_UV = 0.04; // plus petit => plus fin
+const float AA_GAIN      = 1.0;  // anti-aliasing
 
-    // hors lentille: inchangé, dans lentille: alpha modifié par dash
-    float alpha = mix(outColor.a, outColor.a * dash, m);
-    if (alpha < 0.01) discard;
-    outColor = vec4(outColor.rgb, alpha);
-  }
+in vec2 v_uv;
+out vec4 outColor;
+
+void main() {
+  // Coord UV centrées
+  vec2 p = v_uv * 2.0 - 1.0;
+
+  // AA en fonction de la taille écran
+  float aa = max(fwidth(p.x), fwidth(p.y)) * AA_GAIN;
+
+  // Deux traits minces : vertical (x≈0) et horizontal (y≈0)
+  float vLine = 1.0 - smoothstep(LINE_HALF_UV, LINE_HALF_UV + aa, abs(p.x));
+  float hLine = 1.0 - smoothstep(LINE_HALF_UV, LINE_HALF_UV + aa, abs(p.y));
+  float crossMask = max(vLine, hLine);  // plein (hors lens)
+
+  // Masque lentille (écran)
+  float dLens = distance(gl_FragCoord.xy, u_lensCenterPx);
+  float mLens = 1.0 - smoothstep(
+    u_lensRadiusPx - u_lensFeatherPx,
+    u_lensRadiusPx + u_lensFeatherPx,
+    dLens
+  );
+
+  // Motif dashed **lens-local** (stable quand la lens bouge)
+  float period = max(1.0, u_dashPeriodPx);
+  vec2  q      = gl_FragCoord.xy - u_lensCenterPx; // coords locales à la lens
+  float duty   = clamp(u_dashDuty, 0.0, 1.0);
+
+  // On dash la barre verticale le long de Y, et l’horizontale le long de X
+  float sawY = fract(q.y / period);
+  float sawX = fract(q.x / period);
+  float dashV = step(0.0, sawY) * step(sawY, duty);
+  float dashH = step(0.0, sawX) * step(sawX, duty);
+  float dashedMask = max(vLine * dashV, hLine * dashH);
+
+  // Hors lens: traits pleins ; Dans lens: traits dashed
+  float maskFinal = mix(crossMask, dashedMask, mLens);
+
+  float a = u_baseAlpha * maskFinal;
+  if (a < 0.01) discard;
+  outColor = vec4(u_color, a);
+}
 `;
+
+// ---------- Types ----------
 
 export type SparklesTextConfig = {
 	quadWidth: number; // largeur du quad texte
 	quadHeight: number; // hauteur du quad texte
-	// marge latérale depuis le bord du quad texte pour "coller" au mot
 	sideMarginPx: number;
-
-	// lifter vers la wave (haut: -lift, bas: +lift)
 	liftFromLinePx: number;
 
-	// tailles des deux sparkles (gros, petit) par ligne
-	topSizesPx: [number, number];
-	bottomSizesPx: [number, number];
+	topSizesPx: [number, number]; // [gros, petit]
+	bottomSizesPx: [number, number]; // [gros, petit]
 
-	// décalages locaux pour le duo (gros/petit) en haut et en bas
-	// top est côté droit (fin du texte), bottom est côté gauche (début miroir)
-	// dx>0 vers la droite, dy>0 vers le bas (avant mirroring vertical de la scène)
+	// offsets pour chaque sparkle (dans le repère du quad texte)
 	offsetTopBig: { dx: number; dy: number };
 	offsetTopSmall: { dx: number; dy: number };
 	offsetBottomBig: { dx: number; dy: number };
 	offsetBottomSmall: { dx: number; dy: number };
 
-	color: string;
-	texSize: number; // dimension texture "plus"
+	// apparence
+	color: string; // couleur (CSS) → uniform vec3
+	baseAlpha: number; // alpha global des sparkles
+
+	// dashed-lens
+	dashPeriodPx: number;
+	dashDuty: number;
 };
 
 export type SparklesTextUniforms = {
@@ -107,6 +149,8 @@ export type SparklesTextUniforms = {
 	};
 };
 
+// ---------- Impl ----------
+
 export class SparklesText {
 	private gl: WebGL2RenderingContext;
 	private program: WebGLProgram;
@@ -115,7 +159,6 @@ export class SparklesText {
 	private vboQuad: WebGLBuffer | null = null;
 	private vboAnchors: WebGLBuffer | null = null;
 	private vboSize: WebGLBuffer | null = null;
-	private tex: WebGLTexture | null = null;
 
 	private instanceCount = 4; // top-big, top-small, bottom-big, bottom-small
 	private config: SparklesTextConfig;
@@ -128,71 +171,62 @@ export class SparklesText {
 		this.gl = gl;
 		this.program = createProgram({ gl, vsSource: VS, fsSource: FS });
 
-		// valeurs par défaut ergonomiques
+		// valeurs par défaut
 		this.config = {
 			quadWidth: 1400,
 			quadHeight: 550,
-			sideMarginPx: 500,
-			liftFromLinePx: 40,
-			topSizesPx: [28, 16], // gros, petit
-			bottomSizesPx: [28, 16], // gros, petit
-			// top: à droite du mot
+			sideMarginPx: 60,
+			liftFromLinePx: 50,
+			topSizesPx: [26, 18],
+			bottomSizesPx: [26, 18],
 			offsetTopBig: { dx: 8, dy: -6 },
 			offsetTopSmall: { dx: 26, dy: 6 },
-			// bottom: en miroir à gauche du mot
 			offsetBottomBig: { dx: -8, dy: 6 },
 			offsetBottomSmall: { dx: -26, dy: -6 },
 			color: "#ffffff",
-			texSize: 64,
+			baseAlpha: 1.0,
+			dashPeriodPx: 10.0,
+			dashDuty: 0.75,
 			...config,
 		};
 
-		this.createPlusTexture();
 		this.createGeometry();
 		this.updateAnchorsAndSizes();
 	}
 
+	// --- API de placement / config ---
+
 	public updateConfig(cfg: Partial<SparklesTextConfig>): void {
 		this.config = { ...this.config, ...cfg };
 		this.updateAnchorsAndSizes();
-		if (cfg.color || cfg.texSize) {
-			this.disposeTexture();
-			this.createPlusTexture();
-		}
 	}
 
+	// Le texte principal te donne la largeur réelle du mot (en px texture) et la largeur totale tex.
+	// On convertit ça en ratio pour placer les sparkles visuellement au bord du mot dans le quad.
 	public setTextContentWidthFromTexture(wordPx: number, texWidthPx: number) {
-		if (texWidthPx <= 0) {
-			this.contentWidthRatio = 0;
-		} else {
-			this.contentWidthRatio = Math.max(0, Math.min(1, wordPx / texWidthPx));
-		}
+		if (texWidthPx <= 0) this.contentWidthRatio = 0;
+		else this.contentWidthRatio = Math.max(0, Math.min(1, wordPx / texWidthPx));
 		this.updateAnchorsAndSizes();
 	}
 
-	public resizeQuadSize({
-		width,
-		height,
-	}: {
-		width: number;
-		height: number;
-	}): void {
+	public resizeQuadSize({ width, height }: { width: number; height: number }) {
 		this.config.quadWidth = width;
 		this.config.quadHeight = height;
 		this.updateAnchorsAndSizes();
 	}
 
+	// --- Render ---
+
 	public render(uniforms: SparklesTextUniforms): void {
 		const gl = this.gl;
 		gl.useProgram(this.program);
 
+		// uniforms communs
 		gl.uniform2f(
 			gl.getUniformLocation(this.program, "u_resolution"),
 			uniforms.resolution.width,
 			uniforms.resolution.height,
 		);
-
-		sendLensUniforms({ gl, program: this.program, lens: uniforms.lens });
 		gl.uniform1f(
 			gl.getUniformLocation(this.program, "u_phase"),
 			uniforms.phase,
@@ -211,9 +245,31 @@ export class SparklesText {
 			uniforms.offset.y,
 		);
 
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.uniform1i(gl.getUniformLocation(this.program, "u_tex"), 0);
+		// lens
+		sendLensUniforms({ gl, program: this.program, lens: uniforms.lens });
+
+		// apparence
+		const col = this.cssToRgb01(this.config.color);
+		gl.uniform3f(
+			gl.getUniformLocation(this.program, "u_color"),
+			col[0],
+			col[1],
+			col[2],
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_baseAlpha"),
+			this.config.baseAlpha,
+		);
+
+		// dashed dans la lens
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_dashPeriodPx"),
+			this.config.dashPeriodPx,
+		);
+		gl.uniform1f(
+			gl.getUniformLocation(this.program, "u_dashDuty"),
+			this.config.dashDuty,
+		);
 
 		gl.bindVertexArray(this.vao);
 		gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.instanceCount);
@@ -226,7 +282,6 @@ export class SparklesText {
 		if (this.vboQuad) gl.deleteBuffer(this.vboQuad);
 		if (this.vboAnchors) gl.deleteBuffer(this.vboAnchors);
 		if (this.vboSize) gl.deleteBuffer(this.vboSize);
-		this.disposeTexture();
 		gl.deleteProgram(this.program);
 		this.vao = null;
 		this.vboQuad = null;
@@ -248,7 +303,7 @@ export class SparklesText {
 		this.vboSize = gl.createBuffer();
 
 		if (!this.vao || !this.vboQuad || !this.vboAnchors || !this.vboSize) {
-			throw new Error("Sparkles VAO/VBO allocation failed");
+			throw new Error("SparklesText: VAO/VBO allocation failed");
 		}
 
 		gl.bindVertexArray(this.vao);
@@ -291,19 +346,19 @@ export class SparklesText {
 			offsetBottomSmall,
 		} = this.config;
 
-		// The word occupies a fraction of the texture; map that to the quad size.
+		// largeur “visuelle” du mot dans le quad
 		const wText = Math.min(quadWidth, quadWidth * this.contentWidthRatio);
-		const startX = (quadWidth - wText) * 0.5; // left edge of the word (quad space)
-		const endX = startX + wText; // right edge of the word (quad space)
+		const startX = (quadWidth - wText) * 0.5; // bord gauche du mot
+		const endX = startX + wText; // bord droit du mot
 		const midY = quadHeight * 0.5;
 
-		// TOP (right side of the word)
+		// TOP (à droite du mot)
 		const topBase = {
 			x: endX + sideMarginPx,
 			y: midY - Math.abs(liftFromLinePx),
 		};
 
-		// BOTTOM (left side of the word, mirrored)
+		// BOTTOM (miroir à gauche du mot)
 		const botBase = {
 			x: startX - sideMarginPx,
 			y: midY + Math.abs(liftFromLinePx),
@@ -338,52 +393,15 @@ export class SparklesText {
 		}
 	}
 
-	private createPlusTexture(): void {
-		const gl = this.gl;
-		const ts = Math.max(16, Math.floor(this.config.texSize));
-		const canvas = document.createElement("canvas");
-		canvas.width = ts;
-		canvas.height = ts;
-
-		const ctx = canvas.getContext("2d");
-		if (!ctx) throw new Error("2D context not available");
-
-		ctx.clearRect(0, 0, ts, ts);
-		ctx.strokeStyle = this.config.color;
-		ctx.lineCap = "round";
-		ctx.lineWidth = Math.max(2, ts * 0.12);
-
-		const cx = ts * 0.5;
-		const cy = ts * 0.5;
-		const r = ts * 0.3;
-
-		ctx.beginPath();
-		ctx.moveTo(cx - r, cy);
-		ctx.lineTo(cx + r, cy);
-		ctx.stroke();
-
-		ctx.beginPath();
-		ctx.moveTo(cx, cy - r);
-		ctx.lineTo(cx, cy + r);
-		ctx.stroke();
-
-		const tex = gl.createTexture();
-		if (!tex) throw new Error("Texture allocation failed");
-		this.tex = tex;
-
-		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-		gl.bindTexture(gl.TEXTURE_2D, null);
-	}
-
-	private disposeTexture(): void {
-		if (this.tex) {
-			this.gl.deleteTexture(this.tex);
-			this.tex = null;
-		}
+	private cssToRgb01(css: string): [number, number, number] {
+		// support #rgb, #rrggbb, rgb(), rgba(), named colors via canvas
+		const c = document.createElement("canvas");
+		c.width = c.height = 1;
+		const ctx = get2DContext(c);
+		ctx.clearRect(0, 0, 1, 1);
+		ctx.fillStyle = css;
+		ctx.fillRect(0, 0, 1, 1);
+		const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+		return [r / 255, g / 255, b / 255];
 	}
 }

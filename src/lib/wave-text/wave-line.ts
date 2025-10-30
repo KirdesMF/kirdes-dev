@@ -23,28 +23,48 @@ const VS = `#version 300 es
 `;
 
 const FS = `#version 300 es
-  precision highp float;
-  out vec4 outColor;
-  uniform vec4 u_color;
-  uniform vec2  u_lensCenterPx;
-  uniform float u_lensRadiusPx;
-  uniform float u_lensFeatherPx;
+precision highp float;
 
-  void main() {
-    outColor = u_color; // ligne pleine
-    vec4 c = u_color;
+out vec4 outColor;
 
-    // masque lentille
-    float d = distance(gl_FragCoord.xy, u_lensCenterPx);
-    float m = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx, u_lensRadiusPx + u_lensFeatherPx, d);
+uniform vec4  u_color;
 
-    // motif dash (écran)
-    float dash = step(0.5, fract(gl_FragCoord.x * 0.04)); // densité à ajuster
+// Lens
+uniform vec2  u_lensCenterPx;
+uniform float u_lensRadiusPx;
+uniform float u_lensFeatherPx;
 
-    float alpha = mix(c.a, c.a * dash, m);
-    if (alpha < 0.01) discard;
-    outColor = vec4(c.rgb, alpha);
+// Dashes (lens-local)
+uniform int   u_dashEnabled;     // 0 = off (ligne pleine), 1 = on
+uniform float u_dashPeriodPx;    // ex: 14.0
+uniform float u_dashDuty;        // 0..1, ex: 0.55
+
+void main() {
+  vec4 c = u_color;
+
+  // masque lentille
+  float d = distance(gl_FragCoord.xy, u_lensCenterPx);
+  float m = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx,
+                             u_lensRadiusPx + u_lensFeatherPx, d);
+
+  // alpha de base (plein)
+  float alphaBase = c.a;
+
+  // dashes lens-local (stables quand la lens bouge)
+  // On dash selon l'axe X local de la lentille (tu peux passer à .y si tu préfères)
+  float dashMask = 1.0;
+  if (u_dashEnabled == 1) {
+    vec2 q = gl_FragCoord.xy - u_lensCenterPx;   // coords locales lens (px)
+    float saw = fract(q.x / max(1.0, u_dashPeriodPx));
+    dashMask = step(0.0, saw) * step(saw, clamp(u_dashDuty, 0.0, 1.0));
   }
+
+  // Dans la lens: on mixe vers dashed ; hors lens: plein
+  float alpha = mix(alphaBase, alphaBase * dashMask, m);
+
+  if (alpha < 0.01) discard;
+  outColor = vec4(c.rgb, alpha);
+}
 `;
 
 export type WaveLineParams = {
@@ -137,6 +157,23 @@ export class WaveLine {
 			params.color[2],
 			params.color[3],
 		);
+
+		const uDashEnabled = this.gl.getUniformLocation(
+			this.program,
+			"u_dashEnabled",
+		);
+		const uDashPeriod = this.gl.getUniformLocation(
+			this.program,
+			"u_dashPeriodPx",
+		);
+		const uDashDuty = this.gl.getUniformLocation(this.program, "u_dashDuty");
+
+		// Active/désactive selon ton besoin actuel.
+		// Si les diagonales du texte suffisent déjà à “dacher” visuellement la ligne,
+		// mets 0 ici pour garder la ligne pleine dans la lens.
+		this.gl.uniform1i(uDashEnabled, 1); // 1 = dashes ON, 0 = OFF
+		this.gl.uniform1f(uDashPeriod, 14.0); // ajuste visuellement
+		this.gl.uniform1f(uDashDuty, 0.55); // 0.3..0.7 selon le look souhaité
 
 		gl.bindVertexArray(this.vao);
 		gl.drawArrays(gl.LINE_STRIP, 0, this.pointCount);

@@ -6,10 +6,7 @@
 		"dev": "astro dev",
 		"build": "astro build",
 		"preview": "astro preview",
-		"astro": "astro",
-		"prebuild:fonts": "bun run tools/scripts/build-font-atlas.ts",
-		"prebuild:text-pack": "bun run tools/scripts/prebuild-font.ts",
-		"prebuild": "bun run prebuild:text-pack && bun run prebuild:shapes-pack"
+		"astro": "astro"
 	},
 	"dependencies": {
 		"@fontsource-variable/commissioner": "^5.2.10",
@@ -26,10 +23,7 @@
 	],
 	"devDependencies": {
 		"@biomejs/biome": "2.2.7",
-		"@pixi/msdf-bmfont-xml": "^3.0.0",
 		"@types/bun": "^1.3.1",
-		"@types/node": "^24.9.1",
-		"@types/opentype.js": "^1.3.8",
-		"opentype.js": "^1.3.4"
+		"@types/node": "^24.9.1"
 	}
 }
