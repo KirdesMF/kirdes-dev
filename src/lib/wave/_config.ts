@@ -1,5 +1,1 @@
-export const WAVE_CONFIG = {
-	LINE: {
-		POINT_COUNT: 1000,
-	},
-};
+export const WAVE_TEXT_CONFIG = {};
