@@ -1,5 +1,4 @@
-// lens-overlay.ts
-import { createProgram } from "./_utils";
+import { createProgram, getUniform } from "./_helpers";
 
 const VS = `#version 300 es
   precision highp float;
@@ -44,6 +43,11 @@ const FS = `#version 300 es
   }
 `;
 
+export type LensConfig = {
+	colorFill?: string;
+	colorRing?: string;
+};
+
 export type LensUniforms = {
 	resolution: { width: number; height: number };
 	centerPx: { x: number; y: number };
@@ -58,7 +62,14 @@ export class LensOverlay {
 	private program: WebGLProgram;
 	private vao: WebGLVertexArrayObject | null = null;
 
-	public constructor(gl: WebGL2RenderingContext) {
+	// private uResolution: WebGLUniformLocation;
+	private uCenterPx: WebGLUniformLocation;
+	private uRadiusPx: WebGLUniformLocation;
+	private uFeatherPx: WebGLUniformLocation;
+	private uColorFill: WebGLUniformLocation;
+	private uColorRing: WebGLUniformLocation;
+
+	public constructor(gl: WebGL2RenderingContext, config: LensConfig = {}) {
 		this.gl = gl;
 		this.program = createProgram({ gl, vsSource: VS, fsSource: FS });
 
@@ -69,6 +80,13 @@ export class LensOverlay {
 		if (!vao || !vbo) throw new Error("lens-overlay: VAO/VBO alloc failed");
 		this.vao = vao;
 
+		// this.uResolution = getUniform(gl, this.program, "u_resolution");
+		this.uCenterPx = getUniform(gl, this.program, "u_centerPx");
+		this.uRadiusPx = getUniform(gl, this.program, "u_radiusPx");
+		this.uFeatherPx = getUniform(gl, this.program, "u_featherPx");
+		this.uColorFill = getUniform(gl, this.program, "u_colorFill");
+		this.uColorRing = getUniform(gl, this.program, "u_colorRing");
+
 		gl.bindVertexArray(vao);
 		gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
 		gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
@@ -77,41 +95,29 @@ export class LensOverlay {
 		gl.bindVertexArray(null);
 	}
 
-	public render(u: LensUniforms): void {
+	public render(u: LensUniforms) {
 		const gl = this.gl;
 		if (!this.vao) return;
 
 		gl.useProgram(this.program);
-		gl.uniform2f(
-			gl.getUniformLocation(this.program, "u_resolution"),
-			u.resolution.width,
-			u.resolution.height,
-		);
-		gl.uniform2f(
-			gl.getUniformLocation(this.program, "u_centerPx"),
-			u.centerPx.x,
-			u.centerPx.y,
-		);
-		gl.uniform1f(gl.getUniformLocation(this.program, "u_radiusPx"), u.radiusPx);
-		gl.uniform1f(
-			gl.getUniformLocation(this.program, "u_featherPx"),
-			u.featherPx,
-		);
+		// gl.uniform2f(this.uResolution, u.resolution.width, u.resolution.height);
+		gl.uniform2f(this.uCenterPx, u.centerPx.x, u.centerPx.y);
+		gl.uniform1f(this.uRadiusPx, u.radiusPx);
+		gl.uniform1f(this.uFeatherPx, u.featherPx);
 
 		const fill = u.colorFill ?? [0, 0, 0, 0];
 		const ring = u.colorRing ?? [1.0, 1.0, 1.0, 1.0];
-		gl.uniform4f(gl.getUniformLocation(this.program, "u_colorFill"), ...fill);
-		gl.uniform4f(gl.getUniformLocation(this.program, "u_colorRing"), ...ring);
+		gl.uniform4f(this.uColorFill, ...fill);
+		gl.uniform4f(this.uColorRing, ...ring);
 
 		gl.bindVertexArray(this.vao);
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 		gl.bindVertexArray(null);
 	}
 
-	public dispose(): void {
-		const gl = this.gl;
-		if (this.vao) gl.deleteVertexArray(this.vao);
-		gl.deleteProgram(this.program);
+	public dispose() {
+		if (this.vao) this.gl.deleteVertexArray(this.vao);
+		this.gl.deleteProgram(this.program);
 		this.vao = null;
 	}
 }
