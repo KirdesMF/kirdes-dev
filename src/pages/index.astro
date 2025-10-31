@@ -48,4 +48,9 @@ import Layout from "../layouts/Layout.astro";
   const waveCanvas = document.getElementById("wave-canvas") as HTMLCanvasElement;
   const scene = new WaveScene({ canvas: waveCanvas });
   scene.start();
+
+  window.addEventListener("beforeunload", () => {
+    splash.unmount();
+    scene.dispose();
+  });
 </script>

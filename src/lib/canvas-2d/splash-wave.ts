@@ -355,10 +355,10 @@ class WaveRenderer {
 				p2 = pts[i + 1],
 				p3 = pts[Math.min(pts.length - 1, i + 2)];
 
-			const cp1x = p1.x + (p2.x - p0.x) / 6,
-				cp1y = p1.y + (p2.y - p0.y) / 6;
-			const cp2x = p2.x - (p3.x - p1.x) / 6,
-				cp2y = p2.y - (p3.y - p1.y) / 6;
+			const cp1x = p1.x + (p2.x - p0.x) / 6;
+			const cp1y = p1.y + (p2.y - p0.y) / 6;
+			const cp2x = p2.x - (p3.x - p1.x) / 6;
+			const cp2y = p2.y - (p3.y - p1.y) / 6;
 
 			ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
 		}

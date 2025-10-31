@@ -1,5 +1,6 @@
 // wave-scene.ts (patch complet)
 import { gsap } from "gsap";
+import { getTheme, onThemeChange, type Theme } from "../theme";
 import { cssColorToVec3, getGL2Context } from "./_helpers";
 import { isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
 import { LensOverlay, type LensUniforms } from "./lens-overlay";
@@ -74,6 +75,8 @@ export class WaveScene {
 	private canvas: HTMLCanvasElement;
 	private gl: WebGL2RenderingContext;
 
+	private unsubscribeThemeChange?: () => void;
+
 	private line: WaveLine;
 	private text: WaveText;
 	private sparklesText: SparklesText;
@@ -121,8 +124,18 @@ export class WaveScene {
 		theme?: SceneTheme;
 	}) {
 		const { canvas, initial, build, waveLine, sparklesField, theme } = args;
-		const primaryCss = theme?.primaryCss ?? "#ffffff";
+		const domTheme = getTheme();
+		const primaryCss = theme?.primaryCss ?? domTheme.text;
 		const primaryVec3 = cssToVec3Cached(primaryCss);
+		const lineCss = theme?.lineColorCss ?? primaryCss;
+		const lineVec3 = cssToVec3Cached(lineCss);
+		const defaultAlpha = initial?.color?.[3] ?? 1;
+		const lineColorRgba: [number, number, number, number] = [
+			lineVec3[0],
+			lineVec3[1],
+			lineVec3[2],
+			defaultAlpha,
+		];
 
 		this.canvas = canvas;
 		this.gl = getGL2Context(canvas);
@@ -134,9 +147,16 @@ export class WaveScene {
 			amplitude: 80,
 			frequency: 0.002,
 			speed: 2,
-			color: [1, 1, 1, 1],
+			color: lineColorRgba,
 			...initial,
 		};
+
+		this.lens.colorRing = [
+			this.params.color[0],
+			this.params.color[1],
+			this.params.color[2],
+			this.params.color[3] ?? 1,
+		];
 
 		this.build = { ...SCENE_BUILD_DEFAULTS, ...build };
 		this.maxDPRCap = this.isMobile
@@ -218,6 +238,9 @@ export class WaveScene {
 		this.ro = new ResizeObserver(() => this.resize());
 		this.ro.observe(this.canvas);
 
+		this.setThemeColors({ primaryCss, lineColorCss: lineCss });
+		this.unsubscribeThemeChange = onThemeChange(this.handleThemeChange);
+
 		// first layout
 		this.resize();
 		this.recalcTextAndSparklesQuads();
@@ -241,11 +264,21 @@ export class WaveScene {
 		this.line.updateConfig({ color: rgba });
 	}
 
+	private handleThemeChange = (theme: Theme) => {
+		this.setThemeColors({
+			primaryCss: theme.text,
+			lineColorCss: theme.text,
+		});
+	};
+
 	/** Met à jour les couleurs du thème (texte/sparkles + optionnellement la ligne). */
 	public setThemeColors(theme: SceneTheme) {
 		const primaryCss = theme.primaryCss ?? "#ffffff";
 		const primaryVec3 = cssToVec3Cached(primaryCss);
 		this.text.updateColor(primaryCss);
+		this.text.updateLensConfig({
+			textColor: cloneVec3(primaryVec3),
+		});
 		this.sparklesText.updateConfig({
 			color: cloneVec3(primaryVec3),
 		});
@@ -253,10 +286,11 @@ export class WaveScene {
 			color: cloneVec3(primaryVec3),
 		});
 
-		if (theme.lineColorCss) {
-			const [r, g, b] = cssToVec3Cached(theme.lineColorCss);
-			this.setLineColorRgba([r, g, b, this.params.color[3] ?? 1]);
-		}
+		const lineCss = theme.lineColorCss ?? primaryCss;
+		const [r, g, b] = cssToVec3Cached(lineCss);
+		const alpha = this.params.color[3] ?? 1;
+		this.setLineColorRgba([r, g, b, alpha]);
+		this.lens.colorRing = [r, g, b, alpha];
 	}
 
 	/** Rebuild des éléments “build-time” (ex: segments, DPR caps, gridRes). */
@@ -324,6 +358,7 @@ export class WaveScene {
 			this.onContextRestored as EventListener,
 		);
 		this.ro?.disconnect();
+		this.unsubscribeThemeChange?.();
 
 		this.lensOverlay.dispose();
 		this.line.dispose();

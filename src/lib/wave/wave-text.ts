@@ -379,6 +379,18 @@ export class WaveText {
 		this.uploadTextures(false);
 	}
 
+	public updateLensConfig(patch: Partial<WaveTextLensConfig>) {
+		const current = this.config.lens;
+		const next: WaveTextLensConfig = {
+			...current,
+			...patch,
+			textColor: patch.textColor
+				? ([...patch.textColor] as [number, number, number])
+				: ([...current.textColor] as [number, number, number]),
+		};
+		this.config.lens = next;
+	}
+
 	public setStrokeWidthPx(px: number) {
 		this.config.strokeWidthPx = Math.max(1, px | 0);
 		this.drawToCanvases();
