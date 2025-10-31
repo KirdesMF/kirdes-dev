@@ -91,15 +91,25 @@ const FS = `#version 300 es
   }
 `;
 
+export type WaveTextLensConfig = {
+	textColor: [number, number, number]; // vec3
+	outlineAlpha: number;
+	hatchPeriodPx: number;
+	hatchDuty: number;
+	hatchAlpha: number;
+	hatchAngleDeg: number;
+};
+
 export type WaveTextConfig = {
 	text: string;
 	font: string; // ex: "800 300px Commissioner Variable, sans-serif"
-	color: string; // fill color (Canvas2D)
+	color: string; // fill color (CSS) pour Canvas2D
 	letterSpacingPx: number;
 	lineSpacingPx: number; // distance half-top/half-bottom (miroir)
 	gridRes: number;
 	maxTextureSize?: number;
 	strokeWidthPx: number; // épaisseur du contour (en px écran car on le bake dans la texture stroke)
+	lens: WaveTextLensConfig;
 };
 
 export type WaveUniforms = {
@@ -114,6 +124,59 @@ export type WaveUniforms = {
 		featherPx: number;
 	};
 };
+
+const LENS_DEFAULTS: WaveTextLensConfig = {
+	textColor: [1, 1, 1],
+	outlineAlpha: 1.0,
+	hatchPeriodPx: 6.0,
+	hatchDuty: 0.5,
+	hatchAlpha: 0.75,
+	hatchAngleDeg: 45.0,
+};
+
+const CONFIG_DEFAULTS: WaveTextConfig = {
+	text: "WORKS",
+	font: "800 300px Commissioner Variable, sans-serif",
+	color: "#ffffff",
+	letterSpacingPx: -10,
+	lineSpacingPx: 20,
+	gridRes: 200,
+	maxTextureSize: 2048,
+	strokeWidthPx: 15,
+	lens: { ...LENS_DEFAULTS },
+};
+
+function createDefaultConfig(): WaveTextConfig {
+	return {
+		...CONFIG_DEFAULTS,
+		lens: {
+			...CONFIG_DEFAULTS.lens,
+			textColor: [...CONFIG_DEFAULTS.lens.textColor] as [
+				number,
+				number,
+				number,
+			],
+		},
+	};
+}
+
+function mergeConfig(patch: Partial<WaveTextConfig>): WaveTextConfig {
+	const base = createDefaultConfig();
+	const lensPartial = (patch.lens ?? {}) as Partial<WaveTextLensConfig>;
+	return {
+		...base,
+		...patch,
+		lens: {
+			...base.lens,
+			...lensPartial,
+			textColor: [...(lensPartial.textColor ?? base.lens.textColor)] as [
+				number,
+				number,
+				number,
+			],
+		},
+	};
+}
 
 export class WaveText {
 	private gl: WebGL2RenderingContext;
@@ -169,17 +232,7 @@ export class WaveText {
 		this.gl = gl;
 		this.program = createProgram({ gl, vsSource: VS, fsSource: FS });
 
-		this.config = {
-			text: "WORKS",
-			font: "800 300px Commissioner Variable, sans-serif",
-			color: "#ffffff",
-			letterSpacingPx: -10,
-			lineSpacingPx: 20,
-			gridRes: 200,
-			maxTextureSize: 2048,
-			strokeWidthPx: 15, // ← épaisseur du ring (en px)
-			...config,
-		};
+		this.config = mergeConfig(config);
 
 		// cache uniforms
 		this.uResolution = getUniform(gl, this.program, "u_resolution");
@@ -259,12 +312,18 @@ export class WaveText {
 		gl.uniform1f(this.uLensFeatherPx, uniforms.lens.featherPx);
 
 		// Inside lens
-		gl.uniform3f(this.uTextColor, 1.0, 1.0, 1.0);
-		gl.uniform1f(this.uOutlineAlpha, 1.0);
-		gl.uniform1f(this.uHatchPeriodPx, 6.0);
-		gl.uniform1f(this.uHatchDuty, 0.5);
-		gl.uniform1f(this.uHatchAlpha, 0.75);
-		gl.uniform1f(this.uHatchAngleDeg, 45.0);
+		const lens = this.config.lens;
+		gl.uniform3f(
+			this.uTextColor,
+			lens.textColor[0],
+			lens.textColor[1],
+			lens.textColor[2],
+		);
+		gl.uniform1f(this.uOutlineAlpha, lens.outlineAlpha);
+		gl.uniform1f(this.uHatchPeriodPx, lens.hatchPeriodPx);
+		gl.uniform1f(this.uHatchDuty, lens.hatchDuty);
+		gl.uniform1f(this.uHatchAlpha, lens.hatchAlpha);
+		gl.uniform1f(this.uHatchAngleDeg, lens.hatchAngleDeg);
 
 		gl.bindVertexArray(this.vao);
 		gl.drawElements(gl.TRIANGLES, this.meshIndexCount, gl.UNSIGNED_SHORT, 0);
@@ -314,6 +373,7 @@ export class WaveText {
 	}
 
 	public updateColor(cssColor: string) {
+		if (cssColor === this.config.color) return;
 		this.config.color = cssColor;
 		this.drawToCanvases();
 		this.uploadTextures(false);
@@ -328,8 +388,20 @@ export class WaveText {
 	public resizeQuad(args: { width: number; height: number; gridRes?: number }) {
 		const { width, height, gridRes } = args;
 		const res = gridRes ?? this.config.gridRes;
-		this.quadW = Math.max(100, Math.floor(width));
-		this.quadH = Math.max(100, Math.floor(height));
+		const nextW = Math.max(100, Math.floor(width));
+		const nextH = Math.max(100, Math.floor(height));
+
+		if (
+			this.quadW === nextW &&
+			this.quadH === nextH &&
+			this.config.gridRes === res
+		) {
+			return;
+		}
+
+		this.quadW = nextW;
+		this.quadH = nextH;
+		this.config.gridRes = res;
 		this.destroyMesh();
 		this.createMesh(this.quadW, this.quadH, res);
 	}

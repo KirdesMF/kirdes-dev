@@ -43,9 +43,9 @@ const FS = `#version 300 es
   }
 `;
 
-export type LensConfig = {
-	colorFill?: string;
-	colorRing?: string;
+export type LensOverlayConfig = {
+	colorFill: [number, number, number, number];
+	colorRing: [number, number, number, number];
 };
 
 export type LensUniforms = {
@@ -57,21 +57,50 @@ export type LensUniforms = {
 	colorRing?: [number, number, number, number];
 };
 
+const CONFIG_DEFAULTS: LensOverlayConfig = {
+	colorFill: [0, 0, 0, 0],
+	colorRing: [1, 1, 1, 1],
+};
+
+function cloneConfig(
+	patch: Partial<LensOverlayConfig> = {},
+): LensOverlayConfig {
+	return {
+		colorFill: [...(patch.colorFill ?? CONFIG_DEFAULTS.colorFill)] as [
+			number,
+			number,
+			number,
+			number,
+		],
+		colorRing: [...(patch.colorRing ?? CONFIG_DEFAULTS.colorRing)] as [
+			number,
+			number,
+			number,
+			number,
+		],
+	};
+}
+
 export class LensOverlay {
 	private gl: WebGL2RenderingContext;
 	private program: WebGLProgram;
 	private vao: WebGLVertexArrayObject | null = null;
 
-	// private uResolution: WebGLUniformLocation;
 	private uCenterPx: WebGLUniformLocation;
 	private uRadiusPx: WebGLUniformLocation;
 	private uFeatherPx: WebGLUniformLocation;
 	private uColorFill: WebGLUniformLocation;
 	private uColorRing: WebGLUniformLocation;
 
-	public constructor(gl: WebGL2RenderingContext, config: LensConfig = {}) {
+	private config: LensOverlayConfig;
+
+	public constructor(
+		gl: WebGL2RenderingContext,
+		config: Partial<LensOverlayConfig> = {},
+	) {
 		this.gl = gl;
 		this.program = createProgram({ gl, vsSource: VS, fsSource: FS });
+		this.config = cloneConfig(config);
 
 		// full-screen quad en clip-space
 		const quad = new Float32Array([-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1]);
@@ -80,7 +109,6 @@ export class LensOverlay {
 		if (!vao || !vbo) throw new Error("lens-overlay: VAO/VBO alloc failed");
 		this.vao = vao;
 
-		// this.uResolution = getUniform(gl, this.program, "u_resolution");
 		this.uCenterPx = getUniform(gl, this.program, "u_centerPx");
 		this.uRadiusPx = getUniform(gl, this.program, "u_radiusPx");
 		this.uFeatherPx = getUniform(gl, this.program, "u_featherPx");
@@ -95,18 +123,21 @@ export class LensOverlay {
 		gl.bindVertexArray(null);
 	}
 
+	public updateConfig(cfg: Partial<LensOverlayConfig>) {
+		this.config = cloneConfig({ ...this.config, ...cfg });
+	}
+
 	public render(u: LensUniforms) {
 		const gl = this.gl;
 		if (!this.vao) return;
 
 		gl.useProgram(this.program);
-		// gl.uniform2f(this.uResolution, u.resolution.width, u.resolution.height);
 		gl.uniform2f(this.uCenterPx, u.centerPx.x, u.centerPx.y);
 		gl.uniform1f(this.uRadiusPx, u.radiusPx);
 		gl.uniform1f(this.uFeatherPx, u.featherPx);
 
-		const fill = u.colorFill ?? [0, 0, 0, 0];
-		const ring = u.colorRing ?? [1.0, 1.0, 1.0, 1.0];
+		const fill = u.colorFill ?? this.config.colorFill;
+		const ring = u.colorRing ?? this.config.colorRing;
 		gl.uniform4f(this.uColorFill, ...fill);
 		gl.uniform4f(this.uColorRing, ...ring);
 

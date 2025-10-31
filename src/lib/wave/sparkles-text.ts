@@ -1,4 +1,4 @@
-import { createProgram, cssColorToVec3, getUniform } from "./_helpers";
+import { createProgram, getUniform } from "./_helpers";
 
 // ---------- Shaders ----------
 
@@ -122,7 +122,7 @@ export type SparklesTextConfig = {
 	offsetBottomSmall: { dx: number; dy: number };
 
 	// apparence
-	color: string; // couleur (CSS) → uniform vec3
+	color: [number, number, number]; // couleur (vec3 0..1)
 	baseAlpha: number; // alpha global des sparkles
 
 	// dashed-lens
@@ -143,6 +143,38 @@ export type SparklesTextUniforms = {
 	};
 };
 
+const INSTANCE_COUNT = 4;
+
+const CONFIG_DEFAULTS: SparklesTextConfig = {
+	quadWidth: 1400,
+	quadHeight: 550,
+	sideMarginPx: 60,
+	liftFromLinePx: 75,
+	topSizesPx: [26, 18],
+	bottomSizesPx: [26, 18],
+	offsetTopBig: { dx: 8, dy: -6 },
+	offsetTopSmall: { dx: 26, dy: 6 },
+	offsetBottomBig: { dx: -8, dy: 6 },
+	offsetBottomSmall: { dx: -26, dy: -6 },
+	color: [1, 1, 1],
+	baseAlpha: 1.0,
+	dashPeriodPx: 10.0,
+	dashDuty: 0.75,
+};
+
+function createDefaultConfig(): SparklesTextConfig {
+	return {
+		...CONFIG_DEFAULTS,
+		topSizesPx: [...CONFIG_DEFAULTS.topSizesPx] as [number, number],
+		bottomSizesPx: [...CONFIG_DEFAULTS.bottomSizesPx] as [number, number],
+		offsetTopBig: { ...CONFIG_DEFAULTS.offsetTopBig },
+		offsetTopSmall: { ...CONFIG_DEFAULTS.offsetTopSmall },
+		offsetBottomBig: { ...CONFIG_DEFAULTS.offsetBottomBig },
+		offsetBottomSmall: { ...CONFIG_DEFAULTS.offsetBottomSmall },
+		color: [...CONFIG_DEFAULTS.color] as [number, number, number],
+	};
+}
+
 export class SparklesText {
 	private gl: WebGL2RenderingContext;
 	private program: WebGLProgram;
@@ -152,10 +184,9 @@ export class SparklesText {
 	private vboAnchors: WebGLBuffer | null = null;
 	private vboSize: WebGLBuffer | null = null;
 
-	private instanceCount = 4; // top-big, top-small, bottom-big, bottom-small
-	private config: SparklesTextConfig;
+	private readonly instanceCount = INSTANCE_COUNT; // top-big, top-small, bottom-big, bottom-small
+	public config: SparklesTextConfig;
 	private contentWidthRatio = 0;
-	private colorVec3: [number, number, number];
 
 	private uResolution: WebGLUniformLocation;
 	private uPhase: WebGLUniformLocation;
@@ -178,25 +209,7 @@ export class SparklesText {
 		this.program = createProgram({ gl, vsSource: VS, fsSource: FS });
 
 		// default values
-		this.config = {
-			quadWidth: 1400,
-			quadHeight: 550,
-			sideMarginPx: 60,
-			liftFromLinePx: 75,
-			topSizesPx: [26, 18],
-			bottomSizesPx: [26, 18],
-			offsetTopBig: { dx: 8, dy: -6 },
-			offsetTopSmall: { dx: 26, dy: 6 },
-			offsetBottomBig: { dx: -8, dy: 6 },
-			offsetBottomSmall: { dx: -26, dy: -6 },
-			color: "#ffffff",
-			baseAlpha: 1.0,
-			dashPeriodPx: 10.0,
-			dashDuty: 0.75,
-			...config,
-		};
-
-		this.colorVec3 = cssColorToVec3(this.config.color);
+		this.config = { ...createDefaultConfig(), ...config };
 
 		this.uResolution = getUniform(gl, this.program, "u_resolution");
 		this.uPhase = getUniform(gl, this.program, "u_phase");
@@ -233,12 +246,8 @@ export class SparklesText {
 		gl.uniform2f(this.uOffset, uniforms.offset.x, uniforms.offset.y);
 
 		// apparence
-		gl.uniform3f(
-			this.uColor,
-			this.colorVec3[0],
-			this.colorVec3[1],
-			this.colorVec3[2],
-		);
+		const [r, g, b] = this.config.color;
+		gl.uniform3f(this.uColor, r, g, b);
 		gl.uniform1f(this.uBaseAlpha, this.config.baseAlpha);
 
 		// dashed dans la lens
@@ -259,18 +268,39 @@ export class SparklesText {
 
 	public updateConfig(cfg: Partial<SparklesTextConfig>) {
 		this.config = { ...this.config, ...cfg };
-		this.updateAnchorsAndSizes();
+
+		if (
+			cfg.quadWidth !== undefined ||
+			cfg.quadHeight !== undefined ||
+			cfg.sideMarginPx !== undefined ||
+			cfg.liftFromLinePx !== undefined ||
+			cfg.topSizesPx !== undefined ||
+			cfg.bottomSizesPx !== undefined ||
+			cfg.offsetTopBig !== undefined ||
+			cfg.offsetTopSmall !== undefined ||
+			cfg.offsetBottomBig !== undefined ||
+			cfg.offsetBottomSmall !== undefined
+		) {
+			this.updateAnchorsAndSizes();
+		}
 	}
 
 	// Le texte principal te donne la largeur réelle du mot (en px texture) et la largeur totale tex.
 	// On convertit ça en ratio pour placer les sparkles visuellement au bord du mot dans le quad.
 	public setTextContentWidthFromTexture(wordPx: number, texWidthPx: number) {
-		if (texWidthPx <= 0) this.contentWidthRatio = 0;
-		else this.contentWidthRatio = Math.max(0, Math.min(1, wordPx / texWidthPx));
-		this.updateAnchorsAndSizes();
+		const nextRatio =
+			texWidthPx <= 0 ? 0 : Math.max(0, Math.min(1, wordPx / texWidthPx));
+
+		if (Math.abs(nextRatio - this.contentWidthRatio) > 1e-4) {
+			this.contentWidthRatio = nextRatio;
+			this.updateAnchorsAndSizes();
+		}
 	}
 
-	public resizeQuadSize({ width, height }: { width: number; height: number }) {
+	public resizeQuad({ width, height }: { width: number; height: number }) {
+		if (this.config.quadWidth === width && this.config.quadHeight === height) {
+			return;
+		}
 		this.config.quadWidth = width;
 		this.config.quadHeight = height;
 		this.updateAnchorsAndSizes();
@@ -314,14 +344,22 @@ export class SparklesText {
 
 		// a_anchorLocal (loc 1) — 4 instances
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vboAnchors);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(8), gl.DYNAMIC_DRAW);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			new Float32Array(INSTANCE_COUNT * 2),
+			gl.DYNAMIC_DRAW,
+		);
 		gl.enableVertexAttribArray(1);
 		gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
 		gl.vertexAttribDivisor(1, 1);
 
 		// a_sizePx (loc 2) — 4 instances
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vboSize);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(4), gl.DYNAMIC_DRAW);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			new Float32Array(INSTANCE_COUNT),
+			gl.DYNAMIC_DRAW,
+		);
 		gl.enableVertexAttribArray(2);
 		gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 0, 0);
 		gl.vertexAttribDivisor(2, 1);

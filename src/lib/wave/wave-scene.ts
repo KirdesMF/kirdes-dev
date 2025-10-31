@@ -1,19 +1,75 @@
+// wave-scene.ts (patch complet)
 import { gsap } from "gsap";
 import { cssColorToVec3, getGL2Context } from "./_helpers";
 import { isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
 import { LensOverlay, type LensUniforms } from "./lens-overlay";
-import { SparklesField } from "./sparkles-field";
+import { SparklesField, type SparklesFieldConfig } from "./sparkles-field";
 import { SparklesText } from "./sparkles-text";
-import { WaveLine } from "./wave-line";
+import { WaveLine, type WaveLineBuild, type WaveLineConfig } from "./wave-line";
 import { WaveText } from "./wave-text";
 
+// ——— Public types ———
 export type WavePublicParams = {
-	amplitude: number; // px
-	frequency: number; // rad/px
+	amplitude: number; // px (tweenable)
+	frequency: number; // rad/px (tweenable)
 	speed: number; // facteur anim phase
-	color: [number, number, number, number]; // RGBA 0..1
+	color: [number, number, number, number]; // RGBA 0..1 (ligne)
 };
 
+export type SceneBuild = {
+	line: Partial<WaveLineBuild>;
+	textGridResDesktop: number;
+	textGridResMobile: number;
+	dprCapDesktop: number;
+	dprCapMobile: number;
+};
+
+export type SceneTheme = {
+	/** Couleur principale (CSS) pour texte + sparkles (field & text). */
+	primaryCss: string;
+	/** Optionnel: couleur CSS différente pour la ligne. */
+	lineColorCss?: string;
+};
+
+// ——— Constantes centralisées ———
+const MAX_TEXT_W = 1400;
+const MAX_TEXT_H = 550;
+
+const SCENE_BUILD_DEFAULTS: SceneBuild = {
+	line: { segments: isLikelyMobile() ? 768 : 1024 },
+	textGridResDesktop: 200,
+	textGridResMobile: 140,
+	dprCapDesktop: 2.0,
+	dprCapMobile: 1.5,
+};
+
+const CONSTANTS = {
+	lensEnterRadius: 200, // rayon animé à l’entrée
+	mouseLerpK: 0.12, // vitesse de lissage pointeur
+	textQuadWFrac: 0.9, // % largeur canvas
+	textQuadHFrac: 0.6, // % hauteur canvas
+	minSegments: 512,
+	maxSegments: 2048,
+	pxPerPoint: 2, // heuristique: ~1 point / 2px
+};
+
+type CssColorKey = string;
+const colorVec3Cache = new Map<CssColorKey, [number, number, number]>();
+
+function cssToVec3Cached(color: string): [number, number, number] {
+	const key = color.trim().toLowerCase();
+	const hit = colorVec3Cache.get(key);
+	if (hit) return hit;
+	const vec = cssColorToVec3(color);
+	colorVec3Cache.set(key, vec);
+	return vec;
+}
+
+function cloneVec3(vec: [number, number, number]): [number, number, number] {
+	return [vec[0], vec[1], vec[2]];
+}
+
+// ——— Scene ———
 export class WaveScene {
 	private canvas: HTMLCanvasElement;
 	private gl: WebGL2RenderingContext;
@@ -35,8 +91,8 @@ export class WaveScene {
 	private mouseTarget = { x: 0, y: 0 }; // [-1..1]
 	private mouseLerp = { x: 0, y: 0 };
 
-	private phase = 0; // interne (rad)
-	public params: WavePublicParams; // tweeneable/public
+	private phase = 0;
+	public params: WavePublicParams;
 
 	private isRunning = false;
 	private reduceMotion = false;
@@ -44,15 +100,30 @@ export class WaveScene {
 	private fpsAvg: number | null = null;
 	private readonly fpsAlpha = 0.1;
 
-	// perf knobs
-	private maxDPRCap = isLikelyMobile() ? 1.5 : 2.0;
-	private basePointCount = isLikelyMobile() ? 768 : 1024;
+	private maxDPRCap: number;
+	private basePointCount: number;
+
+	private build: SceneBuild;
+
+	// — caches / flags —
+	private readonly isMobile = isLikelyMobile();
+	private mediaPRM = window.matchMedia("(prefers-reduced-motion: reduce)");
+	private textOffset = { x: 0, y: 0 };
+	private renderSize = { width: 0, height: 0 };
+	private ro?: ResizeObserver;
 
 	constructor(args: {
 		canvas: HTMLCanvasElement;
 		initial?: Partial<WavePublicParams>;
+		build?: Partial<SceneBuild>;
+		waveLine?: Partial<WaveLineConfig>;
+		sparklesField?: Partial<SparklesFieldConfig>;
+		theme?: SceneTheme;
 	}) {
-		const { canvas, initial } = args;
+		const { canvas, initial, build, waveLine, sparklesField, theme } = args;
+		const primaryCss = theme?.primaryCss ?? "#ffffff";
+		const primaryVec3 = cssToVec3Cached(primaryCss);
+
 		this.canvas = canvas;
 		this.gl = getGL2Context(canvas);
 
@@ -67,73 +138,192 @@ export class WaveScene {
 			...initial,
 		};
 
+		this.build = { ...SCENE_BUILD_DEFAULTS, ...build };
+		this.maxDPRCap = this.isMobile
+			? this.build.dprCapMobile
+			: this.build.dprCapDesktop;
+		this.basePointCount =
+			this.build.line.segments ?? (this.isMobile ? 768 : 1024);
+
+		// — lens overlay
 		this.lensOverlay = new LensOverlay(this.gl);
-		this.line = new WaveLine(this.gl, this.basePointCount);
-		this.text = new WaveText(this.gl, { color: "red" });
+
+		// — wave line (vec4)
+		this.line = new WaveLine(
+			this.gl,
+			{ ...this.build.line },
+			{
+				color: this.params.color,
+				isDashed: true,
+				dashPeriodPx: 12,
+				dashDuty: 0.6,
+				...waveLine,
+			},
+		);
+
+		// — text (fill = CSS)
+		this.text = new WaveText(this.gl, {
+			color: primaryCss,
+		});
+
+		// — sparkles next to text (vec3)
 		this.sparklesText = new SparklesText(this.gl, {
-			quadWidth: Math.min(this.canvas.width * 0.9, 1400),
-			quadHeight: Math.min(this.canvas.height * 0.6, 550),
-			topSizesPx: isLikelyMobile() ? [18, 12] : [30, 18], // [left, right]
-			bottomSizesPx: isLikelyMobile() ? [18, 12] : [30, 18], // [left, right]
-			color: "red",
+			quadWidth: Math.min(
+				this.canvas.width * CONSTANTS.textQuadWFrac,
+				MAX_TEXT_W,
+			),
+			quadHeight: Math.min(
+				this.canvas.height * CONSTANTS.textQuadHFrac,
+				MAX_TEXT_H,
+			),
+			topSizesPx: this.isMobile ? [18, 12] : [30, 18],
+			bottomSizesPx: this.isMobile ? [18, 12] : [30, 18],
+			color: cloneVec3(primaryVec3),
 		});
 
+		// — field sparkles (vec3)
 		this.sparklesField = new SparklesField(this.gl, {
-			count: isLikelyMobile() ? 30 : 150,
-			minSizePx: isLikelyMobile() ? 5 : 6,
-			maxSizePx: isLikelyMobile() ? 10 : 15,
-			parallaxStrengthPx: isLikelyMobile() ? 8 : 100,
-			color: "red",
+			count: this.isMobile ? 30 : 150,
+			minSizePx: this.isMobile ? 5 : 6,
+			maxSizePx: this.isMobile ? 10 : 15,
+			parallaxStrengthPx: this.isMobile ? 8 : 100,
+			color: cloneVec3(primaryVec3),
+			...sparklesField,
 		});
 
-		const mediaPRM = window.matchMedia("(prefers-reduced-motion: reduce)");
-		this.reduceMotion = mediaPRM.matches;
-		mediaPRM.addEventListener("change", (ev) => {
-			this.reduceMotion = ev.matches;
-		});
+		// reduce motion
+		this.reduceMotion = this.mediaPRM.matches;
+		this.mediaPRM.addEventListener("change", this.onPRMChange);
 
+		// pointer
 		this.canvas.addEventListener("pointerenter", this.onPointerEnter);
 		this.canvas.addEventListener("pointermove", this.onPointerMove, {
 			passive: true,
 		});
 		this.canvas.addEventListener("pointerleave", this.onPointerLeave);
 
+		// webgl context lost/restored (optionnel mais robuste)
+		this.canvas.addEventListener(
+			"webglcontextlost",
+			this.onContextLost as EventListener,
+			false,
+		);
+		this.canvas.addEventListener(
+			"webglcontextrestored",
+			this.onContextRestored as EventListener,
+			false,
+		);
+
+		// resize observer (facultatif mais pratique)
+		this.ro = new ResizeObserver(() => this.resize());
+		this.ro.observe(this.canvas);
+
+		// first layout
 		this.resize();
-		this.resizeTextQuad();
+		this.recalcTextAndSparklesQuads();
+		this.updateTextOffset();
 		this.clear();
 	}
 
-	// --- Public API (boutons/GSAP) ---
-	public setAmplitude(v: number): void {
+	// ——— Public API (GSAP friendly) ———
+	public setAmplitude(v: number) {
 		this.params.amplitude = Math.max(0, v);
 	}
-	public setFrequency(v: number): void {
+	public setFrequency(v: number) {
 		this.params.frequency = Math.max(0, v);
 	}
-	public setSpeed(v: number): void {
-		this.params.speed = Math.max(0, v);
+	public setSpeed(v: number) {
+		// borne un peu pour éviter des vitesses “folles”
+		this.params.speed = Math.max(0, Math.min(10, v));
 	}
-	public setColor(rgba: [number, number, number, number]): void {
+	public setLineColorRgba(rgba: [number, number, number, number]) {
 		this.params.color = rgba;
+		this.line.updateConfig({ color: rgba });
 	}
 
-	public start(): void {
+	/** Met à jour les couleurs du thème (texte/sparkles + optionnellement la ligne). */
+	public setThemeColors(theme: SceneTheme) {
+		const primaryCss = theme.primaryCss ?? "#ffffff";
+		const primaryVec3 = cssToVec3Cached(primaryCss);
+		this.text.updateColor(primaryCss);
+		this.sparklesText.updateConfig({
+			color: cloneVec3(primaryVec3),
+		});
+		this.sparklesField.updateConfig({
+			color: cloneVec3(primaryVec3),
+		});
+
+		if (theme.lineColorCss) {
+			const [r, g, b] = cssToVec3Cached(theme.lineColorCss);
+			this.setLineColorRgba([r, g, b, this.params.color[3] ?? 1]);
+		}
+	}
+
+	/** Rebuild des éléments “build-time” (ex: segments, DPR caps, gridRes). */
+	public setBuild(patch: Partial<SceneBuild>) {
+		this.build = { ...this.build, ...patch };
+
+		if (patch.line && patch.line.segments !== undefined) {
+			this.basePointCount = Math.max(2, patch.line.segments);
+			this.line.rebuild({ segments: this.basePointCount });
+		}
+		if (patch.dprCapDesktop !== undefined || patch.dprCapMobile !== undefined) {
+			this.maxDPRCap = this.isMobile
+				? (patch.dprCapMobile ?? this.maxDPRCap)
+				: (patch.dprCapDesktop ?? this.maxDPRCap);
+			this.resize(); // recalc DPR
+		}
+		// gridRes côté texte sera réappliqué au prochain recalc
+		this.recalcTextAndSparklesQuads();
+		this.updateTextOffset();
+	}
+
+	/** Setter explicite pour les caps DPR. */
+	public setDprCap(desktop: number, mobile: number) {
+		this.maxDPRCap = this.isMobile ? mobile : desktop;
+		this.resize();
+	}
+
+	/** Affiche/masque la lentille. */
+	public setLensVisible(visible: boolean, animated = true) {
+		if (animated) {
+			gsap.to(this.lens, {
+				radiusPx: visible ? CONSTANTS.lensEnterRadius : 0,
+				duration: 0.2,
+				ease: visible ? "power2.out" : "power2.in",
+			});
+		} else {
+			this.lens.radiusPx = visible ? CONSTANTS.lensEnterRadius : 0;
+		}
+	}
+
+	public start() {
 		if (this.isRunning) return;
 		gsap.ticker.add(this.tick);
 		this.isRunning = true;
 	}
-
-	public stop(): void {
+	public stop() {
 		if (!this.isRunning) return;
 		gsap.ticker.remove(this.tick);
 		this.isRunning = false;
 	}
 
-	public dispose(): void {
+	public dispose() {
 		this.stop();
+
+		this.mediaPRM.removeEventListener("change", this.onPRMChange);
 		this.canvas.removeEventListener("pointerenter", this.onPointerEnter);
 		this.canvas.removeEventListener("pointermove", this.onPointerMove);
 		this.canvas.removeEventListener("pointerleave", this.onPointerLeave);
+		this.canvas.removeEventListener(
+			"webglcontextlost",
+			this.onContextLost as EventListener,
+		);
+		this.canvas.removeEventListener(
+			"webglcontextrestored",
+			this.onContextRestored as EventListener,
+		);
+		this.ro?.disconnect();
 
 		this.lensOverlay.dispose();
 		this.line.dispose();
@@ -142,45 +332,21 @@ export class WaveScene {
 		this.text.dispose();
 	}
 
-	private resizeTextQuad() {
-		const w = Math.min(this.canvas.width * 0.9, 1400);
-		const h = Math.min(this.canvas.height * 0.6, 550);
-
-		// 1) on (re)calibre le quad du texte
-		this.text.resizeQuad({
-			width: w,
-			height: h,
-			gridRes: isLikelyMobile() ? 140 : 200,
-		});
-
-		// 2) on (re)calibre le quad des sparkles
-		this.sparklesText.resizeQuadSize({ width: w, height: h });
-
-		// 3) on transmet la largeur RÉELLE du mot (mesurée) aux sparkles
-		//    => pour que sideMarginPx s’applique depuis le bord du mot, pas le bord du quad
-		// Convert texture-space measurement to a ratio, then to quad-space inside SparklesText
-		const wordPx = this.text.getTextContentWidthPx(); // texture px
-		const texW = this.text.getTextureCanvasWidth(); // texture px
-		this.sparklesText.setTextContentWidthFromTexture(wordPx, texW);
-	}
-
-	private getTextOffset() {
-		return {
-			x: (this.canvas.width - Math.min(this.canvas.width * 0.9, 1400)) * 0.5,
-			y: (this.canvas.height - Math.min(this.canvas.height * 0.6, 550)) * 0.5,
-		};
-	}
+	// ——— internals ———
+	private onPRMChange = (ev: MediaQueryListEvent) => {
+		this.reduceMotion = ev.matches;
+	};
 
 	private onPointerMove = (e: PointerEvent) => {
 		const rect = this.canvas.getBoundingClientRect();
-
-		// lens
 		const sx = this.canvas.width / rect.width;
 		const sy = this.canvas.height / rect.height;
+
+		// lens in px-space
 		this.lens.centerPx.x = (e.clientX - rect.left) * sx;
 		this.lens.centerPx.y = this.canvas.height - (e.clientY - rect.top) * sy;
 
-		// parallax field
+		// parallax in [-1..1]
 		const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
 		const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
 		this.mouseTarget.x = Math.max(-1, Math.min(1, nx));
@@ -188,21 +354,16 @@ export class WaveScene {
 	};
 
 	private onPointerEnter = () => {
-		// show lens
-		gsap.to(this.lens, { radiusPx: 200, duration: 0.2, ease: "power2.out" });
+		this.setLensVisible(true, true);
 	};
 
 	private onPointerLeave = () => {
-		// hide lens
-		// gsap.to(this.lens, { radiusPx: 0, duration: 0.2, ease: "power2.in" });
-		this.lens.radiusPx = 0;
+		this.setLensVisible(false, false);
 
-		// parallax field
-		// 1) remets la cible à zéro (le lerp naturel va y retourner)
+		// parallax
 		this.mouseTarget.x = 0;
 		this.mouseTarget.y = 0;
 
-		// 2) (optionnel) accélère le retour visuel avec un tween direct du lerp
 		gsap.to(this.mouseLerp, {
 			x: 0,
 			y: 0,
@@ -211,8 +372,17 @@ export class WaveScene {
 		});
 	};
 
-	// --- Internal ---
-	private tick = (): void => {
+	private onContextLost = (e: Event) => {
+		e.preventDefault();
+		this.stop();
+	};
+
+	private onContextRestored = () => {
+		// Si tu as des ressources GL à recréer, fais-le ici.
+		this.start();
+	};
+
+	private tick = () => {
 		const deltaRatio = gsap.ticker.deltaRatio(60);
 		const instantFps = 60 / deltaRatio;
 		this.fpsAvg =
@@ -226,11 +396,10 @@ export class WaveScene {
 		const speed = this.reduceMotion
 			? this.params.speed * 0.5
 			: this.params.speed;
-		this.phase += 0.02 * speed * deltaRatio;
-		if (this.phase > Math.PI * 2) this.phase -= Math.PI * 2;
+		this.phase = (this.phase + 0.02 * speed * deltaRatio) % (Math.PI * 2);
 
-		// lerp doux de la souris
-		const k = 0.12;
+		// mouse lerp
+		const k = CONSTANTS.mouseLerpK;
 		this.mouseLerp.x += (this.mouseTarget.x - this.mouseLerp.x) * k;
 		this.mouseLerp.y += (this.mouseTarget.y - this.mouseLerp.y) * k;
 
@@ -242,44 +411,85 @@ export class WaveScene {
 			canvas: this.canvas,
 			maxDPR: this.maxDPRCap,
 		});
+		if (!changed) return false;
 
-		// Ajuste la densité de points en fonction de la largeur en px (post-DPR)
+		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+
 		// Heuristique: ~1 point / 2px, bornée [512..2048]
-		if (changed) {
-			this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-			const w = this.canvas.width;
-			const target = Math.min(Math.max(512, Math.floor(w / 2)), 2048);
+		const target = Math.min(
+			Math.max(
+				CONSTANTS.minSegments,
+				Math.floor(this.canvas.width / CONSTANTS.pxPerPoint),
+			),
+			CONSTANTS.maxSegments,
+		);
 
-			// Rebuild seulement si changement notable
-			if (target !== this.basePointCount) {
-				this.line.dispose();
-				this.line = new WaveLine(this.gl, target);
-				this.basePointCount = target;
-				this.resizeTextQuad();
-				this.sparklesField.resize({
-					width: this.canvas.width,
-					height: this.canvas.height,
-				});
-			}
+		if (target !== this.basePointCount) {
+			this.basePointCount = target;
+			this.line.rebuild({ segments: target });
 		}
-		return changed;
+
+		// Toujours (re)adapter quads & field sur resize
+		this.recalcTextAndSparklesQuads();
+		this.sparklesField.resize({
+			width: this.canvas.width,
+			height: this.canvas.height,
+		});
+		this.updateTextOffset();
+		return true;
 	}
 
-	private clear(): void {
+	private recalcTextAndSparklesQuads() {
+		const w = Math.min(this.canvas.width * CONSTANTS.textQuadWFrac, MAX_TEXT_W);
+		const h = Math.min(
+			this.canvas.height * CONSTANTS.textQuadHFrac,
+			MAX_TEXT_H,
+		);
+
+		this.text.resizeQuad({
+			width: w,
+			height: h,
+			gridRes: this.isMobile
+				? this.build.textGridResMobile
+				: this.build.textGridResDesktop,
+		});
+
+		this.sparklesText.resizeQuad({ width: w, height: h });
+
+		const wordPx = this.text.getTextContentWidthPx(); // texture px
+		const texW = this.text.getTextureCanvasWidth(); // texture px
+		this.sparklesText.setTextContentWidthFromTexture(wordPx, texW);
+	}
+
+	private updateTextOffset() {
+		const w = Math.min(this.canvas.width * CONSTANTS.textQuadWFrac, MAX_TEXT_W);
+		const h = Math.min(
+			this.canvas.height * CONSTANTS.textQuadHFrac,
+			MAX_TEXT_H,
+		);
+		this.textOffset.x = (this.canvas.width - w) * 0.5;
+		this.textOffset.y = (this.canvas.height - h) * 0.5;
+	}
+
+	private clear() {
 		const gl = this.gl;
 		gl.clearColor(0, 0, 0, 0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 	}
 
-	private render(): void {
+	private render() {
 		this.clear();
 
-		// garde-fous ultra simples pour éviter des valeurs négatives
 		const amp = Math.max(0, this.params.amplitude);
 		const freq = Math.max(0, this.params.frequency);
 
+		// cache la taille pour éviter d’allouer à chaque appel
+		this.renderSize.width = this.canvas.width;
+		this.renderSize.height = this.canvas.height;
+
+		// 1) field (back)
 		this.sparklesField.render({
-			resolution: { width: this.canvas.width, height: this.canvas.height },
+			resolution: this.renderSize,
 			parallax: { x: this.mouseLerp.x, y: this.mouseLerp.y },
 			reduceMotion: this.reduceMotion,
 			lens: {
@@ -289,11 +499,12 @@ export class WaveScene {
 			},
 		});
 
+		// 2) ligne
 		this.line.render({
-			resolution: { width: this.canvas.width, height: this.canvas.height },
+			resolution: this.renderSize,
+			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
-			phase: this.phase,
 			lens: {
 				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
 				radiusPx: this.lens.radiusPx,
@@ -301,12 +512,13 @@ export class WaveScene {
 			},
 		});
 
+		// 3) sparkles du texte
 		this.sparklesText.render({
-			resolution: { width: this.canvas.width, height: this.canvas.height },
+			resolution: this.renderSize,
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
-			offset: this.getTextOffset(),
+			offset: this.textOffset,
 			lens: {
 				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
 				radiusPx: this.lens.radiusPx,
@@ -314,15 +526,13 @@ export class WaveScene {
 			},
 		});
 
+		// 4) texte
 		this.text.render({
-			resolution: { width: this.canvas.width, height: this.canvas.height },
+			resolution: this.renderSize,
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
-			offset: {
-				x: (this.canvas.width - Math.min(this.canvas.width * 0.9, 1400)) * 0.5,
-				y: (this.canvas.height - Math.min(this.canvas.height * 0.6, 550)) * 0.5,
-			},
+			offset: this.textOffset,
 			lens: {
 				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
 				radiusPx: this.lens.radiusPx,
@@ -330,8 +540,9 @@ export class WaveScene {
 			},
 		});
 
+		// 5) overlay de lentille
 		this.lensOverlay.render({
-			resolution: { width: this.canvas.width, height: this.canvas.height },
+			resolution: this.renderSize,
 			centerPx: this.lens.centerPx,
 			radiusPx: this.lens.radiusPx,
 			featherPx: this.lens.featherPx,
