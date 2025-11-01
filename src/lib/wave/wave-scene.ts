@@ -4,7 +4,6 @@ import { getTheme, onThemeChange, type Theme } from "../theme";
 import { cssColorToVec3, getGL2Context } from "./_helpers";
 import { isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
 import { LensOverlay, type LensUniforms } from "./lens-overlay";
-import { SparklesField, type SparklesFieldConfig } from "./sparkles-field";
 import { SparklesText } from "./sparkles-text";
 import { WaveLine, type WaveLineBuild, type WaveLineConfig } from "./wave-line";
 import { WaveText } from "./wave-text";
@@ -80,7 +79,6 @@ export class WaveScene {
 	private line: WaveLine;
 	private text: WaveText;
 	private sparklesText: SparklesText;
-	private sparklesField: SparklesField;
 	private lensOverlay: LensOverlay;
 
 	private lens: Omit<LensUniforms, "resolution"> = {
@@ -120,10 +118,9 @@ export class WaveScene {
 		initial?: Partial<WavePublicParams>;
 		build?: Partial<SceneBuild>;
 		waveLine?: Partial<WaveLineConfig>;
-		sparklesField?: Partial<SparklesFieldConfig>;
 		theme?: SceneTheme;
 	}) {
-		const { canvas, initial, build, waveLine, sparklesField, theme } = args;
+		const { canvas, initial, build, waveLine, theme } = args;
 		const domTheme = getTheme();
 		const primaryCss = theme?.primaryCss ?? domTheme.text;
 		const primaryVec3 = cssToVec3Cached(primaryCss);
@@ -201,16 +198,6 @@ export class WaveScene {
 			color: cloneVec3(primaryVec3),
 		});
 
-		// — field sparkles (vec3)
-		this.sparklesField = new SparklesField(this.gl, {
-			count: this.isMobile ? 30 : 150,
-			minSizePx: this.isMobile ? 5 : 6,
-			maxSizePx: this.isMobile ? 10 : 15,
-			parallaxStrengthPx: this.isMobile ? 8 : 100,
-			color: cloneVec3(primaryVec3),
-			...sparklesField,
-		});
-
 		// reduce motion
 		this.reduceMotion = this.mediaPRM.matches;
 		this.mediaPRM.addEventListener("change", this.onPRMChange);
@@ -248,6 +235,18 @@ export class WaveScene {
 		this.clear();
 	}
 
+	public getLensCSS() {
+		const rect = this.canvas.getBoundingClientRect();
+		const sx = this.canvas.width / rect.width;
+		const sy = this.canvas.height / rect.height;
+
+		const x = this.lens.centerPx.x / sx;
+		const y = (this.canvas.height - this.lens.centerPx.y) / sy;
+		const radius = this.lens.radiusPx / sx;
+
+		return { x, y, radius };
+	}
+
 	// ——— Public API (GSAP friendly) ———
 	public setAmplitude(v: number) {
 		this.params.amplitude = Math.max(0, v);
@@ -280,9 +279,6 @@ export class WaveScene {
 			textColor: cloneVec3(primaryVec3),
 		});
 		this.sparklesText.updateConfig({
-			color: cloneVec3(primaryVec3),
-		});
-		this.sparklesField.updateConfig({
 			color: cloneVec3(primaryVec3),
 		});
 
@@ -362,7 +358,6 @@ export class WaveScene {
 
 		this.lensOverlay.dispose();
 		this.line.dispose();
-		this.sparklesField.dispose();
 		this.sparklesText.dispose();
 		this.text.dispose();
 	}
@@ -466,10 +461,6 @@ export class WaveScene {
 
 		// Toujours (re)adapter quads & field sur resize
 		this.recalcTextAndSparklesQuads();
-		this.sparklesField.resize({
-			width: this.canvas.width,
-			height: this.canvas.height,
-		});
 		this.updateTextOffset();
 		return true;
 	}
@@ -515,72 +506,55 @@ export class WaveScene {
 	private render() {
 		this.clear();
 
+		const offset = this.textOffset;
+		const resolution = this.renderSize;
 		const amp = Math.max(0, this.params.amplitude);
 		const freq = Math.max(0, this.params.frequency);
+		const lens = {
+			centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
+			radiusPx: this.lens.radiusPx,
+			featherPx: this.lens.featherPx,
+		};
 
 		// cache la taille pour éviter d’allouer à chaque appel
 		this.renderSize.width = this.canvas.width;
 		this.renderSize.height = this.canvas.height;
 
-		// 1) field (back)
-		this.sparklesField.render({
-			resolution: this.renderSize,
-			parallax: { x: this.mouseLerp.x, y: this.mouseLerp.y },
-			reduceMotion: this.reduceMotion,
-			lens: {
-				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
-				radiusPx: this.lens.radiusPx,
-				featherPx: this.lens.featherPx,
-			},
-		});
-
 		// 2) ligne
 		this.line.render({
-			resolution: this.renderSize,
+			resolution,
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
-			lens: {
-				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
-				radiusPx: this.lens.radiusPx,
-				featherPx: this.lens.featherPx,
-			},
+			lens,
 		});
 
 		// 3) sparkles du texte
 		this.sparklesText.render({
-			resolution: this.renderSize,
+			resolution,
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
-			offset: this.textOffset,
-			lens: {
-				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
-				radiusPx: this.lens.radiusPx,
-				featherPx: this.lens.featherPx,
-			},
+			offset,
+			lens,
 		});
 
 		// 4) texte
 		this.text.render({
-			resolution: this.renderSize,
+			resolution,
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
-			offset: this.textOffset,
-			lens: {
-				centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
-				radiusPx: this.lens.radiusPx,
-				featherPx: this.lens.featherPx,
-			},
+			offset,
+			lens,
 		});
 
 		// 5) overlay de lentille
 		this.lensOverlay.render({
-			resolution: this.renderSize,
-			centerPx: this.lens.centerPx,
-			radiusPx: this.lens.radiusPx,
-			featherPx: this.lens.featherPx,
+			resolution,
+			centerPx: lens.centerPx,
+			radiusPx: lens.radiusPx,
+			featherPx: lens.featherPx,
 			colorRing: this.lens.colorRing,
 		});
 	}

@@ -58,4 +58,7 @@ export type UniformsNames =
 	| "u_hatchAlpha"
 	| "u_hatchDuty"
 	| "u_outlineAlpha"
-	| "u_sparklesColor";
+	| "u_sparklesColor"
+	| "u_lineWidthPx"
+	| "u_curveFalloff"
+	| "u_motionDir";
