@@ -1,4 +1,5 @@
 import { gsap } from "gsap";
+import { parseColor } from "../theme";
 import type { Point } from "./_types";
 
 export type ElasticLinesConfig = {
@@ -30,6 +31,15 @@ const DEFAULT_CONFIG: ElasticLinesConfig = {
 	easePeriod: 0.2,
 	samplesPerSegment: 50,
 };
+
+const ELASTIC_LINES_OPACITY = 0.4;
+
+function colorWithOpacity(cssColor: string, alpha: number): string {
+	const [r, g, b] = parseColor(cssColor);
+	const to255 = (value: number) =>
+		Math.max(0, Math.min(255, Math.round(value * 255)));
+	return `rgba(${to255(r)}, ${to255(g)}, ${to255(b)}, ${alpha})`;
+}
 
 /* ------------------ utils ------------------ */
 function dist2(a: Point, b: Point): number {
@@ -157,6 +167,10 @@ export class ElasticLines {
 
 	constructor(config?: Partial<ElasticLinesConfig>) {
 		this.config = { ...DEFAULT_CONFIG, ...config };
+		this.config.color = colorWithOpacity(
+			this.config.color,
+			ELASTIC_LINES_OPACITY,
+		);
 	}
 
 	resize(arg: { width: number; height: number; dpr: number }) {
@@ -168,6 +182,9 @@ export class ElasticLines {
 
 	setConfig(config: Partial<ElasticLinesConfig>) {
 		this.config = { ...this.config, ...config };
+		if (config.color !== undefined) {
+			this.config.color = colorWithOpacity(config.color, ELASTIC_LINES_OPACITY);
+		}
 		this.ensureBuilt();
 	}
 

@@ -1,6 +1,15 @@
 import { gsap } from "gsap";
 import { get2dContext } from "../../utils/get-2d-context";
-import { getTheme, onThemeChange, type Theme } from "../theme";
+import { getTheme, onThemeChange, parseColor, type Theme } from "../theme";
+
+const MOIRE_OPACITY = 0.3;
+
+function colorWithOpacity(cssColor: string, alpha: number): string {
+	const [r, g, b] = parseColor(cssColor);
+	const to255 = (value: number) =>
+		Math.max(0, Math.min(255, Math.round(value * 255)));
+	return `rgba(${to255(r)}, ${to255(g)}, ${to255(b)}, ${alpha})`;
+}
 
 export type MoireConfig = {
 	lineColor: string;
@@ -71,7 +80,7 @@ export class MoireCanvas {
 	}
 
 	private applyTheme(t: Theme) {
-		this.setConfig({ lineColor: t.text });
+		this.setConfig({ lineColor: colorWithOpacity(t.text, MOIRE_OPACITY) });
 	}
 
 	private resize() {
