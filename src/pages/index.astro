@@ -7,13 +7,39 @@ import Layout from "../layouts/Layout.astro";
   <Header />
 
   <section class="min-h-dvh grid place-items-center" id="home">
-    <div class="w-3/4 h-2/3 border border-dashed relative bg-background">
+    <div
+      id="home-frame"
+      class="h-1/2 w-2/3 border border-dashed relative bg-background grid place-items-center @container"
+    >
+      <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
+      <div class="relative grid place-items-center pointer-events-none">
+        <div
+          data-parallax-shadow
+          class="absolute top-1/2 left-1/2 size-[25cqmin] -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground blur-xs z-0 dark:hidden"
+        >
+        </div>
+        <div
+          data-parallax-circle
+          class="size-[23cqmin] rounded-full bg-background z-0 shadow-2xl relative grid place-items-center text-foreground"
+        >
+          <svg
+            data-parallax-ring
+            viewBox="0 0 200 200"
+            class="absolute inset-0 size-full overflow-visible"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            preserveAspectRatio="none"
+          >
+            <circle cx="100" cy="100" r="100"></circle>
+          </svg>
+        </div>
+      </div>
       <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
       <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
       <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
       <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
-
-      <canvas id="splash-wave-canvas" class="size-full"></canvas>
     </div>
   </section>
 
@@ -24,7 +50,11 @@ import Layout from "../layouts/Layout.astro";
       <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
       <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
 
-      <canvas id="wave-canvas" class="size-full border-0 block"></canvas>
+      <div class="relative size-full">
+        <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
+        <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
+        <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
+      </div>
     </div>
   </section>
 
@@ -39,7 +69,10 @@ import Layout from "../layouts/Layout.astro";
 
 <script>
   import { SplashWaveScene } from "../lib/canvas-2d/splash-wave";
+  import { MoireCanvas } from "../lib/lines-repel/moire";
+  import { LinesRepelScene } from "../lib/lines-repel/lines-repel-scene";
   import { WaveScene } from "../lib/wave/wave-scene";
+  import { gsap } from "gsap";
 
   const canvas = document.getElementById("splash-wave-canvas") as HTMLCanvasElement;
   const splash = new SplashWaveScene(canvas);
@@ -49,8 +82,98 @@ import Layout from "../layouts/Layout.astro";
   const scene = new WaveScene({ canvas: waveCanvas });
   scene.start();
 
+  const moireCanvas = document.getElementById("moire-canvas") as HTMLCanvasElement;
+  const moire = new MoireCanvas(moireCanvas, { lineSpacing: 30 });
+  moire.start();
+
+  const repelCanvas = document.getElementById("repel-canvas") as HTMLCanvasElement;
+  const repel = new LinesRepelScene(repelCanvas, { configLines: { spacing: 30 } });
+  repel.start();
+
+  const homeFrame = document.getElementById("home-frame");
+  const parallaxCircle = homeFrame?.querySelector("[data-parallax-circle]");
+  const parallaxShadow = homeFrame?.querySelector("[data-parallax-shadow]");
+  const parallaxRing = parallaxCircle?.querySelector("[data-parallax-ring]");
+
+  if (homeFrame) {
+    const maxOffset = 30;
+    const shadowOffsetMultiplier = 1.8;
+    const shadowScaleFactor = 0.25;
+    const ringRotationMultiplier = 0.4;
+
+    if (parallaxShadow) {
+      gsap.set(parallaxShadow, { opacity: 0.35 });
+    }
+    if (parallaxRing) {
+      gsap.set(parallaxRing, { rotation: 0, transformOrigin: "50% 50%" });
+    }
+
+    homeFrame.addEventListener("mousemove", (event) => {
+      const rect = homeFrame.getBoundingClientRect();
+      const normalizedX = (event.clientX - rect.left) / rect.width - 0.5;
+      const normalizedY = (event.clientY - rect.top) / rect.height - 0.5;
+      const distance = Math.min(Math.hypot(normalizedX, normalizedY), 0.75);
+      const angleDeg = Math.atan2(normalizedY, normalizedX) * (180 / Math.PI);
+
+      if (parallaxCircle) {
+        gsap.to(parallaxCircle, {
+          x: -normalizedX * maxOffset,
+          y: -normalizedY * maxOffset,
+          duration: 0.6,
+          ease: "power2.out",
+        });
+      }
+
+      if (parallaxRing) {
+        gsap.to(parallaxRing, {
+          rotation: angleDeg * ringRotationMultiplier,
+          duration: 0.6,
+          ease: "power2.out",
+        });
+      }
+
+      if (parallaxShadow) {
+        gsap.to(parallaxShadow, {
+          x: -normalizedX * maxOffset * shadowOffsetMultiplier,
+          y: -normalizedY * maxOffset * shadowOffsetMultiplier,
+          scale: 1 + distance * shadowScaleFactor,
+          opacity: 0.35 + distance * 0.25,
+          duration: 0.6,
+          ease: "power2.out",
+        });
+      }
+    });
+
+    homeFrame.addEventListener("mouseleave", () => {
+      if (parallaxCircle) {
+        gsap.to(parallaxCircle, { x: 0, y: 0, duration: 0.8, ease: "power2.out" });
+      }
+
+      if (parallaxRing) {
+        gsap.to(parallaxRing, { rotation: 0, duration: 0.8, ease: "power2.out" });
+      }
+
+      if (parallaxShadow) {
+        gsap.to(parallaxShadow, {
+          x: 0,
+          y: 0,
+          scale: 1,
+          opacity: 0.35,
+          duration: 0.8,
+          ease: "power2.out",
+        });
+      }
+    });
+  }
+
   window.addEventListener("beforeunload", () => {
     splash.unmount();
+    moire.dispose();
     scene.dispose();
+  });
+
+  gsap.ticker.add(() => {
+    const { x, y, radius } = scene.getLensCSS();
+    repel.setRepellerPosition({ x, y }, radius);
   });
 </script>

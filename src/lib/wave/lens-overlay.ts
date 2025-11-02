@@ -11,7 +11,6 @@ const VS = `#version 300 es
 const FS = `#version 300 es
   precision mediump float;
 
-  uniform vec2  u_resolution;    // px
   uniform vec2  u_centerPx;      // px
   uniform float u_radiusPx;      // px
   uniform float u_featherPx;     // px
