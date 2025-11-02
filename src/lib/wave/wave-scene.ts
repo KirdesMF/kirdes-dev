@@ -5,6 +5,7 @@ import { cssColorToVec3, getGL2Context } from "./_helpers";
 import { isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
 import { LensOverlay, type LensUniforms } from "./lens-overlay";
 import { SparklesText } from "./sparkles-text";
+import { SparklesWaveParticles } from "./sparkles-wave-particles";
 import { WaveLine, type WaveLineBuild, type WaveLineConfig } from "./wave-line";
 import { WaveText } from "./wave-text";
 
@@ -86,6 +87,7 @@ export class WaveScene {
 	private line: WaveLine;
 	private text: WaveText;
 	private sparklesText: SparklesText;
+	private sparklesWave: SparklesWaveParticles;
 	private lensOverlay: LensOverlay;
 
 	private lens: Omit<LensUniforms, "resolution"> = {
@@ -100,6 +102,7 @@ export class WaveScene {
 	private mouseLerp = { x: 0, y: 0 };
 
 	private phase = 0;
+	private timeSec = 0;
 	public params: WavePublicParams;
 
 	private isRunning = false;
@@ -118,6 +121,7 @@ export class WaveScene {
 	private mediaPRM = window.matchMedia("(prefers-reduced-motion: reduce)");
 	private textOffset = { x: 0, y: 0 };
 	private renderSize = { width: 0, height: 0 };
+	private sparklesArea = { width: 0, height: 0 };
 	private ro?: ResizeObserver;
 
 	constructor(args: {
@@ -189,18 +193,38 @@ export class WaveScene {
 		});
 
 		// — sparkles next to text (vec3)
+		const initialQuadWidth = Math.min(
+			this.canvas.width * CONSTANTS.textQuadWFrac,
+			MAX_TEXT_W,
+		);
+		const initialQuadHeight = Math.min(
+			this.canvas.height * CONSTANTS.textQuadHFrac,
+			MAX_TEXT_H,
+		);
+		this.sparklesArea.width = this.canvas.width;
+		this.sparklesArea.height = this.canvas.height;
+
 		this.sparklesText = new SparklesText(this.gl, {
-			quadWidth: Math.min(
-				this.canvas.width * CONSTANTS.textQuadWFrac,
-				MAX_TEXT_W,
-			),
-			quadHeight: Math.min(
-				this.canvas.height * CONSTANTS.textQuadHFrac,
-				MAX_TEXT_H,
-			),
+			quadWidth: initialQuadWidth,
+			quadHeight: initialQuadHeight,
 			topSizesPx: this.isMobile ? [58, 38] : [92, 58],
 			bottomSizesPx: this.isMobile ? [58, 38] : [92, 58],
 			color: cloneVec3(primaryVec3),
+		});
+
+		this.sparklesWave = new SparklesWaveParticles(this.gl, {
+			count: this.isMobile ? 48 : 84,
+			color: cloneVec3(primaryVec3),
+			areaWidth: this.canvas.width,
+			areaHeight: this.canvas.height,
+			sizeRangePx: this.isMobile ? [18, 46] : [24, 64],
+			yOffsetRangePx: this.isMobile ? [-110, 110] : [-150, 150],
+			speedRangePxPerSec: this.isMobile ? [30, 120] : [40, 190],
+			rotationSpeedRangeDeg: this.isMobile ? [-35, 35] : [-40, 40],
+			rotationBaseRangeDeg: this.isMobile ? [-20, 20] : [-30, 30],
+			tiltAmplitudeDegRange: this.isMobile ? [8, 24] : [10, 32],
+			tiltSpeedRangeHz: this.isMobile ? [0.15, 0.45] : [0.2, 0.6],
+			alphaRange: [0.35, 1],
 		});
 
 		// reduce motion
@@ -286,6 +310,9 @@ export class WaveScene {
 		this.sparklesText.updateConfig({
 			color: cloneVec3(primaryVec3),
 		});
+		this.sparklesWave.updateConfig({
+			color: cloneVec3(primaryVec3),
+		});
 
 		const lineCss = theme.lineColorCss ?? primaryCss;
 		const [r, g, b] = cssToVec3Cached(lineCss);
@@ -363,6 +390,7 @@ export class WaveScene {
 
 		this.lensOverlay.dispose();
 		this.line.dispose();
+		this.sparklesWave.dispose();
 		this.sparklesText.dispose();
 		this.text.dispose();
 	}
@@ -432,6 +460,7 @@ export class WaveScene {
 			? this.params.speed * 0.5
 			: this.params.speed;
 		this.phase = (this.phase + 0.02 * speed * deltaRatio) % (Math.PI * 2);
+		this.timeSec += deltaRatio / 60;
 
 		// mouse lerp
 		const k = CONSTANTS.mouseLerpK;
@@ -486,6 +515,12 @@ export class WaveScene {
 		});
 
 		this.sparklesText.resizeQuad({ width: w, height: h });
+		this.sparklesWave.resizeArea({
+			width: this.canvas.width,
+			height: this.canvas.height,
+		});
+		this.sparklesArea.width = this.canvas.width;
+		this.sparklesArea.height = this.canvas.height;
 
 		const wordPx = this.text.getTextContentWidthPx(); // texture px
 		const texW = this.text.getTextureCanvasWidth(); // texture px
@@ -534,7 +569,20 @@ export class WaveScene {
 			lens,
 		});
 
-		// 3) sparkles du texte
+		// 3) particules le long de l'onde
+		const particlesOffset = { x: 0, y: this.canvas.height * 0.5 };
+		this.sparklesWave.render({
+			resolution,
+			phase: this.phase,
+			amplitude: amp,
+			frequency: freq,
+			offset: particlesOffset,
+			areaSize: this.sparklesArea,
+			time: this.timeSec,
+			lens,
+		});
+
+		// 4) sparkles du texte
 		this.sparklesText.render({
 			resolution,
 			phase: this.phase,
@@ -544,7 +592,7 @@ export class WaveScene {
 			lens,
 		});
 
-		// 4) texte
+		// 5) texte
 		this.text.render({
 			resolution,
 			phase: this.phase,
@@ -554,7 +602,7 @@ export class WaveScene {
 			lens,
 		});
 
-		// 5) overlay de lentille
+		// 6) overlay de lentille
 		this.lensOverlay.render({
 			resolution,
 			centerPx: lens.centerPx,
