@@ -1,5 +1,6 @@
 import { gsap } from "gsap";
 import { get2dContext } from "../../utils/get-2d-context";
+import { getTheme, onThemeChange, type Theme } from "../theme";
 import type { Point } from "./_types";
 import { ElasticLines, type ElasticLinesConfig } from "./elastic-lines";
 import { Repeller } from "./repeller";
@@ -27,6 +28,8 @@ export class LinesRepelScene {
 	private lines: ElasticLines;
 	private repeller: Repeller;
 
+	private unsubscribeThemeChange?: () => void;
+
 	constructor(canvas: HTMLCanvasElement, config?: Partial<SceneConfig>) {
 		this.canvas = canvas;
 		this.ctx = get2dContext(this.canvas);
@@ -43,6 +46,8 @@ export class LinesRepelScene {
 
 	start() {
 		if (this.isRunning) return;
+		this.applyTheme(getTheme());
+		this.unsubscribeThemeChange = onThemeChange((t) => this.applyTheme(t));
 		gsap.ticker.add(this.tick);
 		this.isRunning = true;
 	}
@@ -56,10 +61,15 @@ export class LinesRepelScene {
 	dispose() {
 		this.stop();
 		this.ro?.disconnect();
+		this.unsubscribeThemeChange?.();
 	}
 
 	setRepellerPosition(center: Point, radius: number) {
 		this.repeller.setRepeller({ center, radius });
+	}
+
+	private applyTheme(theme: Theme) {
+		this.lines.setConfig({ color: theme.text });
 	}
 
 	private resize() {
@@ -88,6 +98,7 @@ export class LinesRepelScene {
 
 	private tick = () => {
 		this.resize();
+		this.lines.update(this.repeller.getCoords(), this.repeller.getRadius());
 		this.draw();
 	};
 

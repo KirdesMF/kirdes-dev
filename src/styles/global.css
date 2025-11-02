@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* biome-ignore lint: lint/suspicious/noUnknownAtRules */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* commissioner-latin-wght-normal */
 @font-face {
 	font-family: "Commissioner Variable";

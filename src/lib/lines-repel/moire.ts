@@ -1,5 +1,6 @@
 import { gsap } from "gsap";
 import { get2dContext } from "../../utils/get-2d-context";
+import { getTheme, onThemeChange, type Theme } from "../theme";
 
 export type MoireConfig = {
 	lineColor: string;
@@ -17,12 +18,13 @@ export class MoireCanvas {
 	private invalidated = true;
 	private isRunning = false;
 	private ro: ResizeObserver | null = null;
+	private unsubscribeThemeChange?: () => void;
 
 	constructor(canvas: HTMLCanvasElement, config?: Partial<MoireConfig>) {
 		this.canvas = canvas;
 		this.ctx = get2dContext(canvas);
 		this.config = {
-			lineColor: "#fff",
+			lineColor: "oklch(0.9332 0.025 75.27 / 0.3)",
 			lineWidth: 1,
 			lineSpacing: 30,
 			maxDPR: 2,
@@ -38,6 +40,8 @@ export class MoireCanvas {
 
 	start() {
 		if (this.isRunning) return;
+		this.applyTheme(getTheme());
+		this.unsubscribeThemeChange = onThemeChange((t) => this.applyTheme(t));
 		gsap.ticker.add(this.tick);
 		this.isRunning = true;
 	}
@@ -53,11 +57,21 @@ export class MoireCanvas {
 		gsap.ticker.remove(this.tick);
 		this.ro = null;
 		this.isRunning = false;
+		this.unsubscribeThemeChange?.();
+	}
+
+	setConfig(config: Partial<MoireConfig>) {
+		this.config = { ...this.config, ...config };
+		this.invalidated = true;
 	}
 
 	setLineSpacing(spacing: number) {
 		this.config.lineSpacing = spacing;
 		this.invalidated = true;
+	}
+
+	private applyTheme(t: Theme) {
+		this.setConfig({ lineColor: t.text });
 	}
 
 	private resize() {
