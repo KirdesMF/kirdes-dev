@@ -138,11 +138,11 @@ const CONFIG_DEFAULTS: WaveTextConfig = {
 	text: "WORKS",
 	font: "800 300px Commissioner Variable, sans-serif",
 	color: "#ffffff",
-	letterSpacingPx: -10,
+	letterSpacingPx: -12,
 	lineSpacingPx: 20,
 	gridRes: 200,
 	maxTextureSize: 2048,
-	strokeWidthPx: 15,
+	strokeWidthPx: 10,
 	lens: { ...LENS_DEFAULTS },
 };
 

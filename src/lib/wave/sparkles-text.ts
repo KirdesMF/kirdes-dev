@@ -18,26 +18,23 @@ const VS = `#version 300 es
   out vec2 v_uv;
 
   void main() {
-    // base locale -> espace scène
     vec2 base = a_anchorLocal + u_offset;
+    vec2 local = base + a_unitPos * a_sizePx;
 
-    // onde + "stretch" identiques au texte
-    float wave  = sin(base.x * u_frequency + u_phase) * u_amplitude;
-    float slope = cos(base.x * u_frequency + u_phase) * u_amplitude * u_frequency;
+    float wave  = sin(local.x * u_frequency + u_phase) * u_amplitude;
+    float slope = cos(local.x * u_frequency + u_phase) * u_amplitude * u_frequency;
     float stretch = sqrt(1.0 + slope * slope);
 
     float baseline = u_resolution.y * 0.5;
-    float yDeformed = baseline + (base.y + wave - baseline) * stretch;
+    float yDeformed = baseline + (local.y + wave - baseline) * stretch;
 
-    // billboard du sprite autour de la position déformée
-    vec2 spritePx = a_unitPos * a_sizePx;
-    vec2 posPx = vec2(base.x, yDeformed) + spritePx;
+    vec2 posPx = vec2(local.x, yDeformed);
 
     // NDC
     vec2 clip = (posPx / u_resolution) * 2.0 - 1.0;
     clip.y *= -1.0;
 
-    v_uv = a_unitPos * 0.5 + 0.5;
+    v_uv = a_unitPos + 0.5;
     gl_Position = vec4(clip, 0.0, 1.0);
   }
 `;
@@ -45,37 +42,44 @@ const VS = `#version 300 es
 const FS = `#version 300 es
   precision mediump float;
 
+  uniform sampler2D u_sprite;
+
   // Lens
   uniform vec2  u_lensCenterPx;
   uniform float u_lensRadiusPx;
   uniform float u_lensFeatherPx;
 
   // Apparence
-  uniform vec3  u_color;        // ex: vec3(1.0)
-  uniform float u_baseAlpha;    // ex: 1.0
+  uniform vec3  u_color;
+  uniform float u_baseAlpha;
+  uniform float u_outlineWidth;
 
   // Dashed (dans la lens seulement)
-  uniform float u_dashPeriodPx; // ex: 14.0 (px écran)
-  uniform float u_dashDuty;     // ex: 0.55 (0..1)
+  uniform float u_dashPeriodPx;
+  uniform float u_dashDuty;
+  uniform float u_dashAngleDeg;
 
-  // Croisillon "fin" (épaisseur en UV du quad unité)
-  const float LINE_HALF_UV = 0.04; // plus petit => plus fin
-  const float AA_GAIN      = 1.0;  // anti-aliasing
+  const float LENS_HATCH_ALPHA = 0.75;
+  const float LENS_OUTLINE_GAIN = 1.2;
 
   in vec2 v_uv;
   out vec4 outColor;
 
+  float median(float r, float g, float b) {
+    return max(min(r, g), min(max(r, g), b));
+  }
+
   void main() {
-    // Coord UV centrées
-    vec2 p = v_uv * 2.0 - 1.0;
+    vec3 spriteSample = texture(u_sprite, v_uv).rgb;
+    float sd = median(spriteSample.r, spriteSample.g, spriteSample.b) - 0.5;
+    float aa = max(fwidth(sd), 1e-5);
 
-    // AA en fonction de la taille écran
-    float aa = max(fwidth(p.x), fwidth(p.y)) * AA_GAIN;
+    float fillMask = smoothstep(-aa, aa, sd);
+    float outlineOuter = smoothstep(-aa, aa, sd + u_outlineWidth);
+    float outlineInner = smoothstep(-aa, aa, sd - u_outlineWidth);
+    float outlineMask = clamp(outlineOuter - outlineInner, 0.0, 1.0);
 
-    // Deux traits minces : vertical (x≈0) et horizontal (y≈0)
-    float vLine = 1.0 - smoothstep(LINE_HALF_UV, LINE_HALF_UV + aa, abs(p.x));
-    float hLine = 1.0 - smoothstep(LINE_HALF_UV, LINE_HALF_UV + aa, abs(p.y));
-    float crossMask = max(vLine, hLine);  // plein (hors lens)
+    if (fillMask <= 0.0 && outlineMask <= 0.0) discard;
 
     // Masque lentille (écran)
     float dLens = distance(gl_FragCoord.xy, u_lensCenterPx);
@@ -85,24 +89,27 @@ const FS = `#version 300 es
       dLens
     );
 
-    // Motif dashed **lens-local** (stable quand la lens bouge)
+    // Motif dashed dans la lens (stable quand la lens bouge)
     float period = max(1.0, u_dashPeriodPx);
-    vec2  q      = gl_FragCoord.xy - u_lensCenterPx; // coords locales à la lens
+    vec2  q      = gl_FragCoord.xy - u_lensCenterPx;
     float duty   = clamp(u_dashDuty, 0.0, 1.0);
+    float ang    = radians(u_dashAngleDeg);
+    mat2 rot     = mat2(cos(ang), -sin(ang), sin(ang), cos(ang));
+    vec2 r       = rot * q;
+    float saw    = fract(r.x / period);
+    float hatch  = step(0.0, saw) * step(saw, duty);
 
-    // On dash la barre verticale le long de Y, et l’horizontale le long de X
-    float sawY = fract(q.y / period);
-    float sawX = fract(q.x / period);
-    float dashV = step(0.0, sawY) * step(sawY, duty);
-    float dashH = step(0.0, sawX) * step(sawX, duty);
-    float dashedMask = max(vLine * dashV, hLine * dashH);
+    float outsideFill = fillMask * (1.0 - mLens);
+    float interiorMask = clamp(fillMask - outlineMask, 0.0, 1.0);
+    float insideOutline = clamp(outlineMask * mLens * LENS_OUTLINE_GAIN, 0.0, 1.0);
+    float insideHatch = interiorMask * hatch * mLens * LENS_HATCH_ALPHA;
 
-    // Hors lens: traits pleins ; Dans lens: traits dashed
-    float maskFinal = mix(crossMask, dashedMask, mLens);
+    float maskFinal = clamp(outsideFill + insideOutline + insideHatch, 0.0, 1.0);
 
-    float a = u_baseAlpha * maskFinal;
-    if (a < 0.01) discard;
-    outColor = vec4(u_color, a);
+    float alpha = u_baseAlpha * maskFinal;
+    if (alpha < 0.01) discard;
+
+    outColor = vec4(u_color, alpha);
   }
 `;
 
@@ -111,6 +118,7 @@ export type SparklesTextConfig = {
 	quadHeight: number; // hauteur du quad texte
 	sideMarginPx: number;
 	liftFromLinePx: number;
+	spriteUrl: string;
 
 	topSizesPx: [number, number]; // [gros, petit]
 	bottomSizesPx: [number, number]; // [gros, petit]
@@ -124,10 +132,12 @@ export type SparklesTextConfig = {
 	// apparence
 	color: [number, number, number]; // couleur (vec3 0..1)
 	baseAlpha: number; // alpha global des sparkles
+	outlineWidth: number; // épaisseur du contour (en unités SDF)
 
 	// dashed-lens
 	dashPeriodPx: number;
 	dashDuty: number;
+	dashAngleDeg: number;
 };
 
 export type SparklesTextUniforms = {
@@ -148,18 +158,21 @@ const INSTANCE_COUNT = 4;
 const CONFIG_DEFAULTS: SparklesTextConfig = {
 	quadWidth: 1400,
 	quadHeight: 550,
-	sideMarginPx: 60,
+	sideMarginPx: 55,
 	liftFromLinePx: 75,
-	topSizesPx: [26, 18],
-	bottomSizesPx: [26, 18],
-	offsetTopBig: { dx: 8, dy: -6 },
-	offsetTopSmall: { dx: 26, dy: 6 },
-	offsetBottomBig: { dx: -8, dy: 6 },
-	offsetBottomSmall: { dx: -26, dy: -6 },
+	spriteUrl: "/assets/msdf/sparkle.png",
+	topSizesPx: [88, 56],
+	bottomSizesPx: [88, 56],
+	offsetTopBig: { dx: 10, dy: -26 },
+	offsetTopSmall: { dx: 40, dy: 26 },
+	offsetBottomBig: { dx: -10, dy: 26 },
+	offsetBottomSmall: { dx: -36, dy: -26 },
 	color: [1, 1, 1],
 	baseAlpha: 1.0,
-	dashPeriodPx: 10.0,
-	dashDuty: 0.75,
+	outlineWidth: 0.15,
+	dashPeriodPx: 6.0,
+	dashDuty: 0.5,
+	dashAngleDeg: 45.0,
 };
 
 function createDefaultConfig(): SparklesTextConfig {
@@ -187,6 +200,8 @@ export class SparklesText {
 	private readonly instanceCount = INSTANCE_COUNT; // top-big, top-small, bottom-big, bottom-small
 	public config: SparklesTextConfig;
 	private contentWidthRatio = 0;
+	private spriteTexture: WebGLTexture | null = null;
+	private spriteReady = false;
 
 	private uResolution: WebGLUniformLocation;
 	private uPhase: WebGLUniformLocation;
@@ -200,6 +215,9 @@ export class SparklesText {
 	private uLensCenterPx: WebGLUniformLocation;
 	private uLensRadiusPx: WebGLUniformLocation;
 	private uLensFeatherPx: WebGLUniformLocation;
+	private uSprite: WebGLUniformLocation;
+	private uOutlineWidth: WebGLUniformLocation;
+	private uDashAngleDeg: WebGLUniformLocation;
 
 	constructor(
 		gl: WebGL2RenderingContext,
@@ -220,18 +238,94 @@ export class SparklesText {
 		this.uOffset = getUniform(gl, this.program, "u_offset");
 
 		// lens uniforms (cached)
+		this.uSprite = getUniform(gl, this.program, "u_sprite");
+		this.uOutlineWidth = getUniform(gl, this.program, "u_outlineWidth");
 		this.uDashDuty = getUniform(gl, this.program, "u_dashDuty");
 		this.uDashPeriodPx = getUniform(gl, this.program, "u_dashPeriodPx");
+		this.uDashAngleDeg = getUniform(gl, this.program, "u_dashAngleDeg");
 		this.uLensCenterPx = getUniform(gl, this.program, "u_lensCenterPx");
 		this.uLensRadiusPx = getUniform(gl, this.program, "u_lensRadiusPx");
 		this.uLensFeatherPx = getUniform(gl, this.program, "u_lensFeatherPx");
 
 		this.createGeometry();
+		this.initSpriteTexture();
 		this.updateAnchorsAndSizes();
+	}
+
+	private initSpriteTexture() {
+		const gl = this.gl;
+		const tex = gl.createTexture();
+		if (!tex) throw new Error("SparklesText: sprite texture allocation failed");
+		this.spriteTexture = tex;
+
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+		const placeholder = new Uint8Array([0, 0, 0, 0]);
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.RGBA,
+			1,
+			1,
+			0,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			placeholder,
+		);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+
+		// Bind sampler unit 0 once
+		gl.useProgram(this.program);
+		gl.uniform1i(this.uSprite, 0);
+		gl.useProgram(null);
+
+		this.loadSpriteTexture(this.config.spriteUrl);
+	}
+
+	private loadSpriteTexture(url: string) {
+		if (!this.spriteTexture) return;
+		if (typeof window === "undefined") {
+			this.spriteReady = false;
+			return;
+		}
+
+		this.spriteReady = false;
+		const image = new Image();
+		image.crossOrigin = "anonymous";
+		image.decoding = "async";
+		image.onload = () => {
+			const gl = this.gl;
+			gl.bindTexture(gl.TEXTURE_2D, this.spriteTexture);
+			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
+			gl.texImage2D(
+				gl.TEXTURE_2D,
+				0,
+				gl.RGBA,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE,
+				image,
+			);
+			gl.bindTexture(gl.TEXTURE_2D, null);
+			this.spriteReady = true;
+		};
+		image.onerror = () => {
+			console.warn(`[SparklesText] Failed to load sprite: ${url}`);
+			this.spriteReady = false;
+		};
+		image.src = url;
 	}
 
 	public render(uniforms: SparklesTextUniforms) {
 		const gl = this.gl;
+
+		if (!this.spriteTexture || !this.spriteReady) {
+			return;
+		}
+
 		gl.useProgram(this.program);
 
 		// uniforms communs
@@ -246,9 +340,11 @@ export class SparklesText {
 		gl.uniform2f(this.uOffset, uniforms.offset.x, uniforms.offset.y);
 
 		// apparence
+		gl.uniform1f(this.uOutlineWidth, Math.max(0, this.config.outlineWidth));
 		const [r, g, b] = this.config.color;
 		gl.uniform3f(this.uColor, r, g, b);
 		gl.uniform1f(this.uBaseAlpha, this.config.baseAlpha);
+		gl.uniform1f(this.uDashAngleDeg, this.config.dashAngleDeg);
 
 		// dashed dans la lens
 		gl.uniform2f(
@@ -261,13 +357,26 @@ export class SparklesText {
 		gl.uniform1f(this.uDashPeriodPx, this.config.dashPeriodPx);
 		gl.uniform1f(this.uDashDuty, this.config.dashDuty);
 
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.spriteTexture);
+
 		gl.bindVertexArray(this.vao);
 		gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.instanceCount);
 		gl.bindVertexArray(null);
+		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 
 	public updateConfig(cfg: Partial<SparklesTextConfig>) {
+		const prevSpriteUrl = this.config.spriteUrl;
 		this.config = { ...this.config, ...cfg };
+
+		if (
+			cfg.spriteUrl !== undefined &&
+			cfg.spriteUrl.length > 0 &&
+			cfg.spriteUrl !== prevSpriteUrl
+		) {
+			this.loadSpriteTexture(this.config.spriteUrl);
+		}
 
 		if (
 			cfg.quadWidth !== undefined ||
@@ -312,11 +421,14 @@ export class SparklesText {
 		if (this.vboQuad) gl.deleteBuffer(this.vboQuad);
 		if (this.vboAnchors) gl.deleteBuffer(this.vboAnchors);
 		if (this.vboSize) gl.deleteBuffer(this.vboSize);
+		if (this.spriteTexture) gl.deleteTexture(this.spriteTexture);
 		gl.deleteProgram(this.program);
 		this.vao = null;
 		this.vboQuad = null;
 		this.vboAnchors = null;
 		this.vboSize = null;
+		this.spriteTexture = null;
+		this.spriteReady = false;
 	}
 
 	private createGeometry() {

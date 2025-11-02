@@ -44,13 +44,20 @@ const SCENE_BUILD_DEFAULTS: SceneBuild = {
 };
 
 const CONSTANTS = {
-	lensEnterRadius: 200, // rayon animé à l’entrée
+	lensEnterRadius: 160, // rayon animé à l’entrée
 	mouseLerpK: 0.12, // vitesse de lissage pointeur
 	textQuadWFrac: 0.9, // % largeur canvas
 	textQuadHFrac: 0.6, // % hauteur canvas
 	minSegments: 512,
 	maxSegments: 2048,
 	pxPerPoint: 2, // heuristique: ~1 point / 2px
+};
+
+const PARAM_DEFAULTS: WavePublicParams = {
+	amplitude: 120,
+	frequency: 0.005,
+	speed: 2,
+	color: [1, 1, 1, 1],
 };
 
 type CssColorKey = string;
@@ -141,9 +148,7 @@ export class WaveScene {
 		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
 		this.params = {
-			amplitude: 80,
-			frequency: 0.002,
-			speed: 2,
+			...PARAM_DEFAULTS,
 			color: lineColorRgba,
 			...initial,
 		};
@@ -193,8 +198,8 @@ export class WaveScene {
 				this.canvas.height * CONSTANTS.textQuadHFrac,
 				MAX_TEXT_H,
 			),
-			topSizesPx: this.isMobile ? [18, 12] : [30, 18],
-			bottomSizesPx: this.isMobile ? [18, 12] : [30, 18],
+			topSizesPx: this.isMobile ? [58, 38] : [92, 58],
+			bottomSizesPx: this.isMobile ? [58, 38] : [92, 58],
 			color: cloneVec3(primaryVec3),
 		});
 
