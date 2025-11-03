@@ -11,6 +11,7 @@ const VS = `#version 300 es
   uniform float u_amplitude;
   uniform float u_frequency;
   uniform vec2  u_offset;
+  uniform vec2  u_dualOffsetX;
 
   out vec2 v_uv;
 
@@ -18,6 +19,9 @@ const VS = `#version 300 es
     v_uv = a_uv;
 
     vec2 pos = a_position + u_offset;
+    float isTop = step(0.5, a_uv.y);
+    float offsetX = mix(u_dualOffsetX.y, u_dualOffsetX.x, isTop);
+    pos.x += offsetX;
 
     float wave  = sin(pos.x * u_frequency + u_phase) * u_amplitude;
     float slope = cos(pos.x * u_frequency + u_phase) * u_amplitude * u_frequency;
@@ -139,7 +143,7 @@ const CONFIG_DEFAULTS: WaveTextConfig = {
 	font: "900 300px Commissioner Variable, sans-serif",
 	color: "#ffffff",
 	letterSpacingPx: -12,
-	lineSpacingPx: 20,
+	lineSpacingPx: 60,
 	gridRes: 200,
 	maxTextureSize: 2048,
 	strokeWidthPx: 10,
@@ -202,6 +206,7 @@ export class WaveText {
 	private quadH = 550;
 	private texW = 2048;
 	private texH = 1024;
+	private dualOffsetX: [number, number] = [0, 0];
 
 	// lens uniforms (cached)
 	private uLensCenterPx: WebGLUniformLocation;
@@ -216,6 +221,7 @@ export class WaveText {
 	private uAmp: WebGLUniformLocation;
 	private uFreq: WebGLUniformLocation;
 	private uOffset: WebGLUniformLocation;
+	private uDualOffsetX: WebGLUniformLocation;
 	private uTextColor: WebGLUniformLocation;
 	private uOutlineAlpha: WebGLUniformLocation;
 	private uHatchPeriodPx: WebGLUniformLocation;
@@ -240,6 +246,7 @@ export class WaveText {
 		this.uAmp = getUniform(gl, this.program, "u_amplitude");
 		this.uFreq = getUniform(gl, this.program, "u_frequency");
 		this.uOffset = getUniform(gl, this.program, "u_offset");
+		this.uDualOffsetX = getUniform(gl, this.program, "u_dualOffsetX");
 		this.uTexFill = getUniform(gl, this.program, "u_texFill");
 		this.uTexStroke = getUniform(gl, this.program, "u_texStroke");
 		this.uTextColor = getUniform(gl, this.program, "u_textColor");
@@ -301,6 +308,7 @@ export class WaveText {
 		gl.uniform1f(this.uAmp, uniforms.amplitude);
 		gl.uniform1f(this.uFreq, uniforms.frequency);
 		gl.uniform2f(this.uOffset, uniforms.offset.x, uniforms.offset.y);
+		gl.uniform2f(this.uDualOffsetX, this.dualOffsetX[0], this.dualOffsetX[1]);
 
 		// Lens
 		gl.uniform2f(
@@ -395,6 +403,20 @@ export class WaveText {
 		this.config.strokeWidthPx = Math.max(1, px | 0);
 		this.drawToCanvases();
 		this.uploadTextures(false);
+	}
+
+	public setDualOffsetX(topOffset: number, bottomOffset: number) {
+		const top = Number.isFinite(topOffset) ? topOffset : 0;
+		const bottom = Number.isFinite(bottomOffset) ? bottomOffset : 0;
+		if (top === this.dualOffsetX[0] && bottom === this.dualOffsetX[1]) {
+			return;
+		}
+		this.dualOffsetX[0] = top;
+		this.dualOffsetX[1] = bottom;
+	}
+
+	public getDualOffsetX(): readonly [number, number] {
+		return this.dualOffsetX;
 	}
 
 	public resizeQuad(args: { width: number; height: number; gridRes?: number }) {
@@ -544,21 +566,55 @@ export class WaveText {
 		const uvs: number[] = [];
 		const indices: number[] = [];
 
-		for (let y = 0; y <= gridRes; y++) {
+		const cols = gridRes + 1;
+		const midRow = Math.floor(gridRes / 2);
+
+		const bottomIndex: number[][] = Array.from(
+			{ length: midRow + 1 },
+			() => new Array<number>(cols),
+		);
+		const topIndex: number[][] = Array.from(
+			{ length: gridRes - midRow + 1 },
+			() => new Array<number>(cols),
+		);
+
+		let vertexCount = 0;
+		const pushVertex = (x: number, y: number) => {
+			const px = (x / gridRes) * width;
+			const py = (y / gridRes) * height;
+			positions.push(px, py);
+			uvs.push(x / gridRes, y / gridRes);
+			return vertexCount++;
+		};
+
+		for (let y = 0; y <= midRow; y++) {
 			for (let x = 0; x <= gridRes; x++) {
-				const px = (x / gridRes) * width;
-				const py = (y / gridRes) * height;
-				positions.push(px, py);
-				uvs.push(x / gridRes, y / gridRes);
+				bottomIndex[y][x] = pushVertex(x, y);
 			}
 		}
 
-		for (let y = 0; y < gridRes; y++) {
+		for (let y = midRow; y <= gridRes; y++) {
+			for (let x = 0; x <= gridRes; x++) {
+				topIndex[y - midRow][x] = pushVertex(x, y);
+			}
+		}
+
+		for (let y = 0; y < midRow; y++) {
 			for (let x = 0; x < gridRes; x++) {
-				const tl = y * (gridRes + 1) + x;
-				const tr = tl + 1;
-				const bl = (y + 1) * (gridRes + 1) + x;
-				const br = bl + 1;
+				const bl = bottomIndex[y][x];
+				const br = bottomIndex[y][x + 1];
+				const tl = bottomIndex[y + 1][x];
+				const tr = bottomIndex[y + 1][x + 1];
+				indices.push(tl, bl, tr, tr, bl, br);
+			}
+		}
+
+		for (let y = 0; y < gridRes - midRow; y++) {
+			for (let x = 0; x < gridRes; x++) {
+				const bl = topIndex[y][x];
+				const br = topIndex[y][x + 1];
+				const tl = topIndex[y + 1][x];
+				const tr = topIndex[y + 1][x + 1];
 				indices.push(tl, bl, tr, tr, bl, br);
 			}
 		}

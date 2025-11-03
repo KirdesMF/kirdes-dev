@@ -70,4 +70,5 @@ export type UniformsNames =
 	| "u_sparklesColor"
 	| "u_lineWidthPx"
 	| "u_curveFalloff"
+	| "u_dualOffsetX"
 	| "u_motionDir";

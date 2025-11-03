@@ -14,11 +14,16 @@ const VS = `#version 300 es
   uniform float u_amplitude;    // px
   uniform float u_frequency;    // rad/px
   uniform vec2  u_offset;       // offset du quad texte (px)
+  uniform vec2  u_dualOffsetX;  // offsets horizontaux individuels (top, bottom)
 
   out vec2 v_uv;
 
   void main() {
-    vec2 base = a_anchorLocal + u_offset;
+    float offsetX = u_dualOffsetX.y;
+    if (gl_InstanceID < 2) {
+      offsetX = u_dualOffsetX.x;
+    }
+    vec2 base = a_anchorLocal + u_offset + vec2(offsetX, 0.0);
     vec2 local = base + a_unitPos * a_sizePx;
 
     float wave  = sin(local.x * u_frequency + u_phase) * u_amplitude;
@@ -163,10 +168,10 @@ const CONFIG_DEFAULTS: SparklesTextConfig = {
 	spriteUrl: "/assets/msdf/sparkle.png",
 	topSizesPx: [88, 56],
 	bottomSizesPx: [88, 56],
-	offsetTopBig: { dx: 10, dy: -26 },
-	offsetTopSmall: { dx: 40, dy: 26 },
-	offsetBottomBig: { dx: -10, dy: 26 },
-	offsetBottomSmall: { dx: -36, dy: -26 },
+	offsetTopBig: { dx: -10, dy: -26 },
+	offsetTopSmall: { dx: -40, dy: 26 },
+	offsetBottomBig: { dx: 10, dy: 26 },
+	offsetBottomSmall: { dx: 36, dy: -26 },
 	color: [1, 1, 1],
 	baseAlpha: 1.0,
 	outlineWidth: 0.15,
@@ -212,12 +217,14 @@ export class SparklesText {
 	private uDashPeriodPx: WebGLUniformLocation;
 	private uDashDuty: WebGLUniformLocation;
 	private uOffset: WebGLUniformLocation;
+	private uDualOffsetX: WebGLUniformLocation;
 	private uLensCenterPx: WebGLUniformLocation;
 	private uLensRadiusPx: WebGLUniformLocation;
 	private uLensFeatherPx: WebGLUniformLocation;
 	private uSprite: WebGLUniformLocation;
 	private uOutlineWidth: WebGLUniformLocation;
 	private uDashAngleDeg: WebGLUniformLocation;
+	private dualOffsetX: [number, number] = [0, 0];
 
 	constructor(
 		gl: WebGL2RenderingContext,
@@ -236,6 +243,7 @@ export class SparklesText {
 		this.uColor = getUniform(gl, this.program, "u_color");
 		this.uBaseAlpha = getUniform(gl, this.program, "u_baseAlpha");
 		this.uOffset = getUniform(gl, this.program, "u_offset");
+		this.uDualOffsetX = getUniform(gl, this.program, "u_dualOffsetX");
 
 		// lens uniforms (cached)
 		this.uSprite = getUniform(gl, this.program, "u_sprite");
@@ -338,6 +346,7 @@ export class SparklesText {
 		gl.uniform1f(this.uAmplitude, uniforms.amplitude);
 		gl.uniform1f(this.uFrequency, uniforms.frequency);
 		gl.uniform2f(this.uOffset, uniforms.offset.x, uniforms.offset.y);
+		gl.uniform2f(this.uDualOffsetX, this.dualOffsetX[0], this.dualOffsetX[1]);
 
 		// apparence
 		gl.uniform1f(this.uOutlineWidth, Math.max(0, this.config.outlineWidth));
@@ -392,6 +401,20 @@ export class SparklesText {
 		) {
 			this.updateAnchorsAndSizes();
 		}
+	}
+
+	public setDualOffsetX(topOffset: number, bottomOffset: number) {
+		const top = Number.isFinite(topOffset) ? topOffset : 0;
+		const bottom = Number.isFinite(bottomOffset) ? bottomOffset : 0;
+		if (top === this.dualOffsetX[0] && bottom === this.dualOffsetX[1]) {
+			return;
+		}
+		this.dualOffsetX[0] = top;
+		this.dualOffsetX[1] = bottom;
+	}
+
+	public getDualOffsetX(): readonly [number, number] {
+		return this.dualOffsetX;
 	}
 
 	// Le texte principal te donne la largeur réelle du mot (en px texture) et la largeur totale tex.
@@ -500,15 +523,15 @@ export class SparklesText {
 		const endX = startX + wText; // bord droit du mot
 		const midY = quadHeight * 0.5;
 
-		// TOP (à droite du mot)
+		// TOP (gauche du mot)
 		const topBase = {
-			x: endX + sideMarginPx,
+			x: startX - sideMarginPx,
 			y: midY - Math.abs(liftFromLinePx),
 		};
 
-		// BOTTOM (miroir à gauche du mot)
+		// BOTTOM (droite du mot)
 		const botBase = {
-			x: startX - sideMarginPx,
+			x: endX + sideMarginPx,
 			y: midY + Math.abs(liftFromLinePx),
 		};
 

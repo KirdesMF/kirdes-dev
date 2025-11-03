@@ -30,6 +30,7 @@ import Layout from "../layouts/Layout.astro";
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
+            stroke-dasharray="5 5"
             preserveAspectRatio="none"
           >
             <circle cx="100" cy="100" r="100"></circle>
@@ -58,11 +59,11 @@ import Layout from "../layouts/Layout.astro";
     </div>
   </section>
 
-  <section class="min-h-dvh px-4 grid place-items-center" id="projects" data-wave-text="WORKS"></section>
-  <section class="min-h-dvh px-4 grid place-items-center" id="projects" data-wave-text="PROJECTS"></section>
-  <section class="min-h-dvh px-4 grid place-items-center" id="about" data-wave-text="ABOUT"></section>
+  <section class="min-h-[200dvh] px-4 grid place-items-center" id="projects" data-wave-text="WORKS"></section>
+  <section class="min-h-[200dvh] px-4 grid place-items-center" id="projects" data-wave-text="PROJECTS"></section>
+  <section class="min-h-[200dvh] px-4 grid place-items-center" id="about" data-wave-text="ABOUT"></section>
 
-  <footer class="min-h-dvh px-4 grid place-items-center" id="contact">
+  <footer class="min-h-dvh px-4 grid place-items-center z-10 relative bg-background" id="contact">
     <h2 class="font-body text-9xl tracking-tighter">Contact</h2>
   </footer>
 </Layout>
@@ -72,7 +73,11 @@ import Layout from "../layouts/Layout.astro";
   import { MoireCanvas } from "../lib/lines-repel/moire";
   import { LinesRepelScene } from "../lib/lines-repel/lines-repel-scene";
   import { WaveScene } from "../lib/wave/wave-scene";
+  import { setupWaveSectionController } from "../lib/wave/wave-scroll-controller";
   import { gsap } from "gsap";
+  import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+  gsap.registerPlugin(ScrollTrigger);
 
   const canvas = document.getElementById("splash-wave-canvas") as HTMLCanvasElement;
   const splash = new SplashWaveScene(canvas);
@@ -81,6 +86,11 @@ import Layout from "../layouts/Layout.astro";
   const waveCanvas = document.getElementById("wave-canvas") as HTMLCanvasElement;
   const scene = new WaveScene({ canvas: waveCanvas });
   scene.start();
+
+  const teardownWaveSections = setupWaveSectionController({
+    scene,
+    canvas: waveCanvas,
+  });
 
   const moireCanvas = document.getElementById("moire-canvas") as HTMLCanvasElement;
   const moire = new MoireCanvas(moireCanvas, { lineSpacing: 30 });
@@ -167,6 +177,7 @@ import Layout from "../layouts/Layout.astro";
   }
 
   window.addEventListener("beforeunload", () => {
+    teardownWaveSections?.();
     splash.unmount();
     moire.dispose();
     scene.dispose();
