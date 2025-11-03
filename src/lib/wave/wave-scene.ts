@@ -120,6 +120,7 @@ export class WaveScene {
 	private readonly isMobile = isLikelyMobile();
 	private mediaPRM = window.matchMedia("(prefers-reduced-motion: reduce)");
 	private textOffset = { x: 0, y: 0 };
+	private textOffsets = { top: 0, bottom: 0 };
 	private renderSize = { width: 0, height: 0 };
 	private sparklesArea = { width: 0, height: 0 };
 	private ro?: ResizeObserver;
@@ -191,6 +192,7 @@ export class WaveScene {
 		this.text = new WaveText(this.gl, {
 			color: primaryCss,
 		});
+		this.text.setDualOffsetX(this.textOffsets.top, this.textOffsets.bottom);
 
 		// — sparkles next to text (vec3)
 		const initialQuadWidth = Math.min(
@@ -211,6 +213,10 @@ export class WaveScene {
 			bottomSizesPx: this.isMobile ? [58, 38] : [92, 58],
 			color: cloneVec3(primaryVec3),
 		});
+		this.sparklesText.setDualOffsetX(
+			this.textOffsets.top,
+			this.textOffsets.bottom,
+		);
 
 		this.sparklesWave = new SparklesWaveParticles(this.gl, {
 			count: this.isMobile ? 48 : 84,
@@ -525,6 +531,37 @@ export class WaveScene {
 		const wordPx = this.text.getTextContentWidthPx(); // texture px
 		const texW = this.text.getTextureCanvasWidth(); // texture px
 		this.sparklesText.setTextContentWidthFromTexture(wordPx, texW);
+	}
+
+	public setTextContent(text: string) {
+		this.text.updateText(text);
+		const wordPx = this.text.getTextContentWidthPx();
+		const texW = this.text.getTextureCanvasWidth();
+		this.sparklesText.setTextContentWidthFromTexture(wordPx, texW);
+	}
+
+	public setTextOffsets(offsets: { top?: number; bottom?: number }) {
+		const nextTop =
+			offsets.top !== undefined ? offsets.top : this.textOffsets.top;
+		const nextBottom =
+			offsets.bottom !== undefined ? offsets.bottom : this.textOffsets.bottom;
+		if (
+			nextTop === this.textOffsets.top &&
+			nextBottom === this.textOffsets.bottom
+		) {
+			return;
+		}
+		this.textOffsets.top = nextTop;
+		this.textOffsets.bottom = nextBottom;
+		this.text.setDualOffsetX(this.textOffsets.top, this.textOffsets.bottom);
+		this.sparklesText.setDualOffsetX(
+			this.textOffsets.top,
+			this.textOffsets.bottom,
+		);
+	}
+
+	public getTextOffsets() {
+		return { ...this.textOffsets };
 	}
 
 	private updateTextOffset() {
