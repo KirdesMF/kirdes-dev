@@ -1,71 +1,78 @@
 ---
 import Header from "../components/Header.astro";
+import SkillsGrid from "../components/SkillsGrid.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
   <Header />
 
-  <section class="min-h-dvh grid place-items-center" id="home">
-    <div
-      id="home-frame"
-      class="h-1/2 w-2/3 border border-dashed relative bg-background grid place-items-center @container"
-    >
-      <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
-      <div class="relative grid place-items-center pointer-events-none">
-        <div
-          data-parallax-shadow
-          class="absolute top-1/2 left-1/2 size-[25cqmin] -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground blur-xs z-0 dark:hidden"
-        >
-        </div>
-        <div
-          data-parallax-circle
-          class="size-[23cqmin] rounded-full bg-background z-0 shadow-2xl relative grid place-items-center text-foreground"
-        >
-          <svg
-            data-parallax-ring
-            viewBox="0 0 200 200"
-            class="absolute inset-0 size-full overflow-visible"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-dasharray="5 5"
-            preserveAspectRatio="none"
+  <main>
+    <section class="min-h-dvh max-w-[1200px] mx-auto py-44 px-20" id="home">
+      <div
+        id="home-frame"
+        class="w-full h-[550px] border border-dashed relative bg-background grid place-items-center @container"
+      >
+        <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
+        <div class="relative grid place-items-center pointer-events-none">
+          <div
+            data-parallax-shadow
+            class="absolute top-1/2 left-1/2 size-[23cqi] -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground blur-xs z-0 dark:hidden"
           >
-            <circle cx="100" cy="100" r="100"></circle>
-          </svg>
+          </div>
+          <div
+            data-parallax-circle
+            class="size-[20cqi] rounded-full bg-background z-0 shadow-2xl relative grid place-items-center text-foreground"
+          >
+            <svg
+              data-parallax-ring
+              viewBox="0 0 200 200"
+              class="absolute inset-0 size-full overflow-visible"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-dasharray="5 5"
+              preserveAspectRatio="none"
+            >
+              <circle cx="100" cy="100" r="100"></circle>
+            </svg>
+          </div>
+        </div>
+        <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
+        <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+        <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
+        <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+      </div>
+    </section>
+
+    <section class="grid place-items-center">
+      <SkillsGrid />
+    </section>
+
+    <section class="sticky top-0 min-h-dvh grid place-items-center">
+      <div class="w-3/4 h-2/3 border border-dashed relative bg-background">
+        <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
+        <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+        <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
+        <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+
+        <div class="relative size-full">
+          <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none hidden"></canvas>
+          <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none hidden"></canvas>
+          <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
         </div>
       </div>
-      <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
-      <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-      <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-      <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
-    </div>
-  </section>
+    </section>
 
-  <section class="sticky top-0 min-h-dvh px-4 grid place-items-center">
-    <div class="w-3/4 h-2/3 border border-dashed relative bg-background">
-      <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
-      <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-      <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-      <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+    <section class="min-h-[200dvh] grid place-items-center" id="projects" data-wave-text="PROJECTS"></section>
+    <section class="min-h-[200dvh] grid place-items-center" id="projects" data-wave-text="SKILLS"></section>
+    <section class="min-h-[200dvh] grid place-items-center" id="about" data-wave-text="ABOUT"></section>
 
-      <div class="relative size-full">
-        <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none hidden"></canvas>
-        <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none hidden"></canvas>
-        <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <section class="min-h-[200dvh] px-4 grid place-items-center" id="projects" data-wave-text="WORKS"></section>
-  <section class="min-h-[200dvh] px-4 grid place-items-center" id="projects" data-wave-text="PROJECTS"></section>
-  <section class="min-h-[200dvh] px-4 grid place-items-center" id="about" data-wave-text="ABOUT"></section>
-
-  <footer class="min-h-dvh px-4 grid place-items-center z-10 relative bg-background" id="contact">
-    <h2 class="font-body text-9xl tracking-tighter">Contact</h2>
-  </footer>
+    <footer class="min-h-dvh grid place-items-center z-10 relative bg-background" id="contact">
+      <h2 class="font-body text-9xl tracking-tighter">Contact</h2>
+    </footer>
+  </main>
 </Layout>
 
 <script>

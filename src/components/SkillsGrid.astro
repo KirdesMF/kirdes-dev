@@ -1,0 +1,103 @@
+---
+import { gsap } from "gsap";
+
+const CARD_COUNT = 12;
+const SHADOW_LAYER_COUNT = 12;
+const OFFSET_STEP = 1.25;
+const shadowLayers = Array.from(
+	{ length: SHADOW_LAYER_COUNT },
+	(_, index) => index,
+);
+---
+
+<div class="flex flex-wrap gap-3">
+  {
+    Array.from({ length: CARD_COUNT }).map((_, index) => (
+      <div
+        data-shadow-card
+        data-index={index}
+        class="size-20 relative"
+        style={{ zIndex: CARD_COUNT - index, "--shadow-scale": 1 }}
+      >
+        {shadowLayers.map((depth) => (
+          <div
+            style={{ "--x": `${depth * OFFSET_STEP}px`, "--y": `${-depth * OFFSET_STEP}px` }}
+            class:list={[
+              "absolute size-full inset-0 rounded-sm will-change-transform p-2",
+              depth === shadowLayers.length - 1 ? "bg-background border-2 border-foreground stripes" : "bg-foreground",
+              "translate-x-[calc(var(--x)*var(--shadow-scale))]",
+              "translate-y-[calc(var(--y)*var(--shadow-scale))]",
+            ]}
+          />
+        ))}
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  import { gsap } from "gsap";
+
+  const cards = Array.from(document.querySelectorAll<HTMLDivElement>("[data-shadow-card]"));
+  let lastMouseX = 0;
+  const PARAMS = {
+    HOVER_EASE: "elastic.out(1, 0.3)",
+    LEAVE_EASE: "elastic.out(1, 0.3)",
+    HOVER_DURATION: 2.5,
+    LEAVE_DURATION: 1,
+  };
+
+  function updateCardScales(args: {
+    hoveredIndex: number;
+    direction: number;
+    ease: gsap.EaseString;
+    duration: number;
+  }) {
+    cards.forEach((cardElement, otherIndex) => {
+      let scale = 1;
+
+      if (args.hoveredIndex !== -1) {
+        if (otherIndex === args.hoveredIndex) {
+          scale = 2;
+        } else if (otherIndex === args.hoveredIndex + args.direction) {
+          scale = 1.4;
+        }
+      }
+
+      // Kill the prior tween so fast hover changes never leave a card mid-animation.
+      gsap.killTweensOf(cardElement);
+      gsap.to(cardElement, {
+        "--shadow-scale": scale,
+        duration: args.duration,
+        ease: args.ease,
+        overwrite: "auto",
+      });
+    });
+  }
+
+  cards.forEach((card, index) => {
+    card.addEventListener("mouseenter", (e) => {
+      const mouseX = (e as MouseEvent).clientX;
+      const direction = mouseX > lastMouseX ? 1 : -1;
+      updateCardScales({
+        hoveredIndex: index,
+        direction,
+        ease: PARAMS.HOVER_EASE,
+        duration: PARAMS.HOVER_DURATION,
+      });
+    });
+
+    card.addEventListener("mousemove", (e) => {
+      lastMouseX = (e as MouseEvent).clientX;
+    });
+
+    card.addEventListener("mouseleave", () => {
+      updateCardScales({
+        hoveredIndex: -1,
+        direction: 0,
+        ease: PARAMS.LEAVE_EASE,
+        duration: PARAMS.LEAVE_DURATION,
+      });
+    });
+  });
+</script>

@@ -136,7 +136,7 @@ class TextRenderer {
 		const fontPx = this.computeFontPx(rect, values);
 		ctx.textBaseline = "middle";
 		ctx.textAlign = "left";
-		ctx.font = `800 ${fontPx}px ${this.fontStack}`;
+		ctx.font = `900 ${fontPx}px ${this.fontStack}`;
 
 		const angleRad = ((values.text.angleDeg || 0) * Math.PI) / 180;
 		ctx.save();
