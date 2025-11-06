@@ -163,18 +163,18 @@ const INSTANCE_COUNT = 4;
 const CONFIG_DEFAULTS: SparklesTextConfig = {
 	quadWidth: 1400,
 	quadHeight: 550,
-	sideMarginPx: 55,
+	sideMarginPx: 95,
 	liftFromLinePx: 75,
 	spriteUrl: "/assets/msdf/sparkle.png",
-	topSizesPx: [88, 56],
-	bottomSizesPx: [88, 56],
+	topSizesPx: [78, 56],
+	bottomSizesPx: [78, 56],
 	offsetTopBig: { dx: -10, dy: -26 },
 	offsetTopSmall: { dx: -40, dy: 26 },
 	offsetBottomBig: { dx: 10, dy: 26 },
 	offsetBottomSmall: { dx: 36, dy: -26 },
 	color: [1, 1, 1],
 	baseAlpha: 1.0,
-	outlineWidth: 0.15,
+	outlineWidth: 0.12,
 	dashPeriodPx: 6.0,
 	dashDuty: 0.5,
 	dashAngleDeg: 45.0,
@@ -523,15 +523,15 @@ export class SparklesText {
 		const endX = startX + wText; // bord droit du mot
 		const midY = quadHeight * 0.5;
 
-		// TOP (gauche du mot)
+		// TOP (droite du mot)
 		const topBase = {
-			x: startX - sideMarginPx,
+			x: endX + sideMarginPx,
 			y: midY - Math.abs(liftFromLinePx),
 		};
 
-		// BOTTOM (droite du mot)
+		// BOTTOM (gauche du mot)
 		const botBase = {
-			x: endX + sideMarginPx,
+			x: startX - sideMarginPx,
 			y: midY + Math.abs(liftFromLinePx),
 		};
 

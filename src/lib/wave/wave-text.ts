@@ -19,7 +19,7 @@ const VS = `#version 300 es
     v_uv = a_uv;
 
     vec2 pos = a_position + u_offset;
-    float isTop = step(0.5, a_uv.y);
+    float isTop = step(a_uv.y, 0.5);
     float offsetX = mix(u_dualOffsetX.y, u_dualOffsetX.x, isTop);
     pos.x += offsetX;
 

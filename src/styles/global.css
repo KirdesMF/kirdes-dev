@@ -50,18 +50,12 @@ html {
 @theme {
 	--font-heading: "Commissioner Variable", sans-serif;
 	--font-body: "Mono Sans Variable", sans-serif;
+
 	--color-background: var(--color-background);
 	--color-foreground: var(--color-foreground);
-	--animate-marquee: marquee-animation 20s linear infinite forwards;
 
 	--inset-shadow-cutout: inset 0 0 20px var(--color-foreground);
 	--inset-shadow-cutout-deep: inset 0 0 30px var(--color-foreground);
-
-	@keyframes marquee-animation {
-		to {
-			transform: translateX(-50%);
-		}
-	}
 }
 
 /* biome-ignore lint: lint/suspicious/noUnknownAtRules */
@@ -77,34 +71,18 @@ html {
 	background-size: calc(--value(integer) * 1px) calc(--value(integer) * 1px);
 }
 
+/* biome-ignore lint: lint/suspicious/noUnknownAtRules */
+@utility striped {
+	background: repeating-linear-gradient(
+		135deg,
+		var(--color-foreground),
+		var(--color-foreground) 2px,
+		transparent 2px,
+		transparent 8px
+	);
+}
+
 @layer components {
-	.retro-grid-pattern {
-		background-image:
-			linear-gradient(45deg, var(--color-foreground) 25%, transparent 25%),
-			linear-gradient(-45deg, var(--color-foreground) 25%, transparent 25%),
-			linear-gradient(45deg, transparent 75%, var(--color-foreground) 75%),
-			linear-gradient(-45deg, transparent 75%, var(--color-foreground) 75%);
-		background-size: 50px 50px;
-		background-position:
-			0 0,
-			0 25px,
-			25px -25px,
-			-25px 0px;
-	}
-
-	/*.pattern {
-		--pattern-cols: 8;
-		--pattern-rows: 8;
-		background-image:
-			linear-gradient(to bottom, var(--color-foreground) 1px, transparent 1px),
-			linear-gradient(to right, var(--color-foreground) 1px, transparent 1px);
-		background-size:
-			100% calc(100% / var(--pattern-rows)),
-			calc(100% / var(--pattern-cols)) 100%;
-		background-position: 0 0;
-		background-repeat: repeat;
-	}*/
-
 	.stripes {
 		background: repeating-linear-gradient(
 			135deg,
