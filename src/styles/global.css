@@ -37,13 +37,13 @@ html {
 }
 
 :root {
-	--color-background: oklch(0.9332 0.025 75.27); /* #f3e7d7 */
-	--color-foreground: oklch(0.329 0 0); /* #353535  oklch(0.329 0 0) */
+	--color-background: oklch(1 0 0); /* #f3e7d7 / oklch(0.9332 0.025 75.27) */
+	--color-foreground: oklch(0.329 0 0); /* #353535 /  oklch(0.329 0 0) */
 }
 
 :root.dark {
 	--color-background: oklch(0.329 0 0); /* #353535 */
-	--color-foreground: oklch(0.9332 0.025 75.27); /* #f1f1f1 */
+	--color-foreground: oklch(1 0 0); /* #f1f1f1 oklch(0.9332 0.025 75.27)*/
 }
 
 /* biome-ignore lint: lint/suspicious/noUnknownAtRules */
@@ -92,13 +92,26 @@ html {
 			-25px 0px;
 	}
 
+	/*.pattern {
+		--pattern-cols: 8;
+		--pattern-rows: 8;
+		background-image:
+			linear-gradient(to bottom, var(--color-foreground) 1px, transparent 1px),
+			linear-gradient(to right, var(--color-foreground) 1px, transparent 1px);
+		background-size:
+			100% calc(100% / var(--pattern-rows)),
+			calc(100% / var(--pattern-cols)) 100%;
+		background-position: 0 0;
+		background-repeat: repeat;
+	}*/
+
 	.stripes {
 		background: repeating-linear-gradient(
 			135deg,
 			var(--color-foreground),
-			var(--color-foreground) 1px,
-			transparent 1px,
-			transparent 10px
+			var(--color-foreground) 2px,
+			transparent 2px,
+			transparent 8px
 		);
 	}
 }

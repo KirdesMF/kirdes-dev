@@ -223,14 +223,14 @@ export class WaveScene {
 			color: cloneVec3(primaryVec3),
 			areaWidth: this.canvas.width,
 			areaHeight: this.canvas.height,
-			sizeRangePx: this.isMobile ? [18, 46] : [24, 64],
+			sizeRangePx: this.isMobile ? [18, 46] : [24, 44],
 			yOffsetRangePx: this.isMobile ? [-110, 110] : [-150, 150],
 			speedRangePxPerSec: this.isMobile ? [30, 120] : [40, 190],
 			rotationSpeedRangeDeg: this.isMobile ? [-35, 35] : [-40, 40],
 			rotationBaseRangeDeg: this.isMobile ? [-20, 20] : [-30, 30],
 			tiltAmplitudeDegRange: this.isMobile ? [8, 24] : [10, 32],
 			tiltSpeedRangeHz: this.isMobile ? [0.15, 0.45] : [0.2, 0.6],
-			alphaRange: [0.35, 1],
+			alphaRange: [0.25, 0.5],
 		});
 
 		// reduce motion

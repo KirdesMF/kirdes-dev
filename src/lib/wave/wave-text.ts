@@ -140,7 +140,7 @@ const LENS_DEFAULTS: WaveTextLensConfig = {
 
 const CONFIG_DEFAULTS: WaveTextConfig = {
 	text: "WORKS",
-	font: "900 300px Commissioner Variable, sans-serif",
+	font: "850 240px Commissioner Variable, sans-serif",
 	color: "#ffffff",
 	letterSpacingPx: -12,
 	lineSpacingPx: 60,

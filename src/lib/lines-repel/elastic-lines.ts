@@ -21,7 +21,7 @@ export type ElasticLinesConfig = {
 const DEFAULT_CONFIG: ElasticLinesConfig = {
 	color: "oklch(0.9332 0.025 75.27 / 0.4)",
 	width: 1,
-	spacing: 10,
+	spacing: 50,
 	maxDPR: 2,
 	pathSegments: 2,
 	snapDist: 200,

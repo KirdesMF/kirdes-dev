@@ -1,77 +1,183 @@
 ---
-import Header from "../components/Header.astro";
-import SkillsGrid from "../components/SkillsGrid.astro";
+import StorePills from "../components/StorePills.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-  <Header />
+  <div class="fixed inset-0 grid grid-cols-8 container mx-auto size-full -z-10">
+    <div class="border-s"></div>
+    <div class="border-s"></div>
+    <div class="border-s"></div>
+    <div class="border-s"></div>
+    <div class="border-s"></div>
+    <div class="border-s"></div>
+    <div class="border-s"></div>
+    <div class="border-s border-e"></div>
+  </div>
+
+  <header class="pt-32">
+    <div class="container mx-auto">
+      <div class="grid grid-cols-8">
+        <div class="col-start-1 col-end-8 stripes bg-background relative border-s border-t border-dashed">
+          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2 z-10"></div>
+          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2 z-10"></div>
+          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2 z-10"></div>
+        </div>
+
+        <div
+          class="col-start-8 py-4 grid place-items-center relative bg-background border-t border-s border-e border-dashed"
+        >
+          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2 z-10"></div>
+          <button data-theme-toggle class="text-xs font-light uppercase leading-none inline-grid">
+            Toggle Theme
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
 
   <main>
-    <section class="min-h-dvh max-w-[1200px] mx-auto py-44 px-20" id="home">
-      <div
-        id="home-frame"
-        class="w-full h-[550px] border border-dashed relative bg-background grid place-items-center @container"
-      >
-        <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
-        <div class="relative grid place-items-center pointer-events-none">
-          <div
-            data-parallax-shadow
-            class="absolute top-1/2 left-1/2 size-[23cqi] -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground blur-xs z-0 dark:hidden"
-          >
+    <section class="container mx-auto" id="home">
+      <div class="grid grid-cols-8 size-full">
+        <div
+          class="w-full h-[550px] col-start-1 col-end-9 border border-dashed relative bg-background grid place-items-center @container"
+        >
+          <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
+          <div class="relative grid place-items-center pointer-events-none">
+            <div class="size-[18cqi] relative grid place-items-center text-foreground">
+              <div class="size-full bg-background border absolute inset-0 rounded-full"></div>
+            </div>
           </div>
-          <div
-            data-parallax-circle
-            class="size-[20cqi] rounded-full bg-background z-0 shadow-2xl relative grid place-items-center text-foreground"
-          >
-            <svg
-              data-parallax-ring
-              viewBox="0 0 200 200"
-              class="absolute inset-0 size-full overflow-visible"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-dasharray="5 5"
-              preserveAspectRatio="none"
-            >
-              <circle cx="100" cy="100" r="100"></circle>
-            </svg>
+
+          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
+          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
+          <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+        </div>
+
+        <div class="col-span-full border-s border-e border-b bg-background grid grid-cols-8">
+          <div class="col-start-1 col-end-3 border-e py-4 grid place-items-center relative">
+            <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+            <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+            <p class="uppercase text-xs">copyright 2025</p>
+          </div>
+          <div class="col-start-3 col-end-9 stripes relative">
+            <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
           </div>
         </div>
-        <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
-        <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-        <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-        <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+
+        <div class="col-start-3 col-end-7 bg-background border-s grid place-items-center gap-12 p-12 relative">
+          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
+          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
+          <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+
+          <p class="sr-only">Make it real</p>
+          <div class="flex gap-4 font-heading font-bold text-3xl" aria-hidden="true">
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">M</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">A</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">K</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">E</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-4 font-heading font-bold text-3xl">
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">I</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">T</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-4 font-heading font-bold text-3xl">
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">R</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">E</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">A</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+            <div class="relative">
+              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
+              <div class="bg-background border-2 size-20 grid place-items-center relative">
+                <span class="col-span-full">L</span>
+                <span class="text-sm absolute bottom-1 end-1.5">1</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="grid place-items-center gap-10">
-      <SkillsGrid />
-    </section>
+    <div class="container mx-auto grid-cols-8 h-16 bg-background border"></div>
 
-    <section class="sticky top-0 min-h-dvh grid place-items-center">
-      <div class="w-3/4 h-2/3 border border-dashed relative bg-background">
-        <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
-        <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-        <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-        <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+    <section id="projects" class="sticky min-h-dvh top-0 grid place-items-center" data-wave-text="WORKS">
+      <div class="container mx-auto">
+        <div class="w-full h-[600px] border border-dashed relative bg-background">
+          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
+          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
+          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
+          <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
 
-        <div class="relative size-full">
-          <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none hidden"></canvas>
-          <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none hidden"></canvas>
-          <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
+          <div class="relative size-full">
+            <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
+            <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
+            <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="min-h-[200dvh] grid place-items-center" id="projects" data-wave-text="PROJECTS"></section>
-    <section class="min-h-[200dvh] grid place-items-center" id="projects" data-wave-text="SKILLS"></section>
-    <section class="min-h-[200dvh] grid place-items-center" id="about" data-wave-text="ABOUT"></section>
-
-    <footer class="min-h-dvh grid place-items-center z-10 relative bg-background" id="contact">
-      <h2 class="font-body text-9xl tracking-tighter">Contact</h2>
-    </footer>
+    <section id="about" class="min-h-[200dvh] grid place-items-center" data-wave-text="ABOUT"></section>
+    <section id="contact" class="min-h-dvh grid place-items-center" data-wave-text="CONTACT"></section>
   </main>
 </Layout>
 
@@ -86,10 +192,21 @@ import Layout from "../layouts/Layout.astro";
 
   gsap.registerPlugin(ScrollTrigger);
 
+  //------------ header
+  const themeToggleBtn = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+
+  themeToggleBtn?.addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark");
+    const isDark = document.documentElement.classList.contains("dark");
+    window.dispatchEvent(new CustomEvent("themechange", { detail: { theme: isDark ? "dark" : "light" } }));
+  });
+
+  //------------ splash canvas
   const canvas = document.getElementById("splash-wave-canvas") as HTMLCanvasElement;
   const splash = new SplashWaveScene(canvas);
   splash.mount();
 
+  //------------ section canvas
   const waveCanvas = document.getElementById("wave-canvas") as HTMLCanvasElement;
   const scene = new WaveScene({ canvas: waveCanvas });
   scene.start();
@@ -107,91 +224,16 @@ import Layout from "../layouts/Layout.astro";
   const repel = new LinesRepelScene(repelCanvas, { configLines: { spacing: 30 } });
   repel.start();
 
-  const homeFrame = document.getElementById("home-frame");
-  const parallaxCircle = homeFrame?.querySelector("[data-parallax-circle]");
-  const parallaxShadow = homeFrame?.querySelector("[data-parallax-shadow]");
-  const parallaxRing = parallaxCircle?.querySelector("[data-parallax-ring]");
+  gsap.ticker.add(() => {
+    const { x, y, radius } = scene.getLensCSS();
+    repel.setRepellerPosition({ x, y }, radius);
+  });
 
-  if (homeFrame) {
-    const maxOffset = 30;
-    const shadowOffsetMultiplier = 1.8;
-    const shadowScaleFactor = 0.25;
-    const ringRotationMultiplier = 0.4;
-
-    if (parallaxShadow) {
-      gsap.set(parallaxShadow, { opacity: 0.35 });
-    }
-    if (parallaxRing) {
-      gsap.set(parallaxRing, { rotation: 0, transformOrigin: "50% 50%" });
-    }
-
-    homeFrame.addEventListener("mousemove", (event) => {
-      const rect = homeFrame.getBoundingClientRect();
-      const normalizedX = (event.clientX - rect.left) / rect.width - 0.5;
-      const normalizedY = (event.clientY - rect.top) / rect.height - 0.5;
-      const distance = Math.min(Math.hypot(normalizedX, normalizedY), 0.75);
-      const angleDeg = Math.atan2(normalizedY, normalizedX) * (180 / Math.PI);
-
-      if (parallaxCircle) {
-        gsap.to(parallaxCircle, {
-          x: -normalizedX * maxOffset,
-          y: -normalizedY * maxOffset,
-          duration: 0.6,
-          ease: "power2.out",
-        });
-      }
-
-      if (parallaxRing) {
-        gsap.to(parallaxRing, {
-          rotation: angleDeg * ringRotationMultiplier,
-          duration: 0.6,
-          ease: "power2.out",
-        });
-      }
-
-      if (parallaxShadow) {
-        gsap.to(parallaxShadow, {
-          x: -normalizedX * maxOffset * shadowOffsetMultiplier,
-          y: -normalizedY * maxOffset * shadowOffsetMultiplier,
-          scale: 1 + distance * shadowScaleFactor,
-          opacity: 0.35 + distance * 0.25,
-          duration: 0.6,
-          ease: "power2.out",
-        });
-      }
-    });
-
-    homeFrame.addEventListener("mouseleave", () => {
-      if (parallaxCircle) {
-        gsap.to(parallaxCircle, { x: 0, y: 0, duration: 0.8, ease: "power2.out" });
-      }
-
-      if (parallaxRing) {
-        gsap.to(parallaxRing, { rotation: 0, duration: 0.8, ease: "power2.out" });
-      }
-
-      if (parallaxShadow) {
-        gsap.to(parallaxShadow, {
-          x: 0,
-          y: 0,
-          scale: 1,
-          opacity: 0.35,
-          duration: 0.8,
-          ease: "power2.out",
-        });
-      }
-    });
-  }
-
+  //---------- clean
   window.addEventListener("beforeunload", () => {
     teardownWaveSections?.();
     splash.unmount();
     moire.dispose();
     scene.dispose();
-  });
-
-  gsap.ticker.add(() => {
-    const { x, y, radius } = scene.getLensCSS();
-    repel.setRepellerPosition({ x, y }, radius);
   });
 </script>
