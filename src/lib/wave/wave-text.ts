@@ -1,4 +1,4 @@
-import { createProgram, getUniform } from "./_helpers";
+import { createProgram, cssColorToVec3, getUniform } from "./_helpers";
 
 const VS = `#version 300 es
   precision highp float;
@@ -49,6 +49,9 @@ const FS = `#version 300 es
 
   uniform vec3  u_textColor;     // couleur du contour + hatch
   uniform float u_outlineAlpha;  // opacity du contour
+  uniform vec3  u_outlineBaseColor;
+  uniform float u_outlineBaseAlpha;
+  uniform vec3  u_fillBgColor;
 
   // Hatch
   uniform float u_hatchPeriodPx;
@@ -69,12 +72,18 @@ const FS = `#version 300 es
     // ring = contour pur (stroke sans le plein)
     float ringA = max(0.0, aStroke - aFill);
 
-    // Lens feather
+  // Lens feather
     float d   = distance(gl_FragCoord.xy, u_lensCenterPx);
     float m   = 1.0 - smoothstep(u_lensRadiusPx - u_lensFeatherPx,u_lensRadiusPx + u_lensFeatherPx, d);
 
-    // Outside: fill plein (la couleur vient de la texture 2D déjà colorée)
     vec4 outside = vec4(fillS.rgb, aFill) * (1.0 - m);
+    float shadowDiff = max(
+      max(abs(fillS.r - u_fillBgColor.r), abs(fillS.g - u_fillBgColor.g)),
+      abs(fillS.b - u_fillBgColor.b)
+    );
+    float shadowMask = clamp(shadowDiff * 6.0, 0.0, 1.0) * aFill;
+    vec4 shadowInside = vec4(u_outlineBaseColor * shadowMask, shadowMask) * m;
+    vec4 outlineBase = vec4(u_outlineBaseColor, u_outlineBaseAlpha) * ringA;
 
     // Hatch (dans la lens), masqué par le corps du texte
     vec2  q   = gl_FragCoord.xy - u_lensCenterPx;
@@ -89,7 +98,7 @@ const FS = `#version 300 es
 
     vec4 inside = (outlineCol + hatchCol) * m;
 
-    vec4 color = outside + inside;
+    vec4 color = outside + shadowInside + outlineBase + inside;
     if (color.a < 0.01) discard;
     outColor = color;
   }
@@ -104,6 +113,15 @@ export type WaveTextLensConfig = {
 	hatchAngleDeg: number;
 };
 
+export type WaveTextShadowLayer = {
+	color: string;
+	alpha?: number;
+	offsetPx?: { x: number; y: number };
+	stepOffsetPx?: { x: number; y: number };
+	steps?: number;
+	topOnly?: boolean;
+};
+
 export type WaveTextConfig = {
 	text: string;
 	font: string; // ex: "800 300px Commissioner Variable, sans-serif"
@@ -114,6 +132,9 @@ export type WaveTextConfig = {
 	maxTextureSize?: number;
 	strokeWidthPx: number; // épaisseur du contour (en px écran car on le bake dans la texture stroke)
 	lens: WaveTextLensConfig;
+	shadowLayers: WaveTextShadowLayer[];
+	outlineOutsideColor: [number, number, number];
+	outlineOutsideAlpha: number;
 };
 
 export type WaveUniforms = {
@@ -142,12 +163,15 @@ const CONFIG_DEFAULTS: WaveTextConfig = {
 	text: "WORKS",
 	font: "850 240px Commissioner Variable, sans-serif",
 	color: "#ffffff",
-	letterSpacingPx: -12,
+	letterSpacingPx: -5,
 	lineSpacingPx: 60,
 	gridRes: 200,
 	maxTextureSize: 2048,
 	strokeWidthPx: 10,
 	lens: { ...LENS_DEFAULTS },
+	shadowLayers: [],
+	outlineOutsideColor: [1, 1, 1],
+	outlineOutsideAlpha: 1.0,
 };
 
 function createDefaultConfig(): WaveTextConfig {
@@ -161,6 +185,12 @@ function createDefaultConfig(): WaveTextConfig {
 				number,
 			],
 		},
+		shadowLayers: cloneShadowLayers(CONFIG_DEFAULTS.shadowLayers),
+		outlineOutsideColor: [...CONFIG_DEFAULTS.outlineOutsideColor] as [
+			number,
+			number,
+			number,
+		],
 	};
 }
 
@@ -179,7 +209,30 @@ function mergeConfig(patch: Partial<WaveTextConfig>): WaveTextConfig {
 				number,
 			],
 		},
+		shadowLayers: cloneShadowLayers(patch.shadowLayers ?? base.shadowLayers),
+		outlineOutsideColor: [
+			...((patch.outlineOutsideColor as [number, number, number]) ??
+				base.outlineOutsideColor),
+		] as [number, number, number],
 	};
+}
+
+function cloneShadowLayers(
+	layers: WaveTextShadowLayer[] | undefined,
+): WaveTextShadowLayer[] {
+	if (!layers?.length) return [];
+	return layers.map((layer) => ({
+		color: layer.color,
+		alpha: layer.alpha,
+		offsetPx: layer.offsetPx
+			? { x: layer.offsetPx.x, y: layer.offsetPx.y }
+			: undefined,
+		stepOffsetPx: layer.stepOffsetPx
+			? { x: layer.stepOffsetPx.x, y: layer.stepOffsetPx.y }
+			: undefined,
+		steps: layer.steps,
+		topOnly: layer.topOnly,
+	}));
 }
 
 export class WaveText {
@@ -228,6 +281,10 @@ export class WaveText {
 	private uHatchAlpha: WebGLUniformLocation;
 	private uHatchDuty: WebGLUniformLocation;
 	private uHatchAngleDeg: WebGLUniformLocation;
+	private uOutlineBaseColor: WebGLUniformLocation;
+	private uOutlineBaseAlpha: WebGLUniformLocation;
+	private uFillBgColor: WebGLUniformLocation;
+	private fillBgColorVec3: [number, number, number] = [1, 1, 1];
 
 	public config: WaveTextConfig;
 
@@ -239,6 +296,7 @@ export class WaveText {
 		this.program = createProgram({ gl, vsSource: VS, fsSource: FS });
 
 		this.config = mergeConfig(config);
+		this.fillBgColorVec3 = cssColorToVec3(this.config.color);
 
 		// cache uniforms
 		this.uResolution = getUniform(gl, this.program, "u_resolution");
@@ -251,6 +309,9 @@ export class WaveText {
 		this.uTexStroke = getUniform(gl, this.program, "u_texStroke");
 		this.uTextColor = getUniform(gl, this.program, "u_textColor");
 		this.uOutlineAlpha = getUniform(gl, this.program, "u_outlineAlpha");
+		this.uOutlineBaseColor = getUniform(gl, this.program, "u_outlineBaseColor");
+		this.uOutlineBaseAlpha = getUniform(gl, this.program, "u_outlineBaseAlpha");
+		this.uFillBgColor = getUniform(gl, this.program, "u_fillBgColor");
 		this.uHatchAngleDeg = getUniform(gl, this.program, "u_hatchAngleDeg");
 		this.uHatchPeriodPx = getUniform(gl, this.program, "u_hatchPeriodPx");
 		this.uHatchAlpha = getUniform(gl, this.program, "u_hatchAlpha");
@@ -332,6 +393,19 @@ export class WaveText {
 		gl.uniform1f(this.uHatchDuty, lens.hatchDuty);
 		gl.uniform1f(this.uHatchAlpha, lens.hatchAlpha);
 		gl.uniform1f(this.uHatchAngleDeg, lens.hatchAngleDeg);
+		gl.uniform3f(
+			this.uOutlineBaseColor,
+			this.config.outlineOutsideColor[0],
+			this.config.outlineOutsideColor[1],
+			this.config.outlineOutsideColor[2],
+		);
+		gl.uniform1f(this.uOutlineBaseAlpha, this.config.outlineOutsideAlpha);
+		gl.uniform3f(
+			this.uFillBgColor,
+			this.fillBgColorVec3[0],
+			this.fillBgColorVec3[1],
+			this.fillBgColorVec3[2],
+		);
 
 		gl.bindVertexArray(this.vao);
 		gl.drawElements(gl.TRIANGLES, this.meshIndexCount, gl.UNSIGNED_SHORT, 0);
@@ -383,6 +457,7 @@ export class WaveText {
 	public updateColor(cssColor: string) {
 		if (cssColor === this.config.color) return;
 		this.config.color = cssColor;
+		this.fillBgColorVec3 = cssColorToVec3(cssColor);
 		this.drawToCanvases();
 		this.uploadTextures(false);
 	}
@@ -397,6 +472,19 @@ export class WaveText {
 				: ([...current.textColor] as [number, number, number]),
 		};
 		this.config.lens = next;
+	}
+
+	public setShadowLayers(layers: WaveTextShadowLayer[]) {
+		this.config.shadowLayers = cloneShadowLayers(layers);
+		this.drawToCanvases();
+		this.uploadTextures(false);
+	}
+
+	public setOutlineOutside(color: [number, number, number], alpha?: number) {
+		this.config.outlineOutsideColor = [color[0], color[1], color[2]];
+		if (typeof alpha === "number") {
+			this.config.outlineOutsideAlpha = alpha;
+		}
 	}
 
 	public setStrokeWidthPx(px: number) {
@@ -528,11 +616,19 @@ export class WaveText {
 		const cy = H * 0.5;
 
 		// haut (normal)
+		this.drawShadowLayers2D(
+			fctx,
+			text,
+			cx,
+			cy - this.config.lineSpacingPx,
+			false,
+		);
 		fctx.fillText(text, cx, cy - this.config.lineSpacingPx);
 		// bas (miroir)
 		fctx.save();
 		fctx.translate(cx, cy + this.config.lineSpacingPx);
 		fctx.scale(-1, -1);
+		this.drawShadowLayers2D(fctx, text, 0, 0, true);
 		fctx.fillText(text, 0, 0);
 		fctx.restore();
 
@@ -557,6 +653,37 @@ export class WaveText {
 		sctx.scale(-1, -1);
 		sctx.strokeText(text, 0, 0);
 		sctx.restore();
+	}
+
+	private drawShadowLayers2D(
+		ctx: CanvasRenderingContext2D,
+		text: string,
+		baseX: number,
+		baseY: number,
+		isMirrored: boolean,
+	) {
+		if (!text || !this.config.shadowLayers.length) return;
+		for (const layer of this.config.shadowLayers) {
+			if (!layer.color) continue;
+			if (isMirrored && layer.topOnly) continue;
+			const steps = Math.max(1, Math.floor(layer.steps ?? 1));
+			const rawOffset = layer.offsetPx ?? { x: 0, y: 0 };
+			const rawStep = layer.stepOffsetPx ?? rawOffset;
+			const dir = isMirrored ? -1 : 1;
+			const offset = { x: rawOffset.x * dir, y: rawOffset.y * dir };
+			const step = { x: rawStep.x * dir, y: rawStep.y * dir };
+			ctx.save();
+			ctx.fillStyle = layer.color;
+			ctx.globalAlpha = layer.alpha ?? 1;
+			let dx = offset.x;
+			let dy = offset.y;
+			for (let i = 0; i < steps; i++) {
+				ctx.fillText(text, baseX + dx, baseY + dy);
+				dx += step.x;
+				dy += step.y;
+			}
+			ctx.restore();
+		}
 	}
 
 	private createMesh(width: number, height: number, gridRes: number) {
