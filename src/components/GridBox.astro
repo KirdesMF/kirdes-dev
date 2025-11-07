@@ -1,0 +1,41 @@
+---
+import type { HTMLTag, Polymorphic } from "astro/types";
+
+type Square = "ts" | "te" | "be" | "bs";
+
+type Props<T extends HTMLTag = HTMLTag> = Polymorphic<{
+	as: T;
+	squares?: Array<Square> | "all";
+	class?: string;
+	variant?: "dashed" | "solid" | "none";
+}>;
+
+const {
+	squares,
+	class: className,
+	variant = "dashed",
+	as: Tag = "div",
+	...rest
+} = Astro.props;
+
+const POSITION_CLASSES = {
+	ts: "top-0 start-0 -translate-1/2 z-10",
+	te: "top-0 end-0 -translate-y-1/2 translate-x-1/2 z-10",
+	bs: "bottom-0 end-0 translate-1/2 z-10",
+	be: "bottom-0 start-0 translate-y-1/2 -translate-x-1/2 z-10",
+};
+
+const resolvedSquares: Array<Square> =
+	squares === "all"
+		? (Object.keys(POSITION_CLASSES) as Array<Square>)
+		: (squares ?? []);
+---
+
+<Tag class:list={["relative bg-background", className]} {...rest}>
+  {
+    resolvedSquares.map((position) => (
+      <div class:list={["absolute size-2 bg-foreground", POSITION_CLASSES[position]]} />
+    ))
+  }
+  <slot />
+</Tag>
