@@ -1,0 +1,24 @@
+---
+type Props = {
+	word: string;
+	class?: string;
+};
+
+const { word, class: className = "" } = Astro.props;
+const letters = word.split("");
+---
+
+<div class:list={["flex gap-4 font-heading", className]} aria-label={word}>
+  <p class="sr-only">{word}</p>
+  {
+    letters.map((letter) => (
+      <div class="relative" aria-hidden="true">
+        <div class="bg-foreground size-20 absolute inset-0 translate-x-1 translate-y-1" />
+        <div class="bg-background border-2 size-20 grid place-items-center relative">
+          <span class="text-3xl font-bold uppercase">{letter}</span>
+          <span class="text-sm font-bold absolute bottom-1 end-1.5">1</span>
+        </div>
+      </div>
+    ))
+  }
+</div>

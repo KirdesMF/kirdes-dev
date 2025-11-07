@@ -1,4 +1,7 @@
 ---
+import GridBox from "../components/GridBox.astro";
+import GridContainer from "../components/GridContainer.astro";
+import ScrabbleText from "../components/ScrabbleText.astro";
 import StorePills from "../components/StorePills.astro";
 import Layout from "../layouts/Layout.astro";
 ---
@@ -15,166 +18,48 @@ import Layout from "../layouts/Layout.astro";
     <div class="border-s border-e"></div>
   </div>
 
-  <header class="pt-32">
-    <div class="container mx-auto">
-      <div class="grid grid-cols-8">
-        <div class="col-start-1 col-end-8 stripes bg-background relative border-s border-t border-dashed">
-          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2 z-10"></div>
-          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2 z-10"></div>
-          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2 z-10"></div>
-        </div>
+  <GridContainer as="header" class="pt-32">
+    <GridBox squares="all" class="col-span-7 striped ring" />
 
-        <div
-          class="col-start-8 py-4 grid place-items-center relative bg-background border-t border-s border-e border-dashed"
-        >
-          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2 z-10"></div>
-          <button data-theme-toggle class="text-xs font-light uppercase leading-none inline-grid">
-            Toggle Theme
-          </button>
-        </div>
-      </div>
-    </div>
-  </header>
+    <GridBox squares={["te"]} class="col-span-1 ring py-4">
+      <button data-theme-toggle class="text-xs font-light uppercase leading-none size-full"> Toggle Theme </button>
+    </GridBox>
+  </GridContainer>
 
   <main>
-    <section class="container mx-auto" id="home">
-      <div class="grid grid-cols-8 size-full">
-        <div
-          class="w-full h-[550px] col-start-1 col-end-9 border border-dashed relative bg-background grid place-items-center @container"
-        >
-          <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
-          <div class="relative grid place-items-center pointer-events-none">
-            <div class="size-[18cqi] relative grid place-items-center text-foreground">
-              <div class="size-full bg-background border absolute inset-0 rounded-full"></div>
-            </div>
-          </div>
-
-          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
-          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-          <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+    <GridContainer as="section" id="home">
+      <GridBox squares="all" class="col-span-full h-[550px] striped ring @container grid place-items-center">
+        <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
+        <div class="size-[18cqi] relative grid place-items-center text-foreground pointer-events-none">
+          <div class="size-full bg-background border absolute inset-0 rounded-full"></div>
         </div>
+      </GridBox>
 
-        <div class="col-span-full border-s border-e border-b bg-background grid grid-cols-8">
-          <div class="col-start-1 col-end-3 border-e py-4 grid place-items-center relative">
-            <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-            <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
-            <p class="uppercase text-xs">copyright 2025</p>
-          </div>
-          <div class="col-start-3 col-end-9 stripes relative">
-            <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-          </div>
-        </div>
+      <GridBox class="col-span-2 ring py-4 grid place-items-center" squares="all">
+        <p class="uppercase text-xs">copyright 2025</p>
+      </GridBox>
+      <GridBox class="col-span-6 striped ring" squares={["be"]} />
+    </GridContainer>
 
-        <div class="col-start-3 col-end-7 bg-background border-s grid place-items-center gap-12 p-12 relative">
-          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
-          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-          <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
+    <GridContainer>
+      <GridBox class="col-span-full bg-background ring grid place-items-center gap-12 p-12" squares="all">
+        <ScrabbleText word="MAKE" />
+        <ScrabbleText word="IT" />
+        <ScrabbleText word="REAL" />
+      </GridBox>
+    </GridContainer>
 
-          <p class="sr-only">Make it real</p>
-          <div class="flex gap-4 font-heading font-bold text-3xl" aria-hidden="true">
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">M</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
+    <GridContainer>
+      <GridBox squares="all" class="striped ring bg-background col-span-full h-12" />
+    </GridContainer>
 
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">A</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">K</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">E</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex gap-4 font-heading font-bold text-3xl">
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">I</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">T</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex gap-4 font-heading font-bold text-3xl">
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">R</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">E</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">A</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-            <div class="relative">
-              <div class="bg-foreground size-20 absolute inset-0 translate-1"></div>
-              <div class="bg-background border-2 size-20 grid place-items-center relative">
-                <span class="col-span-full">L</span>
-                <span class="text-sm absolute bottom-1 end-1.5">1</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <div class="container mx-auto grid-cols-8 h-16 bg-background border stripes"></div>
-
-    <section id="projects" class="sticky min-h-dvh top-0 grid place-items-center" data-wave-text="WORKS">
-      <div class="container mx-auto">
-        <div class="w-full h-[600px] border border-dashed relative bg-background">
-          <div class="absolute top-0 start-0 size-2 bg-foreground -translate-1/2"></div>
-          <div class="absolute top-0 end-0 size-2 bg-foreground -translate-y-1/2 translate-x-1/2"></div>
-          <div class="absolute bottom-0 end-0 size-2 bg-foreground translate-y-1/2 translate-x-1/2"></div>
-          <div class="absolute bottom-0 start-0 size-2 bg-foreground translate-y-1/2 -translate-x-1/2"></div>
-
-          <div class="relative size-full">
-            <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
-            <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
-            <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
-          </div>
-        </div>
-      </div>
-    </section>
+    <GridContainer as="section" id="projects" class="sticky min-h-dvh top-0 items-center" data-wave-text="WORKS">
+      <GridBox squares="all" class="ring bg-background h-[600px] col-span-full">
+        <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
+        <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
+        <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
+      </GridBox>
+    </GridContainer>
 
     <section id="about" class="min-h-[200dvh] grid place-items-center" data-wave-text="ABOUT"></section>
     <section id="contact" class="min-h-dvh grid place-items-center" data-wave-text="CONTACT"></section>
