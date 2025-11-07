@@ -4,10 +4,10 @@ import { getTheme, onThemeChange, type Theme } from "../theme";
 import { cssColorToVec3, getGL2Context } from "./_helpers";
 import { isLikelyMobile, resizeCanvasToDisplaySize } from "./_utils";
 import { LensOverlay, type LensUniforms } from "./lens-overlay";
-import { SparklesText } from "./sparkles-text";
+import { type SparklesShadowLayer, SparklesText } from "./sparkles-text";
 import { SparklesWaveParticles } from "./sparkles-wave-particles";
 import { WaveLine, type WaveLineBuild, type WaveLineConfig } from "./wave-line";
-import { WaveText } from "./wave-text";
+import { WaveText, type WaveTextShadowLayer } from "./wave-text";
 
 // ——— Public types ———
 export type WavePublicParams = {
@@ -30,6 +30,8 @@ export type SceneTheme = {
 	primaryCss: string;
 	/** Optionnel: couleur CSS différente pour la ligne. */
 	lineColorCss?: string;
+	/** Couleur CSS utilisée pour remplir le texte (souvent = background). */
+	backgroundCss?: string;
 };
 
 // ——— Constantes centralisées ———
@@ -124,6 +126,7 @@ export class WaveScene {
 	private renderSize = { width: 0, height: 0 };
 	private sparklesArea = { width: 0, height: 0 };
 	private ro?: ResizeObserver;
+	private backgroundCss = "#000000";
 
 	constructor(args: {
 		canvas: HTMLCanvasElement;
@@ -135,7 +138,10 @@ export class WaveScene {
 		const { canvas, initial, build, waveLine, theme } = args;
 		const domTheme = getTheme();
 		const primaryCss = theme?.primaryCss ?? domTheme.text;
+		const backgroundCss = theme?.backgroundCss ?? domTheme.bgCss;
+		this.backgroundCss = backgroundCss;
 		const primaryVec3 = cssToVec3Cached(primaryCss);
+		const backgroundVec3 = cssToVec3Cached(backgroundCss);
 		const lineCss = theme?.lineColorCss ?? primaryCss;
 		const lineVec3 = cssToVec3Cached(lineCss);
 		const defaultAlpha = initial?.color?.[3] ?? 1;
@@ -190,7 +196,9 @@ export class WaveScene {
 
 		// — text (fill = CSS)
 		this.text = new WaveText(this.gl, {
-			color: primaryCss,
+			color: backgroundCss,
+			shadowLayers: this.createTextShadowLayers(primaryCss),
+			outlineOutsideColor: cloneVec3(primaryVec3),
 		});
 		this.text.setDualOffsetX(this.textOffsets.top, this.textOffsets.bottom);
 
@@ -211,7 +219,9 @@ export class WaveScene {
 			quadHeight: initialQuadHeight,
 			topSizesPx: this.isMobile ? [58, 38] : [92, 58],
 			bottomSizesPx: this.isMobile ? [58, 38] : [92, 58],
-			color: cloneVec3(primaryVec3),
+			fillColor: cloneVec3(backgroundVec3),
+			outlineColor: cloneVec3(primaryVec3),
+			shadowLayers: this.createSparklesShadowLayers(primaryVec3),
 		});
 		this.sparklesText.setDualOffsetX(
 			this.textOffsets.top,
@@ -260,7 +270,11 @@ export class WaveScene {
 		this.ro = new ResizeObserver(() => this.resize());
 		this.ro.observe(this.canvas);
 
-		this.setThemeColors({ primaryCss, lineColorCss: lineCss });
+		this.setThemeColors({
+			primaryCss,
+			lineColorCss: lineCss,
+			backgroundCss,
+		});
 		this.unsubscribeThemeChange = onThemeChange(this.handleThemeChange);
 
 		// first layout
@@ -302,6 +316,7 @@ export class WaveScene {
 		this.setThemeColors({
 			primaryCss: theme.text,
 			lineColorCss: theme.text,
+			backgroundCss: theme.bgCss,
 		});
 	};
 
@@ -309,13 +324,22 @@ export class WaveScene {
 	public setThemeColors(theme: SceneTheme) {
 		const primaryCss = theme.primaryCss ?? "#ffffff";
 		const primaryVec3 = cssToVec3Cached(primaryCss);
-		this.text.updateColor(primaryCss);
+		const backgroundCss = theme.backgroundCss ?? this.backgroundCss;
+		this.backgroundCss = backgroundCss;
+		const backgroundVec3 = cssToVec3Cached(backgroundCss);
+		this.text.updateColor(backgroundCss);
+		this.text.setShadowLayers(this.createTextShadowLayers(primaryCss));
+		this.text.setOutlineOutside(cloneVec3(primaryVec3));
 		this.text.updateLensConfig({
 			textColor: cloneVec3(primaryVec3),
 		});
 		this.sparklesText.updateConfig({
-			color: cloneVec3(primaryVec3),
+			fillColor: cloneVec3(backgroundVec3),
+			outlineColor: cloneVec3(primaryVec3),
 		});
+		this.sparklesText.setShadowLayers(
+			this.createSparklesShadowLayers(primaryVec3),
+		);
 		this.sparklesWave.updateConfig({
 			color: cloneVec3(primaryVec3),
 		});
@@ -325,6 +349,32 @@ export class WaveScene {
 		const alpha = this.params.color[3] ?? 1;
 		this.setLineColorRgba([r, g, b, alpha]);
 		this.lens.colorRing = [r, g, b, alpha];
+	}
+
+	private createTextShadowLayers(colorCss: string): WaveTextShadowLayer[] {
+		return [
+			{
+				color: colorCss,
+				alpha: 1,
+				offsetPx: { x: 8, y: 8 },
+				stepOffsetPx: { x: 2, y: 2 },
+				steps: 5,
+			},
+		];
+	}
+
+	private createSparklesShadowLayers(
+		color: [number, number, number],
+	): SparklesShadowLayer[] {
+		return [
+			{
+				color: cloneVec3(color),
+				alpha: 0.85,
+				offsetPx: { x: 3, y: 3 },
+				stepOffsetPx: { x: 0.8, y: 0.8 },
+				steps: 4,
+			},
+		];
 	}
 
 	/** Rebuild des éléments “build-time” (ex: segments, DPR caps, gridRes). */

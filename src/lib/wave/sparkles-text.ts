@@ -15,6 +15,7 @@ const VS = `#version 300 es
   uniform float u_frequency;    // rad/px
   uniform vec2  u_offset;       // offset du quad texte (px)
   uniform vec2  u_dualOffsetX;  // offsets horizontaux individuels (top, bottom)
+  uniform vec2  u_shadowOffset; // offset appliqué à tout le sprite (shadow)
 
   out vec2 v_uv;
 
@@ -23,7 +24,7 @@ const VS = `#version 300 es
     if (gl_InstanceID < 2) {
       offsetX = u_dualOffsetX.x;
     }
-    vec2 base = a_anchorLocal + u_offset + vec2(offsetX, 0.0);
+    vec2 base = a_anchorLocal + u_offset + vec2(offsetX, 0.0) + u_shadowOffset;
     vec2 local = base + a_unitPos * a_sizePx;
 
     float wave  = sin(local.x * u_frequency + u_phase) * u_amplitude;
@@ -55,9 +56,11 @@ const FS = `#version 300 es
   uniform float u_lensFeatherPx;
 
   // Apparence
-  uniform vec3  u_color;
+  uniform vec3  u_fillColor;
+  uniform vec3  u_outlineColor;
   uniform float u_baseAlpha;
   uniform float u_outlineWidth;
+  uniform float u_shadowMode;
 
   // Dashed (dans la lens seulement)
   uniform float u_dashPeriodPx;
@@ -80,11 +83,18 @@ const FS = `#version 300 es
     float aa = max(fwidth(sd), 1e-5);
 
     float fillMask = smoothstep(-aa, aa, sd);
-    float outlineOuter = smoothstep(-aa, aa, sd + u_outlineWidth);
-    float outlineInner = smoothstep(-aa, aa, sd - u_outlineWidth);
-    float outlineMask = clamp(outlineOuter - outlineInner, 0.0, 1.0);
+  float outlineOuter = smoothstep(-aa, aa, sd + u_outlineWidth);
+  float outlineInner = smoothstep(-aa, aa, sd - u_outlineWidth);
+  float outlineMask = clamp(outlineOuter - outlineInner, 0.0, 1.0);
 
-    if (fillMask <= 0.0 && outlineMask <= 0.0) discard;
+  if (fillMask <= 0.0 && outlineMask <= 0.0) discard;
+
+  if (u_shadowMode > 0.5) {
+    float alpha = u_baseAlpha * fillMask;
+    if (alpha < 0.01) discard;
+    outColor = vec4(u_fillColor, alpha);
+    return;
+  }
 
     // Masque lentille (écran)
     float dLens = distance(gl_FragCoord.xy, u_lensCenterPx);
@@ -108,13 +118,17 @@ const FS = `#version 300 es
     float interiorMask = clamp(fillMask - outlineMask, 0.0, 1.0);
     float insideOutline = clamp(outlineMask * mLens * LENS_OUTLINE_GAIN, 0.0, 1.0);
     float insideHatch = interiorMask * hatch * mLens * LENS_HATCH_ALPHA;
+    float outlineOutside = outlineMask * (1.0 - mLens);
 
-    float maskFinal = clamp(outsideFill + insideOutline + insideHatch, 0.0, 1.0);
+    float maskFinal = clamp(outsideFill + insideOutline + insideHatch + outlineOutside, 0.0, 1.0);
+    vec3 premul =
+      u_fillColor * outsideFill +
+      u_outlineColor * (outlineOutside + insideOutline + insideHatch);
 
     float alpha = u_baseAlpha * maskFinal;
     if (alpha < 0.01) discard;
 
-    outColor = vec4(u_color, alpha);
+    outColor = vec4(premul, alpha);
   }
 `;
 
@@ -135,7 +149,8 @@ export type SparklesTextConfig = {
 	offsetBottomSmall: { dx: number; dy: number };
 
 	// apparence
-	color: [number, number, number]; // couleur (vec3 0..1)
+	fillColor: [number, number, number];
+	outlineColor: [number, number, number];
 	baseAlpha: number; // alpha global des sparkles
 	outlineWidth: number; // épaisseur du contour (en unités SDF)
 
@@ -143,6 +158,15 @@ export type SparklesTextConfig = {
 	dashPeriodPx: number;
 	dashDuty: number;
 	dashAngleDeg: number;
+	shadowLayers: SparklesShadowLayer[];
+};
+
+export type SparklesShadowLayer = {
+	color: [number, number, number];
+	alpha?: number;
+	offsetPx?: { x: number; y: number };
+	stepOffsetPx?: { x: number; y: number };
+	steps?: number;
 };
 
 export type SparklesTextUniforms = {
@@ -172,12 +196,14 @@ const CONFIG_DEFAULTS: SparklesTextConfig = {
 	offsetTopSmall: { dx: -40, dy: 26 },
 	offsetBottomBig: { dx: 10, dy: 26 },
 	offsetBottomSmall: { dx: 36, dy: -26 },
-	color: [1, 1, 1],
+	fillColor: [1, 1, 1],
+	outlineColor: [1, 1, 1],
 	baseAlpha: 1.0,
-	outlineWidth: 0.12,
+	outlineWidth: 0.18,
 	dashPeriodPx: 6.0,
 	dashDuty: 0.5,
 	dashAngleDeg: 45.0,
+	shadowLayers: [],
 };
 
 function createDefaultConfig(): SparklesTextConfig {
@@ -189,8 +215,27 @@ function createDefaultConfig(): SparklesTextConfig {
 		offsetTopSmall: { ...CONFIG_DEFAULTS.offsetTopSmall },
 		offsetBottomBig: { ...CONFIG_DEFAULTS.offsetBottomBig },
 		offsetBottomSmall: { ...CONFIG_DEFAULTS.offsetBottomSmall },
-		color: [...CONFIG_DEFAULTS.color] as [number, number, number],
+		fillColor: [...CONFIG_DEFAULTS.fillColor] as [number, number, number],
+		outlineColor: [...CONFIG_DEFAULTS.outlineColor] as [number, number, number],
+		shadowLayers: cloneShadowLayers(CONFIG_DEFAULTS.shadowLayers),
 	};
+}
+
+function cloneShadowLayers(
+	layers: SparklesShadowLayer[] | undefined,
+): SparklesShadowLayer[] {
+	if (!layers?.length) return [];
+	return layers.map((layer) => ({
+		color: [...layer.color] as [number, number, number],
+		alpha: layer.alpha,
+		offsetPx: layer.offsetPx
+			? { x: layer.offsetPx.x, y: layer.offsetPx.y }
+			: undefined,
+		stepOffsetPx: layer.stepOffsetPx
+			? { x: layer.stepOffsetPx.x, y: layer.stepOffsetPx.y }
+			: undefined,
+		steps: layer.steps,
+	}));
 }
 
 export class SparklesText {
@@ -212,7 +257,8 @@ export class SparklesText {
 	private uPhase: WebGLUniformLocation;
 	private uAmplitude: WebGLUniformLocation;
 	private uFrequency: WebGLUniformLocation;
-	private uColor: WebGLUniformLocation;
+	private uFillColor: WebGLUniformLocation;
+	private uOutlineColor: WebGLUniformLocation;
 	private uBaseAlpha: WebGLUniformLocation;
 	private uDashPeriodPx: WebGLUniformLocation;
 	private uDashDuty: WebGLUniformLocation;
@@ -225,6 +271,8 @@ export class SparklesText {
 	private uOutlineWidth: WebGLUniformLocation;
 	private uDashAngleDeg: WebGLUniformLocation;
 	private dualOffsetX: [number, number] = [0, 0];
+	private uShadowOffset: WebGLUniformLocation;
+	private uShadowMode: WebGLUniformLocation;
 
 	constructor(
 		gl: WebGL2RenderingContext,
@@ -240,7 +288,8 @@ export class SparklesText {
 		this.uPhase = getUniform(gl, this.program, "u_phase");
 		this.uAmplitude = getUniform(gl, this.program, "u_amplitude");
 		this.uFrequency = getUniform(gl, this.program, "u_frequency");
-		this.uColor = getUniform(gl, this.program, "u_color");
+		this.uFillColor = getUniform(gl, this.program, "u_fillColor");
+		this.uOutlineColor = getUniform(gl, this.program, "u_outlineColor");
 		this.uBaseAlpha = getUniform(gl, this.program, "u_baseAlpha");
 		this.uOffset = getUniform(gl, this.program, "u_offset");
 		this.uDualOffsetX = getUniform(gl, this.program, "u_dualOffsetX");
@@ -254,6 +303,8 @@ export class SparklesText {
 		this.uLensCenterPx = getUniform(gl, this.program, "u_lensCenterPx");
 		this.uLensRadiusPx = getUniform(gl, this.program, "u_lensRadiusPx");
 		this.uLensFeatherPx = getUniform(gl, this.program, "u_lensFeatherPx");
+		this.uShadowOffset = getUniform(gl, this.program, "u_shadowOffset");
+		this.uShadowMode = getUniform(gl, this.program, "u_shadowMode");
 
 		this.createGeometry();
 		this.initSpriteTexture();
@@ -350,9 +401,6 @@ export class SparklesText {
 
 		// apparence
 		gl.uniform1f(this.uOutlineWidth, Math.max(0, this.config.outlineWidth));
-		const [r, g, b] = this.config.color;
-		gl.uniform3f(this.uColor, r, g, b);
-		gl.uniform1f(this.uBaseAlpha, this.config.baseAlpha);
 		gl.uniform1f(this.uDashAngleDeg, this.config.dashAngleDeg);
 
 		// dashed dans la lens
@@ -370,22 +418,67 @@ export class SparklesText {
 		gl.bindTexture(gl.TEXTURE_2D, this.spriteTexture);
 
 		gl.bindVertexArray(this.vao);
-		gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.instanceCount);
+
+		const shadowLayers = this.config.shadowLayers ?? [];
+		if (shadowLayers.length > 0) {
+			for (const layer of shadowLayers) {
+				const color = layer.color;
+				if (!color) continue;
+				const steps = Math.max(1, Math.floor(layer.steps ?? 1));
+				const baseOffset = layer.offsetPx ?? { x: 0, y: 0 };
+				const stepOffset = layer.stepOffsetPx ?? baseOffset;
+				let dx = baseOffset.x;
+				let dy = baseOffset.y;
+				for (let i = 0; i < steps; i++) {
+					this.drawInstancedPass({
+						fillColor: color,
+						outlineColor: color,
+						baseAlpha: layer.alpha ?? this.config.baseAlpha,
+						shadowOffset: { x: dx, y: dy },
+						isShadow: true,
+					});
+					dx += stepOffset.x;
+					dy += stepOffset.y;
+				}
+			}
+		}
+
+		this.drawInstancedPass({
+			fillColor: this.config.fillColor,
+			outlineColor: this.config.outlineColor,
+			baseAlpha: this.config.baseAlpha,
+			shadowOffset: { x: 0, y: 0 },
+			isShadow: false,
+		});
+
 		gl.bindVertexArray(null);
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 
 	public updateConfig(cfg: Partial<SparklesTextConfig>) {
 		const prevSpriteUrl = this.config.spriteUrl;
-		this.config = { ...this.config, ...cfg };
+		const next: SparklesTextConfig = { ...this.config, ...cfg };
+
+		if (cfg.fillColor) {
+			next.fillColor = [...cfg.fillColor] as [number, number, number];
+		}
+		if (cfg.outlineColor) {
+			next.outlineColor = [...cfg.outlineColor] as [number, number, number];
+		}
 
 		if (
 			cfg.spriteUrl !== undefined &&
 			cfg.spriteUrl.length > 0 &&
 			cfg.spriteUrl !== prevSpriteUrl
 		) {
-			this.loadSpriteTexture(this.config.spriteUrl);
+			this.loadSpriteTexture(next.spriteUrl);
 		}
+
+		if (cfg.shadowLayers !== undefined) {
+			next.shadowLayers = cloneShadowLayers(cfg.shadowLayers);
+		}
+
+		this.config = next;
 
 		if (
 			cfg.quadWidth !== undefined ||
@@ -401,6 +494,10 @@ export class SparklesText {
 		) {
 			this.updateAnchorsAndSizes();
 		}
+	}
+
+	public setShadowLayers(layers: SparklesShadowLayer[]) {
+		this.config.shadowLayers = cloneShadowLayers(layers);
 	}
 
 	public setDualOffsetX(topOffset: number, bottomOffset: number) {
@@ -562,5 +659,31 @@ export class SparklesText {
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.vboSize);
 			gl.bufferSubData(gl.ARRAY_BUFFER, 0, sizes);
 		}
+	}
+
+	private drawInstancedPass(args: {
+		fillColor: [number, number, number];
+		outlineColor: [number, number, number];
+		baseAlpha: number;
+		shadowOffset: { x: number; y: number };
+		isShadow: boolean;
+	}) {
+		const gl = this.gl;
+		gl.uniform3f(
+			this.uFillColor,
+			args.fillColor[0],
+			args.fillColor[1],
+			args.fillColor[2],
+		);
+		gl.uniform3f(
+			this.uOutlineColor,
+			args.outlineColor[0],
+			args.outlineColor[1],
+			args.outlineColor[2],
+		);
+		gl.uniform1f(this.uBaseAlpha, args.baseAlpha);
+		gl.uniform2f(this.uShadowOffset, args.shadowOffset.x, args.shadowOffset.y);
+		gl.uniform1f(this.uShadowMode, args.isShadow ? 1 : 0);
+		gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.instanceCount);
 	}
 }

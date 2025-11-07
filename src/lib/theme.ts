@@ -1,5 +1,6 @@
 export type Theme = {
 	bg: [number, number, number, number];
+	bgCss: string;
 	text: string;
 	line: [number, number, number, number];
 	sparkle: [number, number, number, number];
@@ -35,6 +36,7 @@ export function getTheme(): Theme {
 
 	return {
 		bg: [...bg, 1],
+		bgCss: bgColor,
 		text: fgColor, // Keep as OKLCH string for canvas text
 		line: [...fg, 1],
 		sparkle: [...fg, 1],
