@@ -16,6 +16,8 @@ const VS = `#version 300 es
   uniform vec2  u_offset;       // offset du quad texte (px)
   uniform vec2  u_dualOffsetX;  // offsets horizontaux individuels (top, bottom)
   uniform vec2  u_shadowOffset; // offset appliqué à tout le sprite (shadow)
+  uniform vec2  u_ampEnvelope;  // multipliers start/end
+  uniform float u_baselineSlope;// px delta across width
 
   out vec2 v_uv;
 
@@ -27,12 +29,18 @@ const VS = `#version 300 es
     vec2 base = a_anchorLocal + u_offset + vec2(offsetX, 0.0) + u_shadowOffset;
     vec2 local = base + a_unitPos * a_sizePx;
 
-    float wave  = sin(local.x * u_frequency + u_phase) * u_amplitude;
-    float slope = cos(local.x * u_frequency + u_phase) * u_amplitude * u_frequency;
+    float xNorm = clamp(local.x / max(u_resolution.x, 1.0), 0.0, 1.0);
+    float ramp = smoothstep(0.0, 0.5, xNorm);
+    float env = mix(u_ampEnvelope.x, u_ampEnvelope.y, ramp);
+    float localAmp = u_amplitude * env;
+
+    float wave  = sin(local.x * u_frequency + u_phase) * localAmp;
+    float slope = cos(local.x * u_frequency + u_phase) * localAmp * u_frequency;
     float stretch = sqrt(1.0 + slope * slope);
 
-    float baseline = u_resolution.y * 0.5;
-    float yDeformed = baseline + (local.y + wave - baseline) * stretch;
+    float baseline = u_resolution.y * 0.5 + (xNorm - 0.5) * u_baselineSlope;
+    float anchorWave = sin(u_phase) * u_amplitude * u_ampEnvelope.x;
+    float yDeformed = baseline + (local.y + wave - baseline - anchorWave) * stretch;
 
     vec2 posPx = vec2(local.x, yDeformed);
 
@@ -174,6 +182,8 @@ export type SparklesTextUniforms = {
 	phase: number;
 	amplitude: number;
 	frequency: number;
+	ampEnvelope: { start: number; end: number };
+	baselineSlopePx: number;
 	offset: { x: number; y: number }; // offset du quad texte
 	lens: {
 		centerPx: { x: number; y: number };
@@ -257,6 +267,8 @@ export class SparklesText {
 	private uPhase: WebGLUniformLocation;
 	private uAmplitude: WebGLUniformLocation;
 	private uFrequency: WebGLUniformLocation;
+	private uAmpEnvelope: WebGLUniformLocation;
+	private uBaselineSlope: WebGLUniformLocation;
 	private uFillColor: WebGLUniformLocation;
 	private uOutlineColor: WebGLUniformLocation;
 	private uBaseAlpha: WebGLUniformLocation;
@@ -288,6 +300,8 @@ export class SparklesText {
 		this.uPhase = getUniform(gl, this.program, "u_phase");
 		this.uAmplitude = getUniform(gl, this.program, "u_amplitude");
 		this.uFrequency = getUniform(gl, this.program, "u_frequency");
+		this.uAmpEnvelope = getUniform(gl, this.program, "u_ampEnvelope");
+		this.uBaselineSlope = getUniform(gl, this.program, "u_baselineSlope");
 		this.uFillColor = getUniform(gl, this.program, "u_fillColor");
 		this.uOutlineColor = getUniform(gl, this.program, "u_outlineColor");
 		this.uBaseAlpha = getUniform(gl, this.program, "u_baseAlpha");
@@ -396,6 +410,12 @@ export class SparklesText {
 		gl.uniform1f(this.uPhase, uniforms.phase);
 		gl.uniform1f(this.uAmplitude, uniforms.amplitude);
 		gl.uniform1f(this.uFrequency, uniforms.frequency);
+		gl.uniform2f(
+			this.uAmpEnvelope,
+			uniforms.ampEnvelope.start,
+			uniforms.ampEnvelope.end,
+		);
+		gl.uniform1f(this.uBaselineSlope, uniforms.baselineSlopePx);
 		gl.uniform2f(this.uOffset, uniforms.offset.x, uniforms.offset.y);
 		gl.uniform2f(this.uDualOffsetX, this.dualOffsetX[0], this.dualOffsetX[1]);
 

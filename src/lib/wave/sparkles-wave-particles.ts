@@ -23,6 +23,8 @@ const VS = `#version 300 es
   uniform float u_direction;
   uniform float u_depthWaveNear;
   uniform float u_depthWaveFar;
+  uniform vec2  u_ampEnvelope;
+  uniform float u_baselineSlope;
 
   out vec2 v_uv;
   flat out float v_alpha;
@@ -53,14 +55,19 @@ const VS = `#version 300 es
     }
     float posX = u_offset.x + xWrapped;
 
-    float localAmplitude = mix(u_depthWaveNear, u_depthWaveFar, depth) * u_amplitude;
+    float xNorm = clamp(posX / max(u_resolution.x, 1.0), 0.0, 1.0);
+    float ramp = smoothstep(0.0, 0.5, xNorm);
+    float env = mix(u_ampEnvelope.x, u_ampEnvelope.y, ramp);
+    float depthAmp = mix(u_depthWaveNear, u_depthWaveFar, depth) * u_amplitude;
+    float localAmplitude = depthAmp * env;
     float wave  = sin(posX * u_frequency + u_phase) * localAmplitude;
     float slope = cos(posX * u_frequency + u_phase) * localAmplitude * u_frequency;
     float stretch = sqrt(1.0 + slope * slope);
 
-    float baseline = u_resolution.y * 0.5;
+    float baseline = u_resolution.y * 0.5 + (xNorm - 0.5) * u_baselineSlope;
     float baseY = u_offset.y + baseYOffset;
-    float yDeformed = baseline + (baseY + wave - baseline) * stretch;
+    float anchorWave = sin(u_phase) * depthAmp * u_ampEnvelope.x;
+    float yDeformed = baseline + (baseY + wave - baseline - anchorWave) * stretch;
 
     float tiltAngle = tiltAmplitude * sin((u_time + timeOffset) * tiltSpeed);
     float angle = baseRotation + rotSpeed * t;
@@ -188,6 +195,8 @@ export type WaveParticlesUniforms = {
 	phase: number;
 	amplitude: number;
 	frequency: number;
+	ampEnvelope: { start: number; end: number };
+	baselineSlopePx: number;
 	offset: { x: number; y: number };
 	areaSize: { width: number; height: number };
 	time: number;
@@ -275,6 +284,8 @@ export class SparklesWaveParticles {
 	private uDirection: WebGLUniformLocation;
 	private uDepthWaveNear: WebGLUniformLocation;
 	private uDepthWaveFar: WebGLUniformLocation;
+	private uAmpEnvelope: WebGLUniformLocation;
+	private uBaselineSlope: WebGLUniformLocation;
 	private uColor: WebGLUniformLocation;
 	private uBaseAlpha: WebGLUniformLocation;
 	private uOutlineWidth: WebGLUniformLocation;
@@ -309,6 +320,8 @@ export class SparklesWaveParticles {
 		this.uDirection = getUniform(gl, this.program, "u_direction");
 		this.uDepthWaveNear = getUniform(gl, this.program, "u_depthWaveNear");
 		this.uDepthWaveFar = getUniform(gl, this.program, "u_depthWaveFar");
+		this.uAmpEnvelope = getUniform(gl, this.program, "u_ampEnvelope");
+		this.uBaselineSlope = getUniform(gl, this.program, "u_baselineSlope");
 		this.uColor = getUniform(gl, this.program, "u_color");
 		this.uBaseAlpha = getUniform(gl, this.program, "u_baseAlpha");
 		this.uOutlineWidth = getUniform(gl, this.program, "u_outlineWidth");
@@ -397,6 +410,12 @@ export class SparklesWaveParticles {
 		gl.uniform1f(this.uDirection, this.config.direction);
 		gl.uniform1f(this.uDepthWaveNear, this.config.depthWaveNear);
 		gl.uniform1f(this.uDepthWaveFar, this.config.depthWaveFar);
+		gl.uniform2f(
+			this.uAmpEnvelope,
+			uniforms.ampEnvelope.start,
+			uniforms.ampEnvelope.end,
+		);
+		gl.uniform1f(this.uBaselineSlope, uniforms.baselineSlopePx);
 
 		gl.uniform3f(
 			this.uColor,

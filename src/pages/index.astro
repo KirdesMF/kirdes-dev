@@ -1,8 +1,9 @@
 ---
+import ButtonSplit from "../components/ButtonSplit.astro";
 import GridBox from "../components/GridBox.astro";
 import GridContainer from "../components/GridContainer.astro";
+import Menu from "../components/Menu.astro";
 import ScrabbleText from "../components/ScrabbleText.astro";
-import StorePills from "../components/StorePills.astro";
 import Layout from "../layouts/Layout.astro";
 ---
 
@@ -18,11 +19,14 @@ import Layout from "../layouts/Layout.astro";
     <div class="border-s border-e"></div>
   </div>
 
+  <Menu orientation="vertical" />
+
   <GridContainer as="header" class="pt-32">
     <GridBox squares="all" class="col-span-7 striped ring" />
 
-    <GridBox squares={["te"]} class="col-span-1 ring py-4">
-      <button data-theme-toggle class="text-xs font-light uppercase leading-none size-full"> Toggle Theme </button>
+    <GridBox squares={["te"]} class="col-span-1 ring flex">
+      <button data-theme-toggle class="text-xs font-light uppercase leading-none size-full ring py-4">Theme</button>
+      <button data-menu-toggle class="text-xs font-light uppercase leading-none size-full ring py-4">Menu</button>
     </GridBox>
   </GridContainer>
 
@@ -35,14 +39,14 @@ import Layout from "../layouts/Layout.astro";
         </div>
       </GridBox>
 
-      <GridBox class="col-span-2 ring py-4 grid place-items-center" squares="all">
+      <GridBox class="col-span-2 ring py-4 grid place-items-center" squares={["ts", "te"]}>
         <p class="uppercase text-xs">copyright 2025</p>
       </GridBox>
-      <GridBox class="col-span-6 striped ring" squares={["be"]} />
+      <GridBox class="col-span-6 striped ring" squares="all" />
     </GridContainer>
 
     <GridContainer>
-      <GridBox class="col-span-full bg-background ring grid place-items-center gap-12 p-12" squares="all">
+      <GridBox class="col-span-6 bg-background ring grid place-items-center gap-12 p-12" squares="all">
         <ScrabbleText word="MAKE" />
         <ScrabbleText word="IT" />
         <ScrabbleText word="REAL" />
@@ -55,9 +59,9 @@ import Layout from "../layouts/Layout.astro";
 
     <GridContainer as="section" id="projects" class="sticky min-h-dvh top-0 items-center" data-wave-text="WORKS">
       <GridBox squares="all" class="ring bg-background h-[600px] col-span-full">
-        <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
-        <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
-        <canvas id="wave-canvas" class="size-full border-0 block absolute inset-0"></canvas>
+        <!-- <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas> -->
+        <!-- <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas> -->
+        <canvas id="wave-canvas" class="size-full block absolute inset-0"></canvas>
       </GridBox>
     </GridContainer>
 
@@ -72,6 +76,7 @@ import Layout from "../layouts/Layout.astro";
   import { LinesRepelScene } from "../lib/lines-repel/lines-repel-scene";
   import { WaveScene } from "../lib/wave/wave-scene";
   import { setupWaveSectionController } from "../lib/wave/wave-scroll-controller";
+  import { MENU_STATE_EVENT, dispatchMenuRequest } from "../lib/menu";
   import { gsap } from "gsap";
   import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -79,11 +84,34 @@ import Layout from "../layouts/Layout.astro";
 
   //------------ header
   const themeToggleBtn = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  const menuToggleBtn = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+  const menuElement = document.querySelector<HTMLElement>("[data-menu]");
+  const menuOpenClass = "menu-open";
+  let isMenuOpen = false;
 
   themeToggleBtn?.addEventListener("click", () => {
     document.documentElement.classList.toggle("dark");
     const isDark = document.documentElement.classList.contains("dark");
     window.dispatchEvent(new CustomEvent("themechange", { detail: { theme: isDark ? "dark" : "light" } }));
+  });
+
+  menuElement?.setAttribute("inert", "true");
+
+  menuToggleBtn?.addEventListener("click", () => {
+    dispatchMenuRequest(!isMenuOpen);
+  });
+
+  window.addEventListener(MENU_STATE_EVENT, (event: Event) => {
+    const detail = (event as CustomEvent<{ open: boolean }>).detail;
+    if (!detail) return;
+    isMenuOpen = detail.open;
+    if (detail.open) {
+      document.documentElement.classList.add(menuOpenClass);
+      menuElement?.removeAttribute("inert");
+    } else {
+      document.documentElement.classList.remove(menuOpenClass);
+      menuElement?.setAttribute("inert", "true");
+    }
   });
 
   //------------ splash canvas

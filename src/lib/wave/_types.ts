@@ -28,6 +28,8 @@ export type UniformsNames =
 	| "u_phase"
 	| "u_amplitude"
 	| "u_frequency"
+	| "u_ampEnvelope"
+	| "u_baselineSlope"
 	| "u_offset"
 	| "u_areaSize"
 	| "u_time"

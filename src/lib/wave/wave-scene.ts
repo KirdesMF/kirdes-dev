@@ -15,6 +15,8 @@ export type WavePublicParams = {
 	frequency: number; // rad/px (tweenable)
 	speed: number; // facteur anim phase
 	color: [number, number, number, number]; // RGBA 0..1 (ligne)
+	amplitudeEnvelope: { start: number; end: number };
+	baselineSlopePx: number;
 };
 
 export type SceneBuild = {
@@ -57,10 +59,12 @@ const CONSTANTS = {
 };
 
 const PARAM_DEFAULTS: WavePublicParams = {
-	amplitude: 120,
+	amplitude: 100,
 	frequency: 0.005,
 	speed: 2,
 	color: [1, 1, 1, 1],
+	amplitudeEnvelope: { start: 0.2, end: 1.5 },
+	baselineSlopePx: 100,
 };
 
 type CssColorKey = string;
@@ -158,10 +162,19 @@ export class WaveScene {
 		this.gl.enable(this.gl.BLEND);
 		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
+		const amplitudeEnvelope = {
+			start:
+				initial?.amplitudeEnvelope?.start ??
+				PARAM_DEFAULTS.amplitudeEnvelope.start,
+			end:
+				initial?.amplitudeEnvelope?.end ?? PARAM_DEFAULTS.amplitudeEnvelope.end,
+		};
+
 		this.params = {
 			...PARAM_DEFAULTS,
 			color: lineColorRgba,
 			...initial,
+			amplitudeEnvelope,
 		};
 
 		this.lens.colorRing = [
@@ -302,6 +315,31 @@ export class WaveScene {
 	}
 	public setFrequency(v: number) {
 		this.params.frequency = Math.max(0, v);
+	}
+	public setAmplitudeEnvelope(envelope: { start?: number; end?: number }) {
+		if (!envelope) return;
+		const current = this.params.amplitudeEnvelope;
+		const next = {
+			start:
+				typeof envelope.start === "number"
+					? Math.max(0, envelope.start)
+					: current.start,
+			end:
+				typeof envelope.end === "number"
+					? Math.max(0, envelope.end)
+					: current.end,
+		};
+		if (
+			Math.abs(next.start - current.start) < 1e-4 &&
+			Math.abs(next.end - current.end) < 1e-4
+		) {
+			return;
+		}
+		this.params.amplitudeEnvelope = next;
+	}
+	public setBaselineSlopePx(v: number) {
+		if (!Number.isFinite(v)) return;
+		this.params.baselineSlopePx = v;
 	}
 	public setSpeed(v: number) {
 		// borne un peu pour éviter des vitesses “folles”
@@ -515,7 +553,9 @@ export class WaveScene {
 		const speed = this.reduceMotion
 			? this.params.speed * 0.5
 			: this.params.speed;
-		this.phase = (this.phase + 0.02 * speed * deltaRatio) % (Math.PI * 2);
+		const phaseStep = 0.02 * speed * deltaRatio;
+		this.phase = (this.phase - phaseStep) % (Math.PI * 2);
+		if (this.phase < 0) this.phase += Math.PI * 2;
 		this.timeSec += deltaRatio / 60;
 
 		// mouse lerp
@@ -637,6 +677,12 @@ export class WaveScene {
 		const resolution = this.renderSize;
 		const amp = Math.max(0, this.params.amplitude);
 		const freq = Math.max(0, this.params.frequency);
+		const ampEnvelope =
+			this.params.amplitudeEnvelope ?? PARAM_DEFAULTS.amplitudeEnvelope;
+		const baselineSlopePx =
+			typeof this.params.baselineSlopePx === "number"
+				? this.params.baselineSlopePx
+				: 0;
 		const lens = {
 			centerPx: { x: this.lens.centerPx.x, y: this.lens.centerPx.y },
 			radiusPx: this.lens.radiusPx,
@@ -653,6 +699,8 @@ export class WaveScene {
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
+			ampEnvelope,
+			baselineSlopePx,
 			lens,
 		});
 
@@ -663,6 +711,8 @@ export class WaveScene {
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
+			ampEnvelope,
+			baselineSlopePx,
 			offset: particlesOffset,
 			areaSize: this.sparklesArea,
 			time: this.timeSec,
@@ -675,6 +725,8 @@ export class WaveScene {
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
+			ampEnvelope,
+			baselineSlopePx,
 			offset,
 			lens,
 		});
@@ -685,6 +737,8 @@ export class WaveScene {
 			phase: this.phase,
 			amplitude: amp,
 			frequency: freq,
+			ampEnvelope,
+			baselineSlopePx,
 			offset,
 			lens,
 		});

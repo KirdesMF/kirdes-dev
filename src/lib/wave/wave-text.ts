@@ -12,6 +12,8 @@ const VS = `#version 300 es
   uniform float u_frequency;
   uniform vec2  u_offset;
   uniform vec2  u_dualOffsetX;
+  uniform vec2  u_ampEnvelope;
+  uniform float u_baselineSlope;
 
   out vec2 v_uv;
 
@@ -23,12 +25,18 @@ const VS = `#version 300 es
     float offsetX = mix(u_dualOffsetX.y, u_dualOffsetX.x, isTop);
     pos.x += offsetX;
 
-    float wave  = sin(pos.x * u_frequency + u_phase) * u_amplitude;
-    float slope = cos(pos.x * u_frequency + u_phase) * u_amplitude * u_frequency;
+    float xNorm = clamp(pos.x / max(u_resolution.x, 1.0), 0.0, 1.0);
+    float ramp = smoothstep(0.0, 0.5, xNorm);
+    float env = mix(u_ampEnvelope.x, u_ampEnvelope.y, ramp);
+    float localAmp = u_amplitude * env;
+
+    float wave  = sin(pos.x * u_frequency + u_phase) * localAmp;
+    float slope = cos(pos.x * u_frequency + u_phase) * localAmp * u_frequency;
     float stretch = sqrt(1.0 + slope * slope);
 
-    float baseline = u_resolution.y * 0.5;
-    pos.y = baseline + (pos.y + wave - baseline) * stretch;
+    float baseline = u_resolution.y * 0.5 + (xNorm - 0.5) * u_baselineSlope;
+    float anchorWave = sin(u_phase) * u_amplitude * u_ampEnvelope.x;
+    pos.y = baseline + (pos.y + wave - baseline - anchorWave) * stretch;
 
     vec2 clip = (pos / u_resolution) * 2.0 - 1.0;
     clip.y *= -1.0;
@@ -142,6 +150,8 @@ export type WaveUniforms = {
 	phase: number;
 	amplitude: number;
 	frequency: number;
+	ampEnvelope: { start: number; end: number };
+	baselineSlopePx: number;
 	offset: { x: number; y: number };
 	lens: {
 		centerPx: { x: number; y: number };
@@ -161,7 +171,7 @@ const LENS_DEFAULTS: WaveTextLensConfig = {
 
 const CONFIG_DEFAULTS: WaveTextConfig = {
 	text: "WORKS",
-	font: "850 240px Commissioner Variable, sans-serif",
+	font: "900 240px Commissioner Variable, sans-serif",
 	color: "#ffffff",
 	letterSpacingPx: -5,
 	lineSpacingPx: 60,
@@ -275,6 +285,8 @@ export class WaveText {
 	private uFreq: WebGLUniformLocation;
 	private uOffset: WebGLUniformLocation;
 	private uDualOffsetX: WebGLUniformLocation;
+	private uAmpEnvelope: WebGLUniformLocation;
+	private uBaselineSlope: WebGLUniformLocation;
 	private uTextColor: WebGLUniformLocation;
 	private uOutlineAlpha: WebGLUniformLocation;
 	private uHatchPeriodPx: WebGLUniformLocation;
@@ -305,6 +317,8 @@ export class WaveText {
 		this.uFreq = getUniform(gl, this.program, "u_frequency");
 		this.uOffset = getUniform(gl, this.program, "u_offset");
 		this.uDualOffsetX = getUniform(gl, this.program, "u_dualOffsetX");
+		this.uAmpEnvelope = getUniform(gl, this.program, "u_ampEnvelope");
+		this.uBaselineSlope = getUniform(gl, this.program, "u_baselineSlope");
 		this.uTexFill = getUniform(gl, this.program, "u_texFill");
 		this.uTexStroke = getUniform(gl, this.program, "u_texStroke");
 		this.uTextColor = getUniform(gl, this.program, "u_textColor");
@@ -368,6 +382,12 @@ export class WaveText {
 		gl.uniform1f(this.uPhase, uniforms.phase);
 		gl.uniform1f(this.uAmp, uniforms.amplitude);
 		gl.uniform1f(this.uFreq, uniforms.frequency);
+		gl.uniform2f(
+			this.uAmpEnvelope,
+			uniforms.ampEnvelope.start,
+			uniforms.ampEnvelope.end,
+		);
+		gl.uniform1f(this.uBaselineSlope, uniforms.baselineSlopePx);
 		gl.uniform2f(this.uOffset, uniforms.offset.x, uniforms.offset.y);
 		gl.uniform2f(this.uDualOffsetX, this.dualOffsetX[0], this.dualOffsetX[1]);
 

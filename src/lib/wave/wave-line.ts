@@ -17,10 +17,18 @@ uniform vec2  u_resolution;                 // px
 uniform float u_phase;                      // rad
 uniform float u_amplitude;                  // px
 uniform float u_frequency;                  // rad/px
+uniform vec2  u_ampEnvelope;               // multipliers start/end
+uniform float u_baselineSlope;             // px delta across width
 
 void main() {
   float xPx = a_x * u_resolution.x;
-  float y = sin(xPx * u_frequency + u_phase) * u_amplitude + (u_resolution.y * 0.5);
+  float norm = clamp(a_x, 0.0, 1.0);
+  float ramp = smoothstep(0.0, 0.5, norm);
+  float env = mix(u_ampEnvelope.x, u_ampEnvelope.y, ramp);
+  float wave = sin(xPx * u_frequency + u_phase) * u_amplitude * env;
+  float anchorWave = sin(u_phase) * u_amplitude * u_ampEnvelope.x;
+  float baseline = u_resolution.y * 0.5 + (norm - 0.5) * u_baselineSlope;
+  float y = baseline + (wave - anchorWave);
 
   vec2 clip = vec2(
     (xPx / u_resolution.x) * 2.0 - 1.0,
@@ -93,6 +101,8 @@ export type WaveLineUniforms = {
 	phase: number;
 	amplitude: number;
 	frequency: number;
+	ampEnvelope: { start: number; end: number };
+	baselineSlopePx: number;
 	lens: {
 		centerPx: { x: number; y: number };
 		radiusPx: number;
@@ -126,6 +136,8 @@ export class WaveLine {
 	private uPhase: WebGLUniformLocation;
 	private uAmplitude: WebGLUniformLocation;
 	private uFrequency: WebGLUniformLocation;
+	private uAmpEnvelope: WebGLUniformLocation;
+	private uBaselineSlope: WebGLUniformLocation;
 	private uColor: WebGLUniformLocation;
 	private uDashEnabled: WebGLUniformLocation;
 	private uDashPeriodPx: WebGLUniformLocation;
@@ -150,6 +162,8 @@ export class WaveLine {
 		this.uPhase = getUniform(gl, this.program, "u_phase");
 		this.uAmplitude = getUniform(gl, this.program, "u_amplitude");
 		this.uFrequency = getUniform(gl, this.program, "u_frequency");
+		this.uAmpEnvelope = getUniform(gl, this.program, "u_ampEnvelope");
+		this.uBaselineSlope = getUniform(gl, this.program, "u_baselineSlope");
 		this.uColor = getUniform(gl, this.program, "u_color");
 		this.uDashEnabled = getUniform(gl, this.program, "u_dashEnabled");
 		this.uDashPeriodPx = getUniform(gl, this.program, "u_dashPeriodPx");
@@ -188,6 +202,8 @@ export class WaveLine {
 		gl.uniform1f(this.uPhase, u.phase);
 		gl.uniform1f(this.uAmplitude, u.amplitude);
 		gl.uniform1f(this.uFrequency, u.frequency);
+		gl.uniform2f(this.uAmpEnvelope, u.ampEnvelope.start, u.ampEnvelope.end);
+		gl.uniform1f(this.uBaselineSlope, u.baselineSlopePx);
 
 		// uniforms issus de la config (style)
 		gl.uniform4f(
