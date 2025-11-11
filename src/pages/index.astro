@@ -1,5 +1,4 @@
 ---
-import ButtonSplit from "../components/ButtonSplit.astro";
 import GridBox from "../components/GridBox.astro";
 import GridContainer from "../components/GridContainer.astro";
 import Menu from "../components/Menu.astro";
@@ -21,7 +20,7 @@ import Layout from "../layouts/Layout.astro";
 
   <Menu orientation="vertical" />
 
-  <GridContainer as="header" class="pt-32">
+  <GridContainer as="header" class="pt-52">
     <GridBox squares="all" class="col-span-7 striped ring" />
 
     <GridBox squares={["te"]} class="col-span-1 ring flex">
@@ -31,8 +30,17 @@ import Layout from "../layouts/Layout.astro";
   </GridContainer>
 
   <main>
+    <GridContainer>
+      <GridBox squares="all" class="col-span-full py-32 px-16 grid place-items-center gap-2 ring">
+        <small class="text-xl">Fast by design</small>
+        <p class="text-3xl font-extralight max-w-[45ch] text-center">
+          Accessible, performance-minded frontends with pragmatic services behind the scenes.
+        </p>
+      </GridBox>
+    </GridContainer>
+
     <GridContainer as="section" id="home">
-      <GridBox squares="all" class="col-span-full h-[550px] striped ring @container grid place-items-center">
+      <GridBox squares="all" class="col-span-full h-[50svh] striped ring @container grid place-items-center">
         <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
         <div class="size-[18cqi] relative grid place-items-center text-foreground pointer-events-none">
           <div class="size-full bg-background border absolute inset-0 rounded-full"></div>

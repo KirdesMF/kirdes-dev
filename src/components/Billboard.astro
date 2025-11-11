@@ -1,0 +1,182 @@
+---
+const TEXT_FACES = {
+	a: "Développeur Front-End passionné par la création d'interfaces web modernes et intuitives. Je transforme des designs en expériences utilisateur fluides et performantes.",
+	b: "Spécialisé en React, Vue.js et technologies web modernes. Je crée des applications web responsive et accessibles qui font la différence.",
+	c: "Créatif et rigoureux, je conçois des interfaces captivantes où design et performance se rencontrent. Mon objectif : du code propre et des utilisateurs heureux.",
+	d: "Faisons quelque chose de génial avec React et Vue.js",
+};
+
+const ADS = [TEXT_FACES.a, TEXT_FACES.b, TEXT_FACES.c, TEXT_FACES.d];
+const SLAT_COUNT = 20;
+const SLATS = Array.from({ length: SLAT_COUNT });
+---
+
+<div class="hero-grid" style={`--slat-count:${SLAT_COUNT};`}>
+  {
+    SLATS.map((_, index) => (
+      <div class="slat" data-slat data-delay={`${index * 0.08}`} style={`--slat-index:${index};`}>
+        <div class="prism" data-prism>
+          {ADS.map((message, faceIndex) => (
+            <div class={`face face-${faceIndex + 1}`} aria-hidden="true">
+              <span>{message}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  import { gsap } from "gsap";
+
+  const slats = document.querySelectorAll("[data-slat]") as NodeListOf<HTMLDivElement>;
+  const prisms = document.querySelectorAll("[data-prism]") as NodeListOf<HTMLDivElement>;
+
+  const updateSlatSize = (slat: HTMLDivElement) => {
+    const width = slat.offsetWidth;
+    const depth = width / 2;
+    slat.style.setProperty("--slat-depth", `${depth}px`);
+  };
+
+  const observer = new ResizeObserver((entries) => {
+    entries.forEach((entry) => updateSlatSize(entry.target as HTMLDivElement));
+  });
+
+  slats.forEach((slat) => {
+    updateSlatSize(slat);
+    observer.observe(slat);
+  });
+
+  const HOLD_DURATION = 4;
+  const TURN_DURATION = 5;
+  const ANGLES = [0, -90, -180, -270, -360];
+
+  prisms.forEach((prism) => {
+    const parent = prism.closest("[data-slat]") as HTMLDivElement | null;
+    const delay = parent ? Number(parent.dataset.delay ?? "0") : 0;
+    gsap.set(prism, { rotateY: 0 });
+
+    const tl = gsap.timeline({ repeat: -1, delay });
+    ANGLES.forEach((angle, index) => {
+      // Hold on each face for readability
+      tl.to(
+        prism,
+        {
+          rotateY: angle,
+          duration: index === 0 ? HOLD_DURATION : 0,
+          ease: "none",
+        },
+        ">",
+      );
+
+      if (index === ANGLES.length - 1) {
+        return;
+      }
+
+      tl.to(prism, {
+        rotateY: ANGLES[index + 1],
+        duration: TURN_DURATION,
+        ease: "elastic.out(1, 0.5)",
+      });
+
+      tl.to(prism, {
+        rotateY: ANGLES[index + 1],
+        duration: HOLD_DURATION,
+        ease: "none",
+      });
+    });
+  });
+</script>
+
+<style>
+  .hero-grid {
+    --slat-count: 20;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--slat-count), minmax(0, 1fr));
+    gap: 0;
+    height: 500px;
+    perspective: 1200px;
+    align-items: stretch;
+    background: #0f172a;
+    overflow: hidden;
+  }
+
+  .slat {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-grid::after {
+    content: attr(data-face);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.08);
+    font-size: 5rem;
+    pointer-events: none;
+  }
+
+  .prism {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transform-origin: center;
+  }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.2rem;
+    color: #0f172a;
+    font-size: 80px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    backface-visibility: hidden;
+    overflow: hidden;
+  }
+
+  .face span {
+    position: absolute;
+    top: 50%;
+    left: calc(-1 * var(--slat-index, 0) * 100%);
+    transform: translateY(-50%);
+    width: calc(100% * var(--slat-count, 1));
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 80px;
+    text-align: left;
+  }
+
+  .face-1 {
+    transform: rotateY(0deg) translateZ(var(--slat-depth, 0px));
+    background-color: black;
+    color: white;
+  }
+
+  .face-2 {
+    transform: rotateY(90deg) translateZ(var(--slat-depth, 0px));
+    background-color: white;
+    color: black;
+  }
+
+  .face-3 {
+    transform: rotateY(180deg) translateZ(var(--slat-depth, 0px));
+    background-color: black;
+    color: white;
+  }
+
+  .face-4 {
+    transform: rotateY(270deg) translateZ(var(--slat-depth, 0px));
+    background-color: white;
+    color: black;
+  }
+</style>

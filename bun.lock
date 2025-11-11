@@ -5,9 +5,10 @@
       "name": "kirdes-dev",
       "dependencies": {
         "@fontsource-variable/commissioner": "^5.2.10",
+        "@fontsource-variable/hubot-sans": "^5.2.8",
         "@fontsource-variable/mona-sans": "^5.2.8",
         "@tailwindcss/vite": "^4.1.16",
-        "astro": "^5.15.1",
+        "astro": "^5.15.3",
         "gsap": "^3.13.0",
         "matter-js": "^0.20.0",
         "tailwindcss": "^4.1.16",
@@ -16,7 +17,7 @@
         "@biomejs/biome": "2.2.7",
         "@types/bun": "^1.3.1",
         "@types/matter-js": "^0.20.2",
-        "@types/node": "^24.9.1",
+        "@types/node": "^24.10.0",
       },
     },
   },
@@ -119,6 +120,8 @@
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.11", "", { "os": "win32", "cpu": "x64" }, "sha512-D7Hpz6A2L4hzsRpPaCYkQnGOotdUpDzSGRIv9I+1ITdHROSFUWW95ZPZWQmGka1Fg7W3zFJowyn9WGwMJ0+KPA=="],
 
     "@fontsource-variable/commissioner": ["@fontsource-variable/commissioner@5.2.10", "", {}, "sha512-I2OzXSgj2rQdhdysZEvcH2zmyO/dmMviSR6tWCMTwFXimtKJctadlmfoF1Pm9w/kSAe3fo9MhTZwppJE0/Xnmw=="],
+
+    "@fontsource-variable/hubot-sans": ["@fontsource-variable/hubot-sans@5.2.8", "", {}, "sha512-snt3rHAg6IrE0DKltYvjsIoeB+GSUpQHY3PAkMGUzxp8gN31kTl8yFuyuK6RcknIjtCVo7v0S6i31Oif3QxtjA=="],
 
     "@fontsource-variable/mona-sans": ["@fontsource-variable/mona-sans@5.2.8", "", {}, "sha512-8OWdTcP8KvRxkU1Skkk+tX3D5XHN9buejxSDwrT7teRfGnpKBYxQUApV/+zS8TzeHiSU8H5Tc0HfBr57ahgcvA=="],
 

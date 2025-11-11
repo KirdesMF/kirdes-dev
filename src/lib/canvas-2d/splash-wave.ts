@@ -464,10 +464,10 @@ export class SplashWaveScene {
 				fixEdges: false,
 			},
 			text: {
-				content: "CREATIVE DEV",
+				content: "CREATIVE DEVELOPER",
 				tiled: true,
 				angleDeg: -35,
-				scale: 0.9,
+				scale: 1.25,
 				lineGap: 0.8,
 				hSpacing: 1,
 				letterSpacing: -3,
