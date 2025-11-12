@@ -1,0 +1,27 @@
+<canvas data-hero-canvas class="block absolute inset-0 size-full"></canvas>
+
+<script>
+  import { Scene } from "./scene";
+  function getCanvas() {
+    const canvas = document.querySelector<HTMLCanvasElement>("[data-hero-canvas]");
+    if (!canvas) throw new Error("Canvas not found");
+    return canvas;
+  }
+
+  async function run() {
+    const scene = new Scene(getCanvas());
+    await scene.init();
+
+    // Cleanup on HMR/navigation
+    if (import.meta.hot) {
+      import.meta.hot.dispose(() => {
+        scene.destroy();
+      });
+    }
+    window.addEventListener("pagehide", () => {
+      scene.destroy();
+    });
+  }
+
+  run();
+</script>

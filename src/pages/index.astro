@@ -1,6 +1,7 @@
 ---
 import GridBox from "../components/GridBox.astro";
 import GridContainer from "../components/GridContainer.astro";
+import HeroAnimation from "../components/hero-animation/HeroAnimation.astro";
 import Menu from "../components/Menu.astro";
 import ScrabbleText from "../components/ScrabbleText.astro";
 import Layout from "../layouts/Layout.astro";
@@ -39,6 +40,12 @@ import Layout from "../layouts/Layout.astro";
       </GridBox>
     </GridContainer>
 
+    <GridContainer>
+      <GridBox squares="all" class="col-span-full ring h-[600px]">
+        <HeroAnimation />
+      </GridBox>
+    </GridContainer>
+
     <GridContainer as="section" id="home">
       <GridBox squares="all" class="col-span-full h-[50svh] striped ring @container grid place-items-center">
         <canvas id="splash-wave-canvas" class="size-full absolute inset-0"></canvas>
@@ -67,8 +74,8 @@ import Layout from "../layouts/Layout.astro";
 
     <GridContainer as="section" id="projects" class="sticky min-h-dvh top-0 items-center" data-wave-text="WORKS">
       <GridBox squares="all" class="ring bg-background h-[600px] col-span-full">
-        <!-- <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas> -->
-        <!-- <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas> -->
+        <canvas id="moire-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
+        <canvas id="repel-canvas" class="size-full absolute inset-0 pointer-events-none"></canvas>
         <canvas id="wave-canvas" class="size-full block absolute inset-0"></canvas>
       </GridBox>
     </GridContainer>
