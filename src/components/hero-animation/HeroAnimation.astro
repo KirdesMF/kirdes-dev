@@ -7,6 +7,8 @@
 
 <script>
   import { Scene } from "./scene";
+  import { createHeroTimeline } from "./timeline";
+  import { gsap } from "gsap";
 
   function getCanvas() {
     const canvas = document.querySelector<HTMLCanvasElement>("[data-hero-canvas]");
@@ -15,28 +17,37 @@
   }
 
   async function run() {
+    let tl = gsap.timeline();
     const panel = document.querySelector<HTMLDivElement>("[data-hero-panel]");
     const scene = new Scene(getCanvas());
-    await scene.start({ physics: true, blobs: { count: 20, radius: 25 } });
+    await scene.start({ physics: true, blobs: { count: 20, radius: 80 } });
 
-    if (panel) {
-      scene.setPanelElement(panel, {
-        strength: 0.0015,
-        direction: "outward",
-        falloff: "smoothstep",
-        debug: false,
-      });
-    }
+    if (!panel) throw new Error("Panel not found");
+
+    scene.setPanelElement(panel, {
+      strength: 0.0015,
+      direction: "inward",
+      falloff: "smoothstep",
+      debug: false,
+    });
+    tl = createHeroTimeline({
+      scene,
+      autoplay: true,
+      introDuration: 5,
+      introStagger: 0.05,
+    });
 
     // Cleanup on HMR/navigation
     if (import.meta.hot) {
       import.meta.hot.dispose(() => {
+        tl.kill();
         scene.dispose();
       });
     }
     window.addEventListener(
       "pagehide",
       () => {
+        tl.kill();
         scene.dispose();
       },
       { once: true },

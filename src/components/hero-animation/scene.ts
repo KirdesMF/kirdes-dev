@@ -5,7 +5,7 @@ import {
 	type IEventCollision,
 	type Pair,
 } from "matter-js";
-import { Application, Assets } from "pixi.js";
+import { Application, Assets, type BitmapText } from "pixi.js";
 import { cssVarToPixiColor } from "../../utils/css-color";
 import { lerp } from "./_utils";
 import { Blob } from "./blob";
@@ -37,16 +37,19 @@ export class Scene {
 
 	async start(options?: {
 		physics?: boolean;
+		resolutionCap?: number;
+		autoPauseOnBlur?: boolean;
 		blobs?: { count: number; radius?: number; margin?: number };
 	}) {
 		if (this.#app) return;
 		const app = new Application();
 		const background = cssVarToPixiColor("--color-background");
+		const resolutionCap = Math.max(1, options?.resolutionCap ?? 2);
 		await app.init({
 			canvas: this.#canvas,
 			background,
 			antialias: true,
-			resolution: window.devicePixelRatio || 1,
+			resolution: Math.min(window.devicePixelRatio || 1, resolutionCap),
 			resizeTo: this.#canvas.parentElement ?? window,
 		});
 		this.#app = app;
@@ -65,7 +68,7 @@ export class Scene {
 
 		this.#ensureTitle("PORTFOLIO", {
 			fontFamily: "Commissioner-Black",
-			maxWidthRatio: 0.8,
+			maxWidthRatio: 0.75,
 			baseSize: 24,
 		});
 
@@ -81,6 +84,12 @@ export class Scene {
 		});
 		this.#ro.observe(this.#canvas);
 		window.addEventListener("resize", this.#onWindowResize, { passive: true });
+
+		if (options?.autoPauseOnBlur) {
+			document.addEventListener("visibilitychange", this.#onVisibilityChange, {
+				passive: true,
+			});
+		}
 	}
 
 	setPanelElement(
@@ -92,10 +101,96 @@ export class Scene {
 			debug?: boolean;
 			scrollSync?: boolean;
 		},
-	): void {
+	) {
 		if (!this.#app) throw new Error("App not initialized");
 		this.#panel?.dispose();
 		this.#panel = new Panel(this.#app, el, opts);
+	}
+
+	addBlobs(count: number, options?: { radius?: number; margin?: number }) {
+		const app = this.#app;
+		const engine = this.#engine;
+		if (!app || !engine) throw new Error("App or Engine is not initialized");
+		const r = Math.max(2, options?.radius ?? 16);
+		const margin = Math.max(r + 4, options?.margin ?? 48);
+		const { width, height } = app.renderer;
+		const xMin = margin;
+		const yMin = margin;
+		const xMax = width - margin;
+		const yMax = height - margin;
+		const color = cssVarToPixiColor("--color-foreground");
+		for (let i = 0; i < count; i++) {
+			const x = lerp(xMin, xMax, Math.random());
+			const y = lerp(yMin, yMax, Math.random());
+			const blob = new Blob({
+				engine,
+				stage: app.stage,
+				x,
+				y,
+				radius: r,
+				color,
+				jelly: { frequency: 6, damping: 0.85, maxStretch: 0.18, maxSkew: 0.15 },
+			});
+			this.#blobs.push(blob);
+			this.#blobByBody.set(blob.getBody(), blob);
+		}
+	}
+
+	getViewportSize() {
+		return { width: this.#vw, height: this.#vh };
+	}
+
+	/** Recolor all blobs from a CSS var (call on theme change). */
+	setBlobsColorFromCssVar(varName = "--color-foreground") {
+		const color = cssVarToPixiColor(varName);
+		for (const b of this.#blobs) b.setColor(color);
+	}
+
+	resetBlobs(count: number, options?: { radius?: number; margin?: number }) {
+		this.clearBlobs();
+		this.addBlobs(count, options);
+	}
+
+	clearBlobs() {
+		for (const blob of this.#blobs) blob.dispose();
+		this.#blobs = [];
+		this.#blobByBody.clear();
+	}
+
+	/** Expose the BitmapText for external animation (GSAP). */
+	getTitleDisplay(): BitmapText | null {
+		return this.#title ? this.#title.display : null;
+	}
+
+	/** Expose blob displays (Graphics/Sprite) for intro timeline. */
+	getBlobDisplays() {
+		const out = [];
+		for (const b of this.#blobs) out.push(b.getDisplay());
+		return out;
+	}
+
+	dispose() {
+		window.removeEventListener("resize", this.#onWindowResize);
+		document.removeEventListener("visibilitychange", this.#onVisibilityChange);
+
+		if (this.#ro) {
+			this.#ro.disconnect();
+			this.#ro = null;
+		}
+
+		if (this.#engine && this.#onCollisionRef) {
+			Events.off(this.#engine, "collisionStart", this.#onCollisionRef);
+			this.#onCollisionRef = null;
+		}
+
+		this.#app?.destroy();
+		this.#app = null;
+		this.#engine = null;
+		this.clearBlobs();
+		this.#panel?.dispose();
+		this.#panel = null;
+		this.#title?.dispose();
+		this.#title = null;
 	}
 
 	#enablePhysicsInternal() {
@@ -111,6 +206,7 @@ export class Scene {
 			{
 				stepMs: 1000 / 60,
 				maxSubSteps: 5,
+				maxDeltaMs: 250,
 			},
 			{
 				beforeStep: () => {
@@ -149,52 +245,6 @@ export class Scene {
 		return t * (2 - t);
 	}
 
-	addBlobs(count: number, options?: { radius?: number; margin?: number }) {
-		const app = this.#app;
-		const engine = this.#engine;
-		if (!app || !engine) throw new Error("App or Engine is not initialized");
-		const r = Math.max(2, options?.radius ?? 16);
-		const margin = Math.max(r + 4, options?.margin ?? 48);
-		const { width, height } = app.renderer;
-		const xMin = margin;
-		const yMin = margin;
-		const xMax = width - margin;
-		const yMax = height - margin;
-		const color = cssVarToPixiColor("--color-foreground");
-		for (let i = 0; i < count; i++) {
-			const x = lerp(xMin, xMax, Math.random());
-			const y = lerp(yMin, yMax, Math.random());
-			const blob = new Blob({
-				engine,
-				stage: app.stage,
-				x,
-				y,
-				radius: r,
-				color,
-				jelly: { frequency: 6, damping: 0.85, maxStretch: 0.18, maxSkew: 0.15 },
-			});
-			this.#blobs.push(blob);
-			this.#blobByBody.set(blob.getBody(), blob);
-		}
-	}
-
-	/** Recolor all blobs from a CSS var (call on theme change). */
-	setBlobsColorFromCssVar(varName = "--color-foreground") {
-		const color = cssVarToPixiColor(varName);
-		for (const b of this.#blobs) b.setColor(color);
-	}
-
-	resetBlobs(count: number, options?: { radius?: number; margin?: number }) {
-		this.clearBlobs();
-		this.addBlobs(count, options);
-	}
-
-	clearBlobs() {
-		for (const blob of this.#blobs) blob.dispose();
-		this.#blobs = [];
-		this.#blobByBody.clear();
-	}
-
 	#onWindowResize = () => {
 		if (this.#resizeQueued) return;
 		this.#resizeQueued = true;
@@ -202,6 +252,16 @@ export class Scene {
 			this.#resizeQueued = false;
 			this.#handleResize();
 		});
+	};
+
+	#onVisibilityChange = () => {
+		const app = this.#app;
+		if (!app) return;
+		if (document.hidden) {
+			app.ticker.stop();
+		} else {
+			app.ticker.start();
+		}
 	};
 
 	#handleResize() {
@@ -231,10 +291,6 @@ export class Scene {
 		}
 	}
 
-	get viewportSize() {
-		return { width: this.#vw, height: this.#vh };
-	}
-
 	// ---------- MSDF helpers ----------
 	async #ensureAssets(): Promise<void> {
 		if (this.#assetsReady) return;
@@ -250,7 +306,7 @@ export class Scene {
 	#ensureTitle(
 		text: string,
 		opts?: { fontFamily?: string; maxWidthRatio?: number; baseSize?: number },
-	): void {
+	) {
 		const app = this.#app;
 		if (!app) return;
 		const color = cssVarToPixiColor("--color-foreground");
@@ -282,28 +338,5 @@ export class Scene {
 			app.renderer.width * 0.5,
 			app.renderer.height * 0.25,
 		);
-	}
-
-	dispose() {
-		window.removeEventListener("resize", this.#onWindowResize);
-
-		if (this.#ro) {
-			this.#ro.disconnect();
-			this.#ro = null;
-		}
-
-		if (this.#engine && this.#onCollisionRef) {
-			Events.off(this.#engine, "collisionStart", this.#onCollisionRef);
-			this.#onCollisionRef = null;
-		}
-
-		this.#app?.destroy();
-		this.#app = null;
-		this.#engine = null;
-		this.clearBlobs();
-		this.#panel?.dispose();
-		this.#panel = null;
-		this.#title?.dispose();
-		this.#title = null;
 	}
 }

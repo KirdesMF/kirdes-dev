@@ -116,10 +116,11 @@
 
 ## Étape 7 — Responsive & Performance
 
-- [x] Rendu: `resolution: devicePixelRatio`, `resizeTo`
-- [x] Recalculer les **murs** Matter au resize (**`rebuildWalls`**)
-- [x] **ResizeObserver** sur le canvas (coalescé via `requestAnimationFrame`)
-- [ ] Limiter le nombre de bodies si nécessaire
+- [x] Rendu: cap du dPR (`resolutionCap`, défaut 2) + `resizeTo`
+- [x] Clamp du delta physique (`maxDeltaMs`) pour éviter les sauts après idle
+- [x] Pause/Resume du ticker sur `visibilitychange`
+- [x] Recalculer les bornes monde/Matter au resize
+- [ ] Limiter le nombre de bodies (budget FPS)
 - [ ] Choisir taille atlas MSDF (1024/2048 selon besoins)
 - [ ] Éviter `filter`/`backdrop-filter` sur le parent du canvas
 - **Validation**

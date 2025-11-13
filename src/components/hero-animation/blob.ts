@@ -70,6 +70,10 @@ export class Blob {
 		return this.#radius;
 	}
 
+	getDisplay() {
+		return this.#gfx;
+	}
+
 	/** Called by Scene on collision to trigger a jelly response. */
 	onImpact(magnitude01: number): void {
 		this.#jelly?.hit(magnitude01);
