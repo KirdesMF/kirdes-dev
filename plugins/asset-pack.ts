@@ -15,7 +15,7 @@ export function assetpackPlugin(): Plugin {
 					textureSize: [1024, 1024],
 					pot: true,
 					square: true,
-					charset: "portfolio",
+					charset: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 				},
 			}),
 			pixiManifest({ output: "manifest.json", includeMetaData: true }),

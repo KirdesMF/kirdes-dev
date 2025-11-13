@@ -5,11 +5,12 @@ import {
 	type IEventCollision,
 	type Pair,
 } from "matter-js";
-import { Application } from "pixi.js";
+import { Application, Assets } from "pixi.js";
 import { cssVarToPixiColor } from "../../utils/css-color";
 import { lerp } from "./_utils";
 import { Blob } from "./blob";
 import { createFixedStepper } from "./fixed-step";
+import { fitFontSize, MsdfText } from "./msdf-text";
 import { Panel } from "./panel";
 import { createWorld, rebuildWalls } from "./world";
 
@@ -26,6 +27,9 @@ export class Scene {
 	#vh = 0;
 	#resizeQueued = false;
 	#ro: ResizeObserver | null = null;
+	#assetsReady = false;
+	#msdfManifestUrl = "/assets/generated/manifest.json";
+	#title: MsdfText | null = null;
 
 	constructor(canvas: HTMLCanvasElement) {
 		this.#canvas = canvas;
@@ -49,6 +53,8 @@ export class Scene {
 		this.#vw = app.renderer.width;
 		this.#vh = app.renderer.height;
 
+		await this.#ensureAssets();
+
 		if (options?.physics) {
 			this.#enablePhysicsInternal();
 
@@ -56,6 +62,12 @@ export class Scene {
 				this.resetBlobs(options.blobs.count, options.blobs);
 			}
 		}
+
+		this.#ensureTitle("PORTFOLIO", {
+			fontFamily: "Commissioner-Black",
+			maxWidthRatio: 0.8,
+			baseSize: 24,
+		});
 
 		// resize
 		this.#ro?.disconnect();
@@ -212,10 +224,64 @@ export class Scene {
 		// set new viewport size
 		this.#vw = width;
 		this.#vh = height;
+
+		// refit le titre si présent
+		if (this.#title) {
+			this.#fitAndCenterTitle(this.#title, { maxWidthRatio: 0.8 });
+		}
 	}
 
 	get viewportSize() {
 		return { width: this.#vw, height: this.#vh };
+	}
+
+	// ---------- MSDF helpers ----------
+	async #ensureAssets(): Promise<void> {
+		if (this.#assetsReady) return;
+		await Assets.init({
+			manifest: this.#msdfManifestUrl,
+			basePath: "/assets/generated",
+		});
+		// Ton manifest a un bundle "default"
+		await Assets.loadBundle(["default"]);
+		this.#assetsReady = true;
+	}
+
+	#ensureTitle(
+		text: string,
+		opts?: { fontFamily?: string; maxWidthRatio?: number; baseSize?: number },
+	): void {
+		const app = this.#app;
+		if (!app) return;
+		const color = cssVarToPixiColor("--color-foreground");
+		const family = opts?.fontFamily ?? "Commissioner";
+		const baseSize = opts?.baseSize ?? 96;
+		// Crée une instance pour mesurer et afficher
+		const label = new MsdfText({
+			text,
+			fontFamily: family,
+			fontSize: baseSize,
+			color,
+		});
+		label.addTo(app.stage);
+		this.#title = label;
+		this.#fitAndCenterTitle(label, {
+			maxWidthRatio: opts?.maxWidthRatio ?? 0.8,
+		});
+	}
+
+	#fitAndCenterTitle(label: MsdfText, opts: { maxWidthRatio: number }): void {
+		const app = this.#app;
+		if (!app) return;
+		const target = Math.max(1, app.renderer.width * opts.maxWidthRatio);
+		const currentW = Math.max(1, label.width);
+		const currentSize = (label.display.style.fontSize as number) || 96;
+		const newSize = fitFontSize(currentW, currentSize, target);
+		label.setFontSize(newSize);
+		label.display.position.set(
+			app.renderer.width * 0.5,
+			app.renderer.height * 0.25,
+		);
 	}
 
 	dispose() {
@@ -237,5 +303,7 @@ export class Scene {
 		this.clearBlobs();
 		this.#panel?.dispose();
 		this.#panel = null;
+		this.#title?.dispose();
+		this.#title = null;
 	}
 }

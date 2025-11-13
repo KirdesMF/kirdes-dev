@@ -80,10 +80,10 @@
 
 ## Étape 4 — Panel de compression (logique + sync HTML)
 
-- [ ] Type/Classe **`Panel`** (AABB + `strength`, `direction`, `falloff`)
-- [ ] **Hook** avant chaque sous-step (appliquer **forces** aux bodies dans la zone)
-- [ ] **Sync HTML** : `ResizeObserver` + `getBoundingClientRect()` → conversion coord. Pixi → maj panel physique
-- [ ] (Option) **Debug viz** : rectangle semi-transparent dans Pixi
+- [x] Type/Classe **`Panel`** (AABB + `strength`, `direction`, `falloff`)
+- [x] **Hook** avant chaque sous-step (appliquer **forces** aux bodies dans la zone)
+- [x] **Sync HTML** : `ResizeObserver` + `getBoundingClientRect()` → conversion coord. Pixi → maj panel physique
+- [x] (Option) **Debug viz** : rectangle semi-transparent dans Pixi
 - **Validation**
   - [ ] Les blobs/lettres sont densifiés/repoussés quand le panel passe
 
@@ -91,8 +91,8 @@
 
 ## Étape 5 — Lettres MSDF (rendu + gélatine)
 
-- [ ] `Assets.init({ manifest: '/assets/generated/manifest.json' })` + `loadBundle('fonts')`
-- [ ] `BitmapText` avec `fontFamily` MSDF + **couleur unie** (N/B)
+- [x] `Assets.init({ manifest: '/assets/generated/manifest.json' })` + `loadBundle('fonts')`
+- [x] `BitmapText` avec `fontFamily` MSDF + **couleur unie** (N/B)
 - [ ] **Déformation gélatine** sur lettres : squash/stretch visuel + oscillation amortie à l’impact (sans shader texte custom)
 - [ ] (Option) Bodies Matter pour lettres (sinon décoratives)
 - [ ] **Option avancée — JellyPlane (mesh)** : BitmapText → RenderTexture 2× → plan maillé (ex. 24×8) ; compression **locale** dans l’AABB du panel (avec léger bulge), oscillation amortie par sommet.

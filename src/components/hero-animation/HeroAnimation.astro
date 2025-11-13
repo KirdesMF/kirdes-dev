@@ -17,14 +17,14 @@
   async function run() {
     const panel = document.querySelector<HTMLDivElement>("[data-hero-panel]");
     const scene = new Scene(getCanvas());
-    await scene.start({ physics: true, blobs: { count: 20, radius: 70 } });
+    await scene.start({ physics: true, blobs: { count: 20, radius: 25 } });
 
     if (panel) {
       scene.setPanelElement(panel, {
-        strength: 0.008,
+        strength: 0.0015,
         direction: "outward",
         falloff: "smoothstep",
-        debug: true,
+        debug: false,
       });
     }
 
