@@ -1,4 +1,9 @@
-import type { Body, Engine } from "matter-js";
+import {
+	type Body,
+	type Engine,
+	Events,
+	type IEventCollision,
+} from "matter-js";
 import { Application } from "pixi.js";
 import { lerp } from "./_utils";
 import { Blob } from "./blob";
@@ -11,6 +16,8 @@ export class Scene {
 	#engine: Engine | null = null;
 	#walls: Body[] | null = null;
 	#blobs: Blob[] = [];
+	#blobByBody = new Map<Body, Blob>();
+	#onCollisionRef: ((e: IEventCollision<Engine>) => void) | null = null;
 	#vw = 0;
 	#vh = 0;
 	#resizeQueued = false;
@@ -74,8 +81,20 @@ export class Scene {
 
 		app.ticker.add((ticker) => {
 			step(ticker.deltaMS);
-			for (const blob of this.#blobs) blob.update();
+			for (const blob of this.#blobs) blob.update(ticker.deltaMS);
 		});
+
+		// collisions → jelly
+		const onCol = (e: IEventCollision<Engine>) => {
+			for (const p of e.pairs) {
+				const a = this.#blobByBody.get(p.bodyA);
+				const b = this.#blobByBody.get(p.bodyB);
+				if (a) a.onImpact(this.#impact01(p.bodyA));
+				if (b) b.onImpact(this.#impact01(p.bodyB));
+			}
+		};
+		this.#onCollisionRef = onCol;
+		Events.on(this.#engine, "collisionStart", onCol);
 	}
 
 	addBlobs(count: number, options?: { radius?: number; margin?: number }) {
@@ -99,8 +118,10 @@ export class Scene {
 				y,
 				radius: r,
 				color: "0xffffff",
+				jelly: { frequency: 6, damping: 0.85, maxStretch: 0.18, maxSkew: 0.15 },
 			});
 			this.#blobs.push(blob);
+			this.#blobByBody.set(blob.getBody(), blob);
 		}
 	}
 
@@ -112,6 +133,7 @@ export class Scene {
 	clearBlobs() {
 		for (const blob of this.#blobs) blob.dispose();
 		this.#blobs = [];
+		this.#blobByBody.clear();
 	}
 
 	#onWindowResize = () => {
@@ -149,11 +171,23 @@ export class Scene {
 		return { width: this.#vw, height: this.#vh };
 	}
 
+	// Estimate normalized impact from a body speed (0..1).
+	#impact01(body: Body): number {
+		// Typical speed peaks ~10–20 in notre scène; clamp for stability
+		const m = Math.min(1, body.speed / 12);
+		// ease-out a bit
+		return m * (2 - m);
+	}
+
 	dispose() {
 		window.removeEventListener("resize", this.#onWindowResize);
 		if (this.#ro) {
 			this.#ro.disconnect();
 			this.#ro = null;
+		}
+		if (this.#engine && this.#onCollisionRef) {
+			Events.off(this.#engine, "collisionStart", this.#onCollisionRef);
+			this.#onCollisionRef = null;
 		}
 		this.#app?.destroy();
 		this.#app = null;
