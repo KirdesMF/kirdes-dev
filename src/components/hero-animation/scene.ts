@@ -5,6 +5,7 @@ import {
 	type IEventCollision,
 } from "matter-js";
 import { Application } from "pixi.js";
+import { cssVarToPixiColor } from "../../utils/css-color";
 import { lerp } from "./_utils";
 import { Blob } from "./blob";
 import { createFixedStepper } from "./fixed-step";
@@ -33,9 +34,10 @@ export class Scene {
 	}) {
 		if (this.#app) return;
 		const app = new Application();
+		const background = cssVarToPixiColor("--color-background");
 		await app.init({
 			canvas: this.#canvas,
-			background: "red",
+			background,
 			antialias: true,
 			resolution: window.devicePixelRatio || 1,
 			resizeTo: this.#canvas.parentElement ?? window,
@@ -108,6 +110,7 @@ export class Scene {
 		const yMin = margin;
 		const xMax = width - margin;
 		const yMax = height - margin;
+		const color = cssVarToPixiColor("--color-foreground");
 		for (let i = 0; i < count; i++) {
 			const x = lerp(xMin, xMax, Math.random());
 			const y = lerp(yMin, yMax, Math.random());
@@ -117,7 +120,7 @@ export class Scene {
 				x,
 				y,
 				radius: r,
-				color: "0xffffff",
+				color,
 				jelly: { frequency: 6, damping: 0.85, maxStretch: 0.18, maxSkew: 0.15 },
 			});
 			this.#blobs.push(blob);

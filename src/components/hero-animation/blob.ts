@@ -8,7 +8,7 @@ export type BlobParams = {
 	x: number;
 	y: number;
 	radius: number;
-	color?: string;
+	color?: string | number;
 	physics?: {
 		restitution?: number;
 		friction?: number;
