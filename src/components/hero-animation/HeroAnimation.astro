@@ -1,4 +1,9 @@
 <canvas data-hero-canvas class="block absolute inset-0 size-full"></canvas>
+<div
+  data-hero-panel
+  class="absolute left-1/2 top-1/2 h-[30%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/20"
+>
+</div>
 
 <script>
   import { Scene } from "./scene";
@@ -10,8 +15,18 @@
   }
 
   async function run() {
+    const panel = document.querySelector<HTMLDivElement>("[data-hero-panel]");
     const scene = new Scene(getCanvas());
-    await scene.start({ physics: true, blobs: { count: 100, radius: 20 } });
+    await scene.start({ physics: true, blobs: { count: 20, radius: 70 } });
+
+    if (panel) {
+      scene.setPanelElement(panel, {
+        strength: 0.008,
+        direction: "outward",
+        falloff: "smoothstep",
+        debug: true,
+      });
+    }
 
     // Cleanup on HMR/navigation
     if (import.meta.hot) {
