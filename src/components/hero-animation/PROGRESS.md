@@ -1,12 +1,25 @@
+## Mise à jour — 2025-11-13
+
+> Effet souhaité : **lettres MSDF** + **shapes/blobs/sparkles** à **déformation gélatine** (couleur unie noir/blanc selon thème), qui **s’écrasent et ondulent** sous l’effet d’un **panel** (synchro avec un panneau HTML).
+
+- [ ] **Couleur unie** (noir/blanc) pour lettres & shapes (pas de shader texte custom).
+- [ ] **Panel ⇄ HTML** : synchroniser la zone physique avec le panel DOM (ResizeObserver + `getBoundingClientRect` → coordonnées Pixi).
+- [ ] **Gélatine** : déformation élastique (squash/stretch + oscillation amortie à l’impact), priorité sur lettres.
+- [ ] **Critères** : déformation bornée (clamp), lecture intacte, 60 FPS visés.
+- [ ] **Dark / Light mode** : couleurs unies synchronisées au thème (variables CSS), contraste AA min.
+
+---
+
+# PROGRESS.md
+
 ## 🎯 Vision de l'Animation
 
-**Hero interactive avec physique organique** :
+**Hero interactive avec physique organique (Pixi v8 + Matter.js + GSAP)** :
 
-- Blobs et lettres "portfolio" tombent et flottent avec collisions réalistes
-- Panel central s'ouvre, compressant les éléments via des forces de répulsion
-- Déformation élastique type ballon de baudruche
-- Style N&B épuré avec texte MSDF haute définition
-- Physique Matter.js + rendu Pixi v8 + timeline GSAP
+- Lettres (MSDF) et shapes/blobs tombent et collisionnent
+- Un **panel** s'ouvre et **compresse** la masse
+- **Déformation gélatine** (écrasement + ondulation amortie) — pas de texture “ballon”, rendu **uni** N/B
+- Lettres MSDF nettes à toutes tailles
 
 ---
 
@@ -24,112 +37,89 @@
 
 - [x] Brancher AssetPack via `astro.config.mjs` → `vite.plugins`
 - [x] Définir `output: 'public/assets/generated/'`
-- [x] Ajouter le pipe `msdfFont({ font: { outputType: 'xml', fieldType: 'msdf', distanceRange: 3, textureSize: [1024,1024], pot: true, square: true } })`
+- [x] Ajouter le pipe `msdfFont(...)`
 - [x] Ajouter le pipe **en dernier** `pixiManifest({ output: 'manifest.json', includeMetaData: true })`
 - [x] Lancer `npm run dev` (watch) et `npm run build` (run unique)
 - **Validation**
-  - [x] Génération de `public/assets/generated/fonts/<Family>.png` + `<Family>.fnt`
-  - [x] Présence de `public/assets/generated/manifest.json`
+  - [x] `public/assets/generated/fonts/<Family>.png` + `<Family>.fnt`
+  - [x] `public/assets/generated/manifest.json` présent
 
-### 1.3 Canvas Pixi noir (client-only)
+### 1.3 Canvas Pixi (client-only)
 
-- [x] Créer un composant Astro client-only (ex: `src/components/PixiHero.astro`)
-- [x] `Application.init({ view, background: 'red', resolution: devicePixelRatio, resizeTo: container })`
+- [x] Composant Astro client-only (`HeroAnimation.astro`)
+- [x] `Application.init({ canvas, background: 'red', resolution: devicePixelRatio, resizeTo })`
 - **Validation**
-  - [x] Canvas rouge visible (sans erreur SSR)
+  - [x] Canvas visible (rouge de dev)
   - [x] Resize correct et netteté dPR
 
 ---
 
 ## Étape 2 — Boucle Physique (Matter.js) minimaliste
 
-- [ ] Instancier `Engine`, `World`, un body simple (cercle)
-- [ ] Synchroniser Pixi `Ticker` (rendu) et `Engine.update(engine, 1000/60)` (physique)
-- [ ] Associer 1 DisplayObject ↔ 1 Body (position/angle chaque frame)
+- [x] Instancier `Engine`, `World`, un body simple (cercle)
+- [x] Ticker Pixi ↔ `Engine.update` via **pas fixe**
+- [x] Associer 1 DisplayObject ↔ 1 Body (position/angle)
 - **Validation**
-  - [ ] Gravité OK + collisions avec murs
-  - [ ] Pas de dérive visible à FPS variables
-
-> Note: ne pas tweener directement `Body.position`/`angle` de Matter ; garder un **pas fixe** et pousser les bodies via des **forces** vers des cibles tweenées (cf. Étape 6.B).
+  - [x] Gravité OK + collisions avec murs
+  - [x] Pas fixe stable (no spiral-of-death)
 
 ---
 
-## Étape 3 — Blobs (esthétique + instanciation)
+## Étape 3 — Blobs & Shapes (instanciation + base)
 
-- [ ] Créer N blobs (au départ en `Graphics` ou `Sprite` placeholder)
-- [ ] Régler `density`, `friction`, `restitution`
+- [x] Créer **N blobs** (placeholder Graphics)
+- [x] Régler `density`, `friction`, `restitution`
+- [x] **Classe `Blob`** (encapsule body + visuel + `update()`/`dispose()`) — à introduire
+- [ ] **Style gélatine (blobs/shapes)** : couleur unie, légère oscillation amortie sur collision (visuel uniquement)
+- [ ] **Thème dark/light (blobs/shapes)** : teinte unie liée à des variables CSS (`--fg`), synchro avec le thème.
 - **Validation**
-  - [ ] N blobs vivants
-  - [ ] FPS stable
-  - [ ] Collisions réalistes
+  - [x] 80 blobs vivants, FPS stable
+  - [x] Collisions réalistes
 
 ---
 
-## Étape 4 — Panel de compression (couche logique)
+## Étape 4 — Panel de compression (logique + sync HTML)
 
-- [ ] Définir une zone (AABB) "panel" **sans** DisplayObject
-- [ ] Appliquer une force radiale selon la distance au centre quand panel traverse
+- [ ] Type/Classe **`Panel`** (AABB + `strength`, `direction`, `falloff`)
+- [ ] **Hook** avant chaque sous-step (appliquer **forces** aux bodies dans la zone)
+- [ ] **Sync HTML** : `ResizeObserver` + `getBoundingClientRect()` → conversion coord. Pixi → maj panel physique
+- [ ] (Option) **Debug viz** : rectangle semi-transparent dans Pixi
 - **Validation**
-  - [ ] Les blobs sont compressés/repoussés lors du passage du panel
+  - [ ] Les blobs/lettres sont densifiés/repoussés quand le panel passe
 
 ---
 
-## Étape 5 — Lettres MSDF
+## Étape 5 — Lettres MSDF (rendu + gélatine)
 
-- [ ] `Assets.init({ manifest: '/assets/manifest.json' })`
-- [ ] Charger bundle `fonts` (ou `.fnt` direct)
-- [ ] `new BitmapText({ text, style: { fontFamily: 'Inter', fontSize: 64 } })`
-- [ ] Décider si les lettres ont des bodies Matter (ou décoratives)
+- [ ] `Assets.init({ manifest: '/assets/generated/manifest.json' })` + `loadBundle('fonts')`
+- [ ] `BitmapText` avec `fontFamily` MSDF + **couleur unie** (N/B)
+- [ ] **Déformation gélatine** sur lettres : squash/stretch visuel + oscillation amortie à l’impact (sans shader texte custom)
+- [ ] (Option) Bodies Matter pour lettres (sinon décoratives)
+- [ ] **Option avancée — JellyPlane (mesh)** : BitmapText → RenderTexture 2× → plan maillé (ex. 24×8) ; compression **locale** dans l’AABB du panel (avec léger bulge), oscillation amortie par sommet.
+- [ ] **Thème dark/light (lettres)** : couleur MSDF via variables CSS (`--color-foreground`), contraste AA min.
 - **Validation**
   - [ ] Netteté parfaite à différentes tailles (pas de franges/halos)
+  - [ ] Déformation visible mais **lecture intacte**
 
 ---
 
-## Étape 6 — Séquence / Timeline (entrée, compression, release)
+## Étape 6 — Séquence / Timeline (GSAP)
 
-- [ ] **Choix lib d’animation**: **GSAP** (pilotage de valeurs JS + éventuels sprites Pixi)
-- [ ] Orchestrer: entrée blobs → panel → apparition texte → release
-- [ ] Garder la physique en pas fixe (animer les paramètres cibles)
-- [ ] Option: ajouter play/pause/seek minimal
+- [x] **Choix lib** : **GSAP**
+- [ ] Orchestrations : **lettres plein container** (repos) → **ouverture panel** (compression + ondulation) → release
+- [ ] Piloter des **valeurs JS** (ex: `panel.x/y/width/height`, intensité)
+- [ ] (Option) Controls: play/pause/seek minimal
 - **Validation**
   - [ ] Séquence cohérente et reproductible
-
-### 6.A — Pourquoi GSAP (et pas Motion) ici ?
-
-- GSAP
-  - [x] Tween de **valeurs JS** (ex: `panel.x`, coefficients), parfait pour Pixi/Matter
-  - [x] **PixiPlugin** dispo pour animer des sprites décoratifs
-  - [x] Timelines (play/pause/seek/reverse) faciles
-- Motion (Motion One / Framer Motion)
-  - [ ] Très orienté DOM/CSS/React ; moins direct pour Pixi et valeurs JS “pures”
-  - [ ] Impliquerait des îlots React si Framer, inutile ici
-
-### 6.B — Patrons d’intégration GSAP × Pixi × Matter
-
-**1) Animer un paramètre logique (panel.x)**
-
-```ts
-import gsap from "gsap";
-
-const state = { panelX: 0 };
-const tl = gsap.timeline({ defaults: { duration: 1.2, ease: "power2.inOut" } });
-
-tl.to(state, {
-  panelX: 600,
-  onUpdate: () => panel.setX(state.panelX), // applique dans ta logique
-}).to(state, {
-  panelX: 100,
-  onUpdate: () => panel.setX(state.panelX),
-});
-```
 
 ---
 
 ## Étape 7 — Responsive & Performance
 
-- [ ] Rendu: `resolution: devicePixelRatio`, `resizeTo`
-- [ ] Recalculer les bornes monde/Matter au resize
-- [ ] Limiter le nombre de bodies
+- [x] Rendu: `resolution: devicePixelRatio`, `resizeTo`
+- [x] Recalculer les **murs** Matter au resize (**`rebuildWalls`**)
+- [x] **ResizeObserver** sur le canvas (coalescé via `requestAnimationFrame`)
+- [ ] Limiter le nombre de bodies si nécessaire
 - [ ] Choisir taille atlas MSDF (1024/2048 selon besoins)
 - [ ] Éviter `filter`/`backdrop-filter` sur le parent du canvas
 - **Validation**
@@ -140,155 +130,31 @@ tl.to(state, {
 
 ## Étape 8 — Polish
 
-- [ ] Couleurs, easing, petites particules (optionnel)
+- [ ] **Gélatine avancée** (option) : **JellyPlane (mesh warp)** ou shader displacement si besoin de réalisme ↑
+- [ ] Sparkles non-physiques synchronisées à la timeline
 - [ ] Accessibilité (contraste, focus sur CTA superposé)
 - **Validation**
   - [ ] Aucun warning/erreur console
-  - [ ] Hero "prête prod" (visuel/UX)
+  - [ ] Hero “prête prod” (visuel/UX)
 
 ---
 
-# Détails d’implémentation
+## 🧩 Classes & Modules (présents / prévus)
 
-## A. `astro.config.mjs` — plugin AssetPack (exemple)
-
-```js
-import { defineConfig } from "astro/config";
-import tailwind from "@astrojs/tailwind";
-import { AssetPack } from "@assetpack/core";
-import { msdfFont } from "@assetpack/core/webfont";
-import { pixiManifest } from "@assetpack/core/manifest";
-
-function assetpackPlugin() {
-  const apConfig = {
-    entry: "./raw-assets",
-    output: "./public/assets",
-    pipes: [
-      msdfFont({
-        font: {
-          outputType: "xml", // 'json' possible
-          fieldType: "msdf",
-          distanceRange: 3,
-          textureSize: [1024, 1024],
-          pot: true,
-          square: true,
-          // charset: '...'       // optionnel: limiter la table
-        },
-      }),
-      pixiManifest({ output: "manifest.json", includeMetaData: true }),
-    ],
-  };
-
-  let watcher;
-  return {
-    name: "assetpack-in-astro",
-    async buildStart() {
-      if (process.env.ASTRO_CLI === "dev") {
-        if (!watcher) {
-          watcher = new AssetPack(apConfig);
-          void watcher.watch();
-        }
-      } else {
-        await new AssetPack(apConfig).run();
-      }
-    },
-    async closeBundle() {
-      if (watcher) {
-        await watcher.stop();
-        watcher = undefined;
-      }
-    },
-  };
-}
-
-export default defineConfig({
-  integrations: [tailwind()],
-  vite: { plugins: [assetpackPlugin()] },
-});
-```
-
-## B. Arborescence
-
-```
-public/
-  assets/
-    manifest.json
-    fonts/
-      Inter.png
-      Inter.fnt
-raw-assets/
-  fonts/
-    Inter{msdf}{family=Inter}.ttf
-src/
-  components/
-    PixiHero.astro
-  pages/
-    index.astro
-```
-
-## C. `PixiHero.astro` — canvas noir (base)
-
-```astro
----
-const id = 'pixi-hero';
----
-<div class="min-h-screen w-full flex items-center justify-center bg-black">
-  <canvas id={id} class="block w-full h-[80vh]"></canvas>
-</div>
-<script type="module">
-  import { Application } from 'pixi.js';
-  const canvas = document.getElementById('{id}');
-  const app = new Application();
-  (async () => {
-    await app.init({
-      view: canvas,
-      background: '#000000',
-      antialias: true,
-      resolution: window.devicePixelRatio || 1,
-      resizeTo: canvas.parentElement
-    });
-  })();
-</script>
-```
-
-## D. Chargement MSDF (plus tard, Étape 5)
-
-```ts
-import { Assets, BitmapText } from "pixi.js";
-await Assets.init({ manifest: "/assets/manifest.json" });
-await Assets.loadBundle(["fonts"]); // ou charge direct Inter.fnt
-const title = new BitmapText({
-  text: "Hello MSDF",
-  style: { fontFamily: "Inter", fontSize: 64 },
-});
-app.stage.addChild(title);
-```
-
-## E. Notes Tailwind v4
-
-- [ ] Conteneur plein écran: `min-h-screen w-full overflow-hidden`
-- [ ] Éviter `filter`/`backdrop-filter` sur le parent du canvas
-- [ ] Remettre `body { margin: 0; }` si nécessaire
+- [x] **`Scene`** : own Pixi App + Engine + boucle; `start()`, `dispose()`
+- [ ] **`Blob`** : body circulaire + visuel Pixi; `update()`, `dispose()`
+- [ ] **`Panel`** : logique compression (AABB + forces), sync DOM
+- [ ] **`JellyDeformer`** : mini système ressort-amorti (valeurs visuelles: scale/skew), déclenché par collisions/impulsions
+- [ ] **`JellyPlane`** : plane subdivisé (mesh) pour lettres ; `updateJelly(panelRect)` applique une compression **locale** (bulge + amorti)
+- [ ] **`SoftBody`** _(optionnel plus tard)_ : anneau de particules + contraintes (coûteux)
 
 ---
 
-# Checklist de livrables par étape
+## Notes d’implémentation rapides
 
-- [ ] **Étape 1**: sorties MSDF + manifest; canvas noir responsif
-- [ ] **Étape 2**: moteur physique au pas fixe; 1 body + sprite
-- [ ] **Étape 3**: N blobs; perf OK
-- [ ] **Étape 4**: panel logique qui compresse
-- [ ] **Étape 5**: texte MSDF net; métriques correctes
-- [ ] **Étape 6**: séquence reproductible
-- [ ] **Étape 7**: responsive dPR; FPS stable
-- [ ] **Étape 8**: polish final
-
----
-
-# Paramètres par défaut
-
-- [ ] Sortie police: **BMFont XML (.fnt)**
-- [ ] Atlas: **1024×1024**, `pot: true`, `square: true`
-- [ ] `distanceRange: 3` (augmenter à 4–6 si artefacts à grosse taille)
-- [ ] Basculer en JSON si besoin (`outputType: 'json'`)
-- [ ] Lib d’animation: **GSAP**
+- **Pas fixe** : forces panel via hook `beforeStep` (stable).
+- **Gélatine sans shader** : map _impulse/collision_ → cibles `(scaleX, scaleY, skew)` + oscillation amortie (ressort critique ou léger underdamp).
+- **Sync panel HTML** : convertir `{left, top, width, height}` DOM → `{x, y, w, h}` Pixi.
+- **Couleur** : unie (noir/blanc) selon thème; pas de highlights “ballon”.
+- **GSAP** : tweener des **paramètres logiques** (pas les positions Matter).
+- **JellyPlane** : BitmapText → RenderTexture **2×** → Mesh (cols×rows) ; offsets par sommet **uniquement** dans l’AABB du panel, **bulge latéral**, amorti (ω, ζ) ; update d’un **unique buffer de positions** par frame.

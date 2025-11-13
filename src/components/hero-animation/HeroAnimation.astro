@@ -2,6 +2,7 @@
 
 <script>
   import { Scene } from "./scene";
+
   function getCanvas() {
     const canvas = document.querySelector<HTMLCanvasElement>("[data-hero-canvas]");
     if (!canvas) throw new Error("Canvas not found");
@@ -10,17 +11,21 @@
 
   async function run() {
     const scene = new Scene(getCanvas());
-    await scene.init();
+    await scene.start({ physics: true, blobs: { count: 100, radius: 20 } });
 
     // Cleanup on HMR/navigation
     if (import.meta.hot) {
       import.meta.hot.dispose(() => {
-        scene.destroy();
+        scene.dispose();
       });
     }
-    window.addEventListener("pagehide", () => {
-      scene.destroy();
-    });
+    window.addEventListener(
+      "pagehide",
+      () => {
+        scene.dispose();
+      },
+      { once: true },
+    );
   }
 
   run();
