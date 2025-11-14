@@ -1,58 +1,6 @@
-<canvas data-hero-canvas class="block absolute inset-0 size-full"></canvas>
-<div
-  data-hero-panel
-  class="absolute left-1/2 top-1/2 h-[30%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/20"
->
-</div>
-
-<script>
-  import { Scene } from "./scene";
-  import { createHeroTimeline } from "./timeline";
-  import { gsap } from "gsap";
-
-  function getCanvas() {
-    const canvas = document.querySelector<HTMLCanvasElement>("[data-hero-canvas]");
-    if (!canvas) throw new Error("Canvas not found");
-    return canvas;
-  }
-
-  async function run() {
-    let tl = gsap.timeline();
-    const panel = document.querySelector<HTMLDivElement>("[data-hero-panel]");
-    const scene = new Scene(getCanvas());
-    await scene.start({ physics: true, blobs: { count: 20, radius: 80 } });
-
-    if (!panel) throw new Error("Panel not found");
-
-    scene.setPanelElement(panel, {
-      strength: 0.0015,
-      direction: "inward",
-      falloff: "smoothstep",
-      debug: false,
-    });
-    tl = createHeroTimeline({
-      scene,
-      autoplay: true,
-      introDuration: 5,
-      introStagger: 0.05,
-    });
-
-    // Cleanup on HMR/navigation
-    if (import.meta.hot) {
-      import.meta.hot.dispose(() => {
-        tl.kill();
-        scene.dispose();
-      });
-    }
-    window.addEventListener(
-      "pagehide",
-      () => {
-        tl.kill();
-        scene.dispose();
-      },
-      { once: true },
-    );
-  }
-
-  run();
-</script>
+<section class="w-full h-[70dvh] grid place-items-center">
+  <canvas data-hero-canvas class="block absolute inset-0 size-full -z-10"> </canvas>
+  <div data-hero-panel class="size-2/3 border rounded-sm grid place-items-center">
+    <p class="text-5xl font-heading font-bold uppercase text-center p-2">Panel for hero animation</p>
+  </div>
+</section>
