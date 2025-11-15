@@ -1,0 +1,90 @@
+{
+    "assets": {
+        "/Users/kirdes/Dev/kirdes-dev/raw-assets": {
+            "isFolder": true,
+            "metaData": {},
+            "inheritedMetaData": {},
+            "transformData": {},
+            "stats": {
+                "date": 1763064258705,
+                "duration": 0.4320829999999205,
+                "success": true
+            }
+        },
+        "/Users/kirdes/Dev/kirdes-dev/raw-assets/fonts": {
+            "isFolder": true,
+            "parent": "/Users/kirdes/Dev/kirdes-dev/raw-assets",
+            "metaData": {},
+            "inheritedMetaData": {},
+            "transformData": {},
+            "stats": {
+                "date": 1763064258705,
+                "duration": 0.9244170000001759,
+                "success": true
+            }
+        },
+        "/Users/kirdes/Dev/kirdes-dev/raw-assets/fonts/Commissioner-Black{msdf}{family=Commissioner}.ttf": {
+            "isFolder": false,
+            "parent": "/Users/kirdes/Dev/kirdes-dev/raw-assets/fonts",
+            "metaData": {
+                "msdf": true,
+                "family": "Commissioner"
+            },
+            "inheritedMetaData": {},
+            "transformData": {},
+            "stats": {
+                "date": 1763064258705,
+                "duration": 271.23749999999995,
+                "success": true
+            },
+            "hash": "1Uk9MA"
+        },
+        ".assetpack/msdf-font/fonts/Commissioner-Black.png": {
+            "isFolder": false,
+            "transformParent": "/Users/kirdes/Dev/kirdes-dev/raw-assets/fonts/Commissioner-Black{msdf}{family=Commissioner}.ttf",
+            "metaData": {
+                "nc": true,
+                "nomip": true,
+                "mIgnore": true
+            },
+            "inheritedMetaData": {
+                "msdf": true,
+                "family": "Commissioner"
+            },
+            "transformData": {}
+        },
+        "/Users/kirdes/Dev/kirdes-dev/public/assets/generated/fonts/Commissioner-Black.png": {
+            "isFolder": false,
+            "transformParent": ".assetpack/msdf-font/fonts/Commissioner-Black.png",
+            "metaData": {},
+            "inheritedMetaData": {
+                "msdf": true,
+                "family": "Commissioner",
+                "nc": true,
+                "nomip": true,
+                "mIgnore": true
+            },
+            "transformData": {}
+        },
+        ".assetpack/msdf-font/fonts/Commissioner-Black.fnt": {
+            "isFolder": false,
+            "transformParent": "/Users/kirdes/Dev/kirdes-dev/raw-assets/fonts/Commissioner-Black{msdf}{family=Commissioner}.ttf",
+            "metaData": {},
+            "inheritedMetaData": {
+                "msdf": true,
+                "family": "Commissioner"
+            },
+            "transformData": {}
+        },
+        "/Users/kirdes/Dev/kirdes-dev/public/assets/generated/fonts/Commissioner-Black.fnt": {
+            "isFolder": false,
+            "transformParent": ".assetpack/msdf-font/fonts/Commissioner-Black.fnt",
+            "metaData": {},
+            "inheritedMetaData": {
+                "msdf": true,
+                "family": "Commissioner"
+            },
+            "transformData": {}
+        }
+    }
+}
