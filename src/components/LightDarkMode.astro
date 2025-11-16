@@ -1,0 +1,8 @@
+<button data-theme-btn class="border px-4 py-6">Theme</button>
+
+<script>
+  import { setTheme } from "../lib/theme";
+  const toggleBtn = document.querySelector<HTMLButtonElement>("[data-theme-btn]");
+
+  toggleBtn?.addEventListener("click", setTheme);
+</script>

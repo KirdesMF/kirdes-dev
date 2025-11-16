@@ -1,4 +1,6 @@
 ---
+import LightDarkMode from "../../components/LightDarkMode.astro";
+import PixiTestColor from "../../components/PixiTestColor.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
 
@@ -21,8 +23,12 @@ export async function getStaticPaths() {
           <li><a href={`/${lang}/gallery`}>{t("nav.gallery")}</a></li>
         </ul>
       </nav>
+
+      <LightDarkMode />
     </header>
-    <section class="col-span-full"></section>
+    <section class="col-span-full h-[50dvh] relative">
+      <PixiTestColor />
+    </section>
     <section class="col-span-full"></section>
     <section class="col-span-full"></section>
     <footer class="col-span-full"></footer>
