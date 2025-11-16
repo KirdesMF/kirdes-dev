@@ -11,6 +11,7 @@
     const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const isDark = stored ? stored === "dark" : systemPrefersDark;
 
+    root.style.colorScheme = isDark ? "dark" : "light";
     // 2️⃣ Apply instantly before render (prevents FOUC)
     root.classList.toggle("dark", isDark);
 

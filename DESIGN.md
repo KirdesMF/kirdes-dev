@@ -94,7 +94,7 @@ Ce document décrit les principes visuels, interactifs, la structure globale des
   - ASCII banner “AVAILABLE TO WORK” / équivalent FR.
   - Graph GitHub ASCII.
   - Compteur d’années `©`.
-  - Contrôles / sliders de réglages (dev panel).
+  - Contrôles / sliders de réglages (panel utilisateur).
   - Gestion device orientation (mobile).
   - Switch de thème (dark/light).
   - Switch de langue (FR / EN).
@@ -136,7 +136,7 @@ Ce document décrit les principes visuels, interactifs, la structure globale des
 - À droite : cluster de contrôles “système” :
   - **Language switch** : `FR / EN` (toggle simple, lisible).
   - **Theme switch** : dark/light (icône ou label textuel).
-  - (Optionnel dev-only: toggle pour activer/désactiver la lens XRAY).
+  - (Éventuellement, accès au panel de réglages si tu décides de le rendre global).
 
 Micro-interaction : les toggles peuvent avoir une micro animation spring à l’activation, mais restent très lisibles.
 
@@ -183,7 +183,7 @@ Micro-interaction : les toggles peuvent avoir une micro animation spring à l’
 
 ## 5. Global systems
 
-### 5.1 Elastic model
+### 5.1 Elastic model & control panel
 
 - Un spring model cohérent partout :
   - Paramètres : `tension`, `damping`, `range`, `frequency`.
@@ -193,9 +193,27 @@ Micro-interaction : les toggles peuvent avoir une micro animation spring à l’
     - cordes / poings,
     - hover de cartes (micro-spring),
     - grille de techs (voisinage qui bouge),
-    - lignes décoratives (repel / snap).
+    - lignes décoratives (repel / snap),
+    - **sin waves du tissu texte** (amplitude / fréquence / vitesse),
+    - **lignes élastiques** (titres, décor).
 
-Un panel de réglages (au moins en dev) permet de tweaker ces paramètres.
+- Un **panel de réglages accessible aux utilisateurs** permet de tweaker ces paramètres de manière encadrée :
+  - sliders / inputs pour les valeurs clés (amplitude, fréquence, damping, etc.),
+  - **petit visuel de preview** intégré au panel :
+    - une mini ligne élastique et/ou un mini bout de tissu texte,
+    - qui réagit en live aux sliders (pour voir l’effet sans quitter le panel),
+  - **pré-réglages nommés** applicables d’un clic, par exemple :
+    - `Calm` (amplitude faible, fréquence basse, damping fort),
+    - `Tendu` (amplitude modérée, fréquence haute, peu de damping),
+    - `Mou` (amplitude moyenne, basse fréquence, damping moyen),
+    - d’autres presets possibles pour les besoins (ex: “Bouncy”, “Stiff”).
+
+- Possibilité d’avoir un **mode avancé** (par ex. via un flag dev ou un raccourci) exposant plus de paramètres pour toi, mais la version par défaut doit rester utilisable et compréhensible pour les visiteurs.
+
+Les presets doivent s’appliquer à la fois :
+- aux **waves du tissu texte**,
+- aux **lignes élastiques** (bandes de titres, cordes, décor),
+pour garder une signature de mouvement cohérente sur tout le site.
 
 ### 5.2 Lens (XRAY)
 
@@ -452,7 +470,7 @@ Limiter :
    - Banner ASCII “AVAILABLE TO WORK” + lat/lon + heures.
 3. **Titre stack élastique (hero)**
    - Implémentation bande + couches + spring.
-   - Panel de réglages (dev).
+   - Panel de réglages utilisateur, avec mini preview + presets.
 4. **WORKS**
    - Grid de cartes + flèches ASCII + hover spring simple.
 5. **ABOUT**

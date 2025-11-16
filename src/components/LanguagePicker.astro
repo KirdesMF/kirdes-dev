@@ -1,0 +1,25 @@
+---
+import { languages } from "../i18n/ui";
+import { getLangFromURL, getRouteFromURL } from "../i18n/utils";
+
+const route = getRouteFromURL(Astro.url);
+const curLang = getLangFromURL(Astro.url);
+
+function isActive(lang: string) {
+	return lang === curLang;
+}
+---
+
+<nav>
+  <ul class="flex gap-4">
+    {
+      Object.entries(languages).map(([lang, label]) => (
+        <li>
+          <a data-active={isActive(lang)} href={`/${lang}/${route}`} class="data-[active='true']:text-red-600">
+            {label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

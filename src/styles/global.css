@@ -49,16 +49,20 @@ html {
 }
 
 :root {
-	--color-background: oklch(1 0 0); /* #f3e7d7 / oklch(0.9332 0.025 75.27) */
-	--color-foreground: oklch(0.329 0 0); /* #353535 /  oklch(0.329 0 0) */
+	--white: oklch(1 0 0);
+	--black: oklch(0.329 0 0);
 
+	--color-background: var(--white);
+	--color-foreground: var(--black);
 	--hero-bg: var(--color-background);
 	--hero-fg: var(--color-foreground);
 }
 
 :root.dark {
-	--color-background: oklch(0.329 0 0); /* #353535 */
-	--color-foreground: oklch(1 0 0); /* #f1f1f1 oklch(0.9332 0.025 75.27)*/
+	--color-background: var(--black);
+	--color-foreground: var(--white);
+	--hero-bg: var(--color-background);
+	--hero-fg: var(--color-foreground);
 }
 
 /* biome-ignore lint: lint/suspicious/noUnknownAtRules */
