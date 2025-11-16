@@ -8,8 +8,6 @@ const curLang = getLangFromURL(Astro.url);
 function isActive(lang: string) {
 	return lang === curLang;
 }
-
-console.log("curLang:", curLang);
 ---
 
 <nav>

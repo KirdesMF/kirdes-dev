@@ -56,3 +56,13 @@ export function onThemeChange(callback: (theme: Theme) => void) {
 	// Return cleanup function
 	return () => window.removeEventListener("themechange", handler);
 }
+
+export function setTheme() {
+	document.documentElement.classList.toggle("dark");
+	// dispatch event so we can react to theme changes in canvas
+	window.dispatchEvent(
+		new CustomEvent("themechange", {
+			detail: { theme: isDark() ? "dark" : "light" },
+		}),
+	);
+}
