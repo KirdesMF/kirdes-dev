@@ -1,0 +1,30 @@
+---
+import { getLangFromUrl, useTranslations } from "../../i18n/utils";
+import Layout from "../../layouts/Layout.astro";
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+
+export async function getStaticPaths() {
+	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
+}
+---
+
+<Layout>
+  <div class="container grid grid-cols-8 mx-auto">
+    <header class="col-span-full">
+      <nav class="py-6">
+        <ul class="flex gap-4">
+          <li><a href={`/${lang}/`}>{t("nav.home")}</a></li>
+          <li><a href={`/${lang}/blog`}>{t("nav.blog")}</a></li>
+          <li><a href={`/${lang}/snippets`}>{t("nav.snippets")}</a></li>
+          <li><a href={`/${lang}/gallery`}>{t("nav.gallery")}</a></li>
+        </ul>
+      </nav>
+    </header>
+    <section class="col-span-full"></section>
+    <section class="col-span-full"></section>
+    <section class="col-span-full"></section>
+    <footer class="col-span-full"></footer>
+  </div>
+</Layout>
