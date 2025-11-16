@@ -1,8 +1,8 @@
 ---
-import { getLangFromUrl, useTranslations } from "../../i18n/utils";
+import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
 
-const lang = getLangFromUrl(Astro.url);
+const lang = getLangFromURL(Astro.url);
 const t = useTranslations(lang);
 
 export async function getStaticPaths() {
