@@ -1,0 +1,30 @@
+<button data-menu-btn class="h-full border-s p-4">Menu</button>
+
+<script>
+  import { emitMenuToggle, onMenuToggle } from "./menu-events";
+
+  function setupMenuToggleButton(): void {
+    const btn = document.querySelector<HTMLButtonElement>("[data-menu-btn]");
+    if (!btn) throw new Error("Menu button not found");
+
+    let isOpen = false;
+
+    // 1) Le bouton s'abonne à l'état global du menu
+    const unsubscribe = onMenuToggle((open) => {
+      isOpen = open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
+    // 2) Le clic demande juste un toggle à partir de l'état courant
+    btn.addEventListener("click", () => {
+      emitMenuToggle(!isOpen);
+    });
+
+    // cleanup
+    window.addEventListener("beforeunload", () => {
+      unsubscribe();
+    });
+  }
+
+  setupMenuToggleButton();
+</script>
