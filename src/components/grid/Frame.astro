@@ -1,0 +1,67 @@
+---
+import type { HTMLTag, Polymorphic } from "astro/types";
+
+type Side = "top" | "right" | "bottom" | "left";
+type Square = "ts" | "te" | "bs" | "be";
+
+type Props<T extends HTMLTag = HTMLTag> = Polymorphic<{
+	as: T;
+	class?: string;
+	/**
+	 * Côtés à masquer ("top", "right", "bottom", "left").
+	 * Par défaut, tous les côtés sont visibles.
+	 */
+	disabledSides?: Array<Side>;
+	/**
+	 * Coins à masquer ("ts", "te", "bs", "be").
+	 * Par défaut, tous les coins sont visibles.
+	 */
+	disabledSquares?: Array<Square>;
+	/**
+	 * Style de bordure.
+	 * "none" masque toutes les lignes, les autres valeurs pourront être stylées plus tard.
+	 */
+	variant?: "dashed" | "solid" | "none";
+}>;
+
+const {
+	as: Tag = "div",
+	class: className = "",
+	disabledSides,
+	disabledSquares,
+	variant = "solid",
+	...rest
+} = Astro.props;
+
+const SIDE_DEFS: Array<{ key: Side; className: string }> = [
+	{ key: "left", className: "absolute inset-y-0 start-0 w-px z-10" },
+	{ key: "top", className: "absolute inset-x-0 top-0 h-px z-10" },
+	{ key: "right", className: "absolute inset-y-0 -end-px w-px z-10" },
+	{ key: "bottom", className: "absolute inset-x-0 -bottom-px h-px z-10" },
+];
+
+const SQUARE_DEFS: Array<{ key: Square; className: string }> = [
+	{ key: "ts", className: "top-0 start-0 -translate-1/2" },
+	{ key: "te", className: "top-0 end-0 -translate-y-1/2 translate-x-1/2" },
+	{ key: "bs", className: "bottom-0 start-0 translate-y-1/2 -translate-x-1/2" },
+	{ key: "be", className: "bottom-0 end-0 translate-1/2" },
+];
+
+const sides = SIDE_DEFS.filter(({ key }) => {
+	if (!disabledSides) return true;
+	return !disabledSides.includes(key);
+});
+
+const squares = SQUARE_DEFS.filter(({ key }) => {
+	if (!disabledSquares) return true;
+	return !disabledSquares.includes(key);
+});
+
+const lineBaseClass = variant === "none" ? "hidden" : "bg-foreground";
+---
+
+<Tag class:list={["relative bg-background", className]} {...rest}>
+  {sides.map(({ className }) => <span class:list={[className, lineBaseClass]} />)}
+  {squares.map(({ className }) => <div class:list={["absolute size-2 bg-foreground z-20 rotate-45", className]} />)}
+  <slot />
+</Tag>

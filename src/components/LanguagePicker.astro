@@ -1,6 +1,7 @@
 ---
 import { languages } from "../i18n/ui";
 import { getLangFromURL, getRouteFromURL } from "../i18n/utils";
+import Frame from "./grid/Frame.astro";
 
 const route = getRouteFromURL(Astro.url);
 const curLang = getLangFromURL(Astro.url);
@@ -10,8 +11,8 @@ function isActive(lang: string) {
 }
 ---
 
-<nav>
-  <ul class="flex gap-4">
+<Frame as="nav" class="col-span-2">
+  <ul class="flex gap-4 px42 py-4 items-center justify-center">
     {
       Object.entries(languages).map(([lang, label]) => (
         <li>
@@ -22,4 +23,4 @@ function isActive(lang: string) {
       ))
     }
   </ul>
-</nav>
+</Frame>

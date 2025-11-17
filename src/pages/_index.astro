@@ -1,8 +1,8 @@
 ---
-import GridBox from "../../components/GridBox.astro";
-import GridContainer from "../../components/GridContainer.astro";
-import Menu from "../../components/Menu.astro";
-import Layout from "../../layouts/Layout.astro";
+import GridBox from "../components/GridBox.astro";
+import GridContainer from "../components/GridContainer.astro";
+import Menu from "../components/Menu.astro";
+import Layout from "../layouts/Layout.astro";
 
 export async function getStaticPaths() {
 	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
@@ -74,12 +74,12 @@ export async function getStaticPaths() {
 </Layout>
 
 <script>
-  import { SplashWaveScene } from "../../lib/canvas-2d/splash-wave";
-  import { MoireCanvas } from "../../lib/lines-repel/moire";
-  import { LinesRepelScene } from "../../lib/lines-repel/lines-repel-scene";
-  import { WaveScene } from "../../lib/wave/wave-scene";
-  import { setupWaveSectionController } from "../../lib/wave/wave-scroll-controller";
-  import { MENU_STATE_EVENT, dispatchMenuRequest } from "../../lib/menu";
+  import { SplashWaveScene } from "../lib/canvas-2d/splash-wave";
+  import { MoireCanvas } from "../lib/lines-repel/moire";
+  import { LinesRepelScene } from "../lib/lines-repel/lines-repel-scene";
+  import { WaveScene } from "../lib/wave/wave-scene";
+  import { setupWaveSectionController } from "../lib/wave/wave-scroll-controller";
+  import { MENU_STATE_EVENT, dispatchMenuRequest } from "../lib/menu";
   import { gsap } from "gsap";
   import { ScrollTrigger } from "gsap/ScrollTrigger";
 

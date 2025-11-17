@@ -56,6 +56,8 @@ html {
 	--color-foreground: var(--black);
 	--hero-bg: var(--color-background);
 	--hero-fg: var(--color-foreground);
+
+	--lens-radius: 0px;
 }
 
 :root.dark {
@@ -76,6 +78,8 @@ html {
 
 	--inset-shadow-cutout: inset 0 0 20px var(--color-foreground);
 	--inset-shadow-cutout-deep: inset 0 0 30px var(--color-foreground);
+
+	--inset-shadow-border: inset 0 0 1px var(--color-foreground);
 }
 
 /* biome-ignore lint: lint/suspicious/noUnknownAtRules */
@@ -89,15 +93,4 @@ html {
 		linear-gradient(var(--color-foreground) 1px, transparent 1px),
 		linear-gradient(to right, var(--color-foreground) 1px, transparent 1px);
 	background-size: calc(--value(integer) * 1px) calc(--value(integer) * 1px);
-}
-
-/* biome-ignore lint: lint/suspicious/noUnknownAtRules */
-@utility striped {
-	background-image: repeating-linear-gradient(
-		135deg,
-		var(--color-foreground),
-		var(--color-foreground) 2px,
-		transparent 2px,
-		transparent 8px
-	);
 }
