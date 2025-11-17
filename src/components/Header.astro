@@ -1,0 +1,26 @@
+---
+import { getLangFromURL, useTranslations } from "../i18n/utils";
+import Frame from "./grid/Frame.astro";
+import FrameStriped from "./grid/FrameStriped.astro";
+import GridLayout from "./grid/GridLayout.astro";
+import LanguagePicker from "./LanguagePicker.astro";
+
+const lang = getLangFromURL(Astro.url);
+const t = useTranslations(lang);
+---
+
+<header class="pt-40 px-12">
+  <GridLayout>
+    <Frame as="nav" class="col-span-2">
+      <ul class="flex gap-6 py-4 px-6 items-center">
+        <li><a href={`/${lang}/`}>{t("nav.home")}</a></li>
+        <li><a href={`/${lang}/blog`}>{t("nav.blog")}</a></li>
+        <li><a href={`/${lang}/snippets`}>{t("nav.snippets")}</a></li>
+        <li><a href={`/${lang}/gallery`}>{t("nav.gallery")}</a></li>
+      </ul>
+    </Frame>
+
+    <FrameStriped class="col-span-4" />
+    <LanguagePicker />
+  </GridLayout>
+</header>

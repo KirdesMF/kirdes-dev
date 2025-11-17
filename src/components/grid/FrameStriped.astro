@@ -1,0 +1,39 @@
+---
+import type { HTMLTag, Polymorphic } from "astro/types";
+// FILE: src/components/grid/FrameStriped.astro
+import Frame from "./Frame.astro";
+
+type Props<T extends HTMLTag = HTMLTag> = Polymorphic<{
+	as: T;
+	class?: string;
+}>;
+
+const { as: Tag = "div", class: className = "", ...rest } = Astro.props;
+---
+
+<Frame as={Tag} class={className} {...rest}>
+  <div class="relative size-full">
+    <div class="pointer-events-none absolute inset-0">
+      <svg aria-hidden="true" focusable="false" class="block h-full w-full">
+        <rect
+          class="striped-parallax"
+          x="-32"
+          y="-32"
+          width="calc(100% + 64px)"
+          height="calc(100% + 64px)"
+          fill="url(#pattern-frame-stripes)"></rect>
+      </svg>
+    </div>
+
+    <slot />
+  </div>
+</Frame>
+
+<style>
+  .striped-parallax {
+    transform: translate(
+      calc((var(--lens-x) - 50vw) * var(--stripe-parallax, 0.02) * -1),
+      calc((var(--lens-y) - 50vh) * var(--stripe-parallax, 0.02) * -1)
+    );
+  }
+</style>
