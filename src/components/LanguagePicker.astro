@@ -11,16 +11,16 @@ function isActive(lang: string) {
 }
 ---
 
-<Frame as="nav" class="col-span-2">
-  <ul class="flex gap-4 px42 py-4 items-center justify-center">
+<nav>
+  <ul class="flex gap-2 px42 py-4 items-center justify-center">
     {
       Object.entries(languages).map(([lang, label]) => (
         <li>
-          <a data-active={isActive(lang)} href={`/${lang}/${route}`} class="data-[active='true']:text-red-600">
+          <a data-active={isActive(lang)} href={`/${lang}/${route}`} class="data-[active='true']:font-bold text-sm">
             {label}
           </a>
         </li>
       ))
     }
   </ul>
-</Frame>
+</nav>

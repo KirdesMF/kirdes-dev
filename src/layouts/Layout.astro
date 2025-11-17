@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import GridRails from "../components/grid/GridRails.astro";
 import Header from "../components/Header.astro";
+import Menu from "../components/menu/Menu.astro";
 import SvgPatternDefs from "../components/SvgPatternDefs.astro";
 import ThemeScript from "../components/ThemeScript.astro";
 
@@ -24,6 +25,7 @@ const { title = "Cédric Gourville portfolio" } = Astro.props;
     <ThemeScript />
   </head>
   <body class="bg-background text-foreground font-body font-light overflow-x-hidden">
+    <Menu />
     <SvgPatternDefs />
     <GridRails />
     <Header />
