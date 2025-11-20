@@ -9,6 +9,7 @@
 		"ignoreUnknown": false
 	},
 	"formatter": {
+		"lineWidth": 120,
 		"enabled": true,
 		"indentStyle": "tab"
 	},
@@ -39,7 +40,7 @@
 		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": "off"
 			}
 		}
 	},
