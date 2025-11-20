@@ -1,11 +1,10 @@
 ---
-import ElasticTitle from "../../components/ElasticTitle.astro";
 import Frame from "../../components/grid/Frame.astro";
 import FrameStriped from "../../components/grid/FrameStriped.astro";
 import GridLayout from "../../components/grid/GridLayout.astro";
 import Lens from "../../components/Lens.astro";
-import PortfolioTissue from "../../components/PortfolioTissue.astro";
-import RippleText from "../../components/RippleText.astro";
+import RippleText from "../../components/ripple-text/RippleText.astro";
+import PortfolioTissue from "../../components/text-tissue/PortfolioTissue.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
 
@@ -18,30 +17,24 @@ export async function getStaticPaths() {
 ---
 
 <Layout>
-  <Lens />
+	<Lens/>
 
-  <main class="px-12">
-    <section data-section="home" class="relative container mx-auto">
-      <GridLayout class="h-[60vh]">
-        <Frame class="col-span-full" />
-      </GridLayout>
+	<main class="px-12">
+		<section data-section="home" class="relative container mx-auto">
+			<GridLayout class="h-[60vh]">
+				<Frame class="col-span-full"/>
+			</GridLayout>
 
-      <GridLayout class="h-15">
-        <Frame class="col-span-6" />
-        <FrameStriped class="col-span-2" />
-      </GridLayout>
-    </section>
+			<GridLayout class="h-15">
+				<Frame class="col-span-6"/>
+				<FrameStriped class="col-span-2"/>
+			</GridLayout>
+		</section>
 
-    <section class="relative container mx-auto h-[60vh]">
-      <div class="absolute inset-0">
-        <RippleText text="KINETIC WAVE" />
-      </div>
-    </section>
-
-    <section class="relative container mx-auto h-[60vh]">
-      <div class="absolute inset-0">
-        <ElasticTitle />
-      </div>
-    </section>
-  </main>
+		<section class="relative container mx-auto h-[60vh]">
+			<div class="absolute inset-0">
+				<RippleText text="KINETIC WAVE"/>
+			</div>
+		</section>
+	</main>
 </Layout>

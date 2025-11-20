@@ -1,0 +1,43 @@
+---
+interface Props {
+	text?: string;
+	textColor?: string;
+	backgroundColor?: string;
+	rippleSpeed?: number;
+	rippleFrequency?: number;
+	rippleAmplitude?: number;
+}
+
+const {
+	text = "KINETIC WAVE",
+	textColor = "#82fa1e",
+	backgroundColor = "#050505",
+	rippleSpeed = 0.05,
+	rippleFrequency = 0.02,
+	rippleAmplitude = 50,
+} = Astro.props;
+---
+
+<div
+	id="ripple-text-container"
+	class="w-full h-full min-h-[600px] relative overflow-hidden bg-black rounded-xl"
+	data-text={text}
+	data-color={textColor}
+	data-bg={backgroundColor}
+></div>
+
+<script>
+	import { RippleTextEffect } from "./ripple-text";
+
+	const init = () => {
+		if (document.getElementById("ripple-text-container")) {
+			new RippleTextEffect("ripple-text-container");
+		}
+	};
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init);
+	} else {
+		init();
+	}
+</script>
