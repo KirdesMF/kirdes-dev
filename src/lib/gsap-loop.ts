@@ -89,7 +89,9 @@ export function horizontalLoop(
 		item = itemsArray[i] as HTMLElement;
 		curX = (xPercents[i] / 100) * widths[i];
 		distanceToStart = item.offsetLeft + curX - startX;
-		distanceToLoop = distanceToStart + widths[i] * (gsap.getProperty(item, "scaleX") as number);
+		distanceToLoop =
+			distanceToStart +
+			widths[i] * (gsap.getProperty(item, "scaleX") as number);
 
 		tl.to(
 			item,
@@ -102,11 +104,14 @@ export function horizontalLoop(
 			.fromTo(
 				item,
 				{
-					xPercent: snap(((curX - distanceToLoop + totalWidth) / widths[i]) * 100),
+					xPercent: snap(
+						((curX - distanceToLoop + totalWidth) / widths[i]) * 100,
+					),
 				},
 				{
 					xPercent: xPercents[i],
-					duration: (curX - distanceToLoop + totalWidth - curX) / pixelsPerSecond,
+					duration:
+						(curX - distanceToLoop + totalWidth - curX) / pixelsPerSecond,
 					immediateRender: false,
 				},
 				distanceToLoop / pixelsPerSecond,

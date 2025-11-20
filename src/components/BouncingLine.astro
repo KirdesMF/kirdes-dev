@@ -1,17 +1,12 @@
 ---
 type Props = {
-	className?: string;
+  className?: string;
 };
 const { className } = Astro.props;
 ---
 
 <svg class={className} id="bouncing-line-svg" viewBox="0 0 800 400" preserveAspectRatio="none">
-  <path
-    id="bouncing-line"
-    class="fill-none stroke-2 stroke-foreground"
-    d="M200,200 Q 400,200 600,200"
-  >
-  </path>
+  <path id="bouncing-line" class="fill-none stroke-2 stroke-foreground" d="M200,200 Q 400,200 600,200"> </path>
 </svg>
 
 <script>
