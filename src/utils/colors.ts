@@ -1,43 +1,54 @@
-type Rgb01 = [number, number, number];
+export type RgbFloat = {
+	r: number;
+	g: number;
+	b: number;
+};
 
 /**
- * Converts a CSS color string to RGB values in the range [0, 255].
+ * Convert a CSS color (including OKLCH) to linear-ish RGB floats in [0, 1].
+ * Uses a 1×1 canvas so the browser does the parsing and conversion.
  */
-export function cssColorToRgb255(cssColor: string): [number, number, number] {
+export function convertCssColorToRgbFloat(input: string): RgbFloat {
 	const canvas = document.createElement("canvas");
 	canvas.width = 1;
 	canvas.height = 1;
+
 	const ctx = canvas.getContext("2d");
-	if (!ctx) return [0, 0, 0];
+	if (!ctx) throw new Error("no canvas context to use");
 
-	ctx.fillStyle = cssColor;
+	ctx.clearRect(0, 0, 1, 1);
+	ctx.fillStyle = input;
 	ctx.fillRect(0, 0, 1, 1);
-	const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-	return [r, g, b];
+
+	const data = ctx.getImageData(0, 0, 1, 1).data;
+	const r = data[0] / 255;
+	const g = data[1] / 255;
+	const b = data[2] / 255;
+
+	return { r, g, b };
 }
 
-/**
- * Converts a CSS color string to RGB values in the range [0, 1].
- */
-export function cssColorToRgb01(cssColor: string): Rgb01 {
-	const [r, g, b] = cssColorToRgb255(cssColor);
-	return [r / 255, g / 255, b / 255];
+export type ThemeColorsFloat = {
+	background: RgbFloat;
+	foreground: RgbFloat;
+};
+
+export function readThemeColorsFromCss(): ThemeColorsFloat {
+	const rootStyle = getComputedStyle(document.documentElement);
+	const bgRaw =
+		rootStyle.getPropertyValue("--color-background").trim() || "#000000";
+	const fgRaw =
+		rootStyle.getPropertyValue("--color-foreground").trim() || "#ffffff";
+
+	return {
+		background: convertCssColorToRgbFloat(bgRaw),
+		foreground: convertCssColorToRgbFloat(fgRaw),
+	};
 }
 
-/**
- * Converts a CSS color string to a PixiJS hex color value.
- */
-export function cssColorToPixiHex(cssColor: string): number {
-	const [r, g, b] = cssColorToRgb255(cssColor);
+export function rgbFloatToHex(color: RgbFloat): number {
+	const r = Math.round(color.r * 255);
+	const g = Math.round(color.g * 255);
+	const b = Math.round(color.b * 255);
 	return (r << 16) | (g << 8) | b;
-}
-
-/**
- * Converts a CSS color string to a PixiJS hex color value.
- */
-export function cssVarToPixiHex(cssVar: string): number {
-	const cssColor = getComputedStyle(document.documentElement).getPropertyValue(
-		cssVar,
-	);
-	return cssColorToPixiHex(cssColor);
 }

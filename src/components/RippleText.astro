@@ -1,0 +1,322 @@
+---
+interface Props {
+  text?: string;
+  textColor?: string;
+  backgroundColor?: string;
+  rippleSpeed?: number;
+  rippleFrequency?: number;
+  rippleAmplitude?: number;
+}
+
+const {
+  text = "KINETIC WAVE",
+  textColor = "#82fa1e",
+  backgroundColor = "#050505",
+  rippleSpeed = 0.05,
+  rippleFrequency = 0.02,
+  rippleAmplitude = 50,
+} = Astro.props;
+---
+
+<div id="ripple-text-container" class="w-full h-full min-h-[600px] relative overflow-hidden bg-black rounded-xl" data-text={text} data-color={textColor} data-bg={backgroundColor}>
+</div>
+
+<script>
+  import { Application, Text, Container, TextStyle, DisplacementFilter, Sprite, Texture, Graphics, RenderTexture } from 'pixi.js';
+
+  class RippleTextEffect {
+    app!: Application;
+    container: HTMLElement;
+    textContainer!: Container;
+    displacementContainer!: Container;
+    displacementTexture!: RenderTexture;
+    displacementSprite!: Sprite;
+    displacementFilter!: DisplacementFilter;
+    waveTexture!: Texture;
+    waves: Sprite[] = [];
+    lastSpawn: number = 0;
+    isMouseDown: boolean = false;
+    lastSpawnPos: {x: number, y: number} | null = null;
+    
+    config!: {
+      text: string;
+      textColor: string;
+      backgroundColor: string;
+    };
+
+    constructor(containerId: string) {
+      this.container = document.getElementById(containerId) as HTMLElement;
+      if (!this.container) return;
+
+      this.config = {
+        text: this.container.dataset.text || "KINETIC WAVE",
+        textColor: this.container.dataset.color || "#82fa1e",
+        backgroundColor: this.container.dataset.bg || "#050505",
+      };
+
+      this.init();
+    }
+
+    async init() {
+      this.app = new Application();
+      
+      await this.app.init({
+        resizeTo: this.container,
+        background: this.config.backgroundColor,
+        antialias: true,
+        autoDensity: true,
+        resolution: window.devicePixelRatio || 1,
+      });
+
+      this.container.appendChild(this.app.canvas);
+
+      this.textContainer = new Container();
+      this.app.stage.addChild(this.textContainer);
+
+      this.createGrid();
+      this.createDisplacementSystem();
+      
+      this.app.ticker.add((ticker) => {
+        this.animate(ticker.deltaTime);
+      });
+
+      window.addEventListener('resize', () => this.handleResize());
+      
+      this.container.addEventListener('mousedown', (e) => {
+        this.isMouseDown = true;
+        this.handleInput(e);
+      });
+
+      window.addEventListener('mouseup', () => {
+        this.isMouseDown = false;
+        this.lastSpawnPos = null;
+      });
+
+      this.container.addEventListener('mousemove', (e) => {
+        if (this.isMouseDown) {
+          this.handleInput(e);
+        }
+      });
+    }
+
+    handleInput(e: MouseEvent) {
+      const rect = this.container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Throttle spawning by distance to create a smooth trail without too many particles
+      if (!this.lastSpawnPos || Math.hypot(x - this.lastSpawnPos.x, y - this.lastSpawnPos.y) > 40) {
+        this.spawnWave(x, y);
+        this.lastSpawnPos = { x, y };
+      }
+    }
+
+    createGrid() {
+      this.textContainer.removeChildren();
+      
+      const style = new TextStyle({
+        fontFamily: ['Impact', 'Arial Black', 'Helvetica Neue', 'sans-serif'],
+        fontSize: 100,
+        fontWeight: '900',
+        fill: this.config.textColor,
+        align: 'center',
+        letterSpacing: -2,
+        dropShadow: {
+            alpha: 0.4,
+            angle: Math.PI / 6,
+            blur: 5,
+            color: '#000000',
+            distance: 5,
+        },
+      });
+
+      const tempText = new Text({ text: this.config.text, style });
+      const textWidth = tempText.width;
+      const textHeight = tempText.height;
+      
+      const gapX = 40;
+      const gapY = 0;
+
+      const cols = Math.ceil(this.app.screen.width / (textWidth + gapX)) + 2;
+      const rows = Math.ceil(this.app.screen.height / (textHeight + gapY)) + 2;
+
+      const startX = -textWidth;
+      const startY = -textHeight;
+
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          const text = new Text({ text: this.config.text, style });
+          text.x = startX + i * (textWidth + gapX);
+          text.y = startY + j * (textHeight + gapY);
+          this.textContainer.addChild(text);
+        }
+      }
+    }
+
+    createDisplacementSystem() {
+      // 1. Create the Wave Texture (Concentric Sine Waves)
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d')!;
+      const imageData = ctx.createImageData(256, 256);
+      const data = imageData.data;
+
+      const centerX = 128;
+      const centerY = 128;
+      const maxRadius = 128;
+
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const dx = x - centerX;
+          const dy = y - centerY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          const index = (y * 256 + x) * 4;
+
+          if (distance < maxRadius) {
+            // Create concentric sine waves
+            // Frequency controls how many rings
+            const frequency = 0.3; 
+            // Amplitude fades out towards the edge
+            const edgeFade = 1 - Math.pow(distance / maxRadius, 2);
+            
+            const val = Math.sin(distance * frequency) * 127 * edgeFade;
+            
+            // Neutral grey is 128. 
+            // Red channel for X displacement, Green for Y.
+            // We want the displacement to be radial.
+            // Actually, standard displacement filter uses the color value to displace in X and Y.
+            // Usually Red -> X, Green -> Y.
+            // If we just put the sine wave in both, it displaces diagonally.
+            // For a true optical ripple, we might want the normal map, but Pixi DisplacementFilter
+            // just shifts pixels based on brightness.
+            // Let's stick to a simple brightness map for now, or identical R and G.
+            
+            const color = 128 + val;
+            
+            data[index] = color;     // R
+            data[index + 1] = color; // G
+            data[index + 2] = 128;   // B (unused usually)
+            data[index + 3] = 255 * edgeFade; // Alpha - fade out edges to blend with container
+          } else {
+            data[index] = 128;
+            data[index + 1] = 128;
+            data[index + 2] = 128;
+            data[index + 3] = 0; // Transparent outside circle
+          }
+        }
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+
+      this.waveTexture = Texture.from(canvas);
+
+      // 2. Setup Displacement Container (Off-screen)
+      this.displacementContainer = new Container();
+      
+      // Add a neutral grey background
+      const bg = new Graphics();
+      bg.rect(0, 0, this.app.screen.width, this.app.screen.height);
+      bg.fill({ color: 0x808080 });
+      bg.label = "background";
+      this.displacementContainer.addChild(bg);
+
+      // 3. Setup Render Texture and Sprite
+      this.displacementTexture = RenderTexture.create({
+        width: this.app.screen.width,
+        height: this.app.screen.height,
+      });
+
+      this.displacementSprite = new Sprite(this.displacementTexture);
+      this.displacementSprite.anchor.set(0.5);
+      this.displacementSprite.x = this.app.screen.width / 2;
+      this.displacementSprite.y = this.app.screen.height / 2;
+      
+      this.displacementSprite.renderable = false;
+      this.app.stage.addChild(this.displacementSprite);
+
+      // 4. Setup Filter
+      this.displacementFilter = new DisplacementFilter(this.displacementSprite);
+      this.displacementFilter.scale.x = 100; // Increased scale for more dramatic effect
+      this.displacementFilter.scale.y = 100;
+      this.displacementFilter.padding = 100;
+
+      this.textContainer.filters = [this.displacementFilter];
+    }
+
+    spawnWave(x: number, y: number) {
+      const wave = new Sprite(this.waveTexture);
+      wave.anchor.set(0.5);
+      wave.x = x;
+      wave.y = y;
+      wave.scale.set(0.1); // Start small
+      
+      this.displacementContainer.addChild(wave);
+      this.waves.push(wave);
+    }
+
+    animate(deltaTime: number) {
+      // Update waves
+      for (let i = this.waves.length - 1; i >= 0; i--) {
+        const wave = this.waves[i];
+        
+        // Expand
+        wave.scale.x += 0.02 * deltaTime;
+        wave.scale.y += 0.02 * deltaTime;
+        
+        // Fade out near the end to blend smoothly?
+        // Actually, since the texture edges are neutral grey (128), 
+        // and the background is neutral grey, we don't strictly need to fade alpha 
+        // IF the texture is perfect. But fading alpha blends it back to the container's background (if container has one).
+        // Our container has a solid grey background.
+        // So fading alpha works perfectly to reduce the effect strength.
+        
+        if (wave.scale.x > 4) { // If it's huge
+           wave.alpha -= 0.01 * deltaTime;
+        }
+
+        if (wave.alpha <= 0) {
+          this.displacementContainer.removeChild(wave);
+          this.waves.splice(i, 1);
+        }
+      }
+
+      // Render the displacement container to the texture
+      this.app.renderer.render({ container: this.displacementContainer, target: this.displacementTexture });
+    }
+
+    handleResize() {
+      this.createGrid();
+      
+      // Resize displacement background
+      const bg = this.displacementContainer.getChildByLabel("background") as Graphics;
+      if (bg) {
+        bg.clear();
+        bg.rect(0, 0, this.app.screen.width, this.app.screen.height);
+        bg.fill({ color: 0x808080 });
+      }
+      
+      if (this.displacementTexture) {
+        this.displacementTexture.resize(this.app.screen.width, this.app.screen.height);
+      }
+      
+      if (this.displacementSprite) {
+        this.displacementSprite.x = this.app.screen.width / 2;
+        this.displacementSprite.y = this.app.screen.height / 2;
+      }
+    }
+  }
+
+  const init = () => {
+    if (document.getElementById('ripple-text-container')) {
+      new RippleTextEffect('ripple-text-container');
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>
