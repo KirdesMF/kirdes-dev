@@ -53,7 +53,10 @@ html {
 	--hero-bg: var(--color-background);
 	--hero-fg: var(--color-foreground);
 
-	--lens-radius: 0px;
+	--lens-radius: 250px;
+	--mask-radius: calc(var(--lens-radius) / 2);
+	--mouse-x: 0;
+	--mouse-y: 0;
 }
 
 :root.dark {
@@ -74,7 +77,31 @@ html {
 	--inset-shadow-cutout: inset 0 0 20px var(--color-foreground);
 	--inset-shadow-cutout-deep: inset 0 0 30px var(--color-foreground);
 
-	--inset-shadow-border: inset 0 0 1px var(--color-foreground);
+	--spacing-lens-radius: var(--lens-radius);
+
+	--background-image-stripes: repeating-linear-gradient(
+		45deg,
+		transparent,
+		transparent 8px,
+		var(--color-foreground) 8px,
+		var(--color-foreground) 9px
+	);
+
+	--background-image-striped-dashed: repeating-linear-gradient(
+		45deg,
+		var(--color-foreground) 0,
+		var(--color-foreground) 6px,
+		transparent 6px,
+		transparent 9px
+	);
+}
+
+@utility masked-reveal {
+	mask-image: radial-gradient(
+		circle at var(--mouse-x) var(--mouse-y),
+		black var(--mask-radius),
+		transparent var(--mask-radius)
+	);
 }
 
 @utility variation-* {

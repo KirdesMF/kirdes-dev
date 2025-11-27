@@ -1,7 +1,4 @@
 ---
-import Frame from "../../components/grid/Frame.astro";
-import FrameStriped from "../../components/grid/FrameStriped.astro";
-import GridLayout from "../../components/grid/GridLayout.astro";
 import Lens from "../../components/Lens.astro";
 import RippleText from "../../components/ripple-text/RippleText.astro";
 import PortfolioTissue from "../../components/text-tissue/PortfolioTissue.astro";
@@ -17,24 +14,6 @@ export async function getStaticPaths() {
 ---
 
 <Layout>
-	<Lens/>
-
-	<main class="px-12">
-		<section data-section="home" class="relative container mx-auto">
-			<GridLayout class="h-[60vh]">
-				<Frame class="col-span-full"/>
-			</GridLayout>
-
-			<GridLayout class="h-15">
-				<Frame class="col-span-6"/>
-				<FrameStriped class="col-span-2"/>
-			</GridLayout>
-		</section>
-
-		<section class="relative container mx-auto h-[60vh]">
-			<div class="absolute inset-0">
-				<RippleText text="KINETIC WAVE"/>
-			</div>
-		</section>
-	</main>
+  <Lens />
+  <main></main>
 </Layout>

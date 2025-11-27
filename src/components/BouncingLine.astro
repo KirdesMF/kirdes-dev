@@ -47,7 +47,7 @@ const { className } = Astro.props;
     }
 
     if (isConnected) {
-      const { x, y } = getSVGCoordinates(svg, event);
+      const { y } = getSVGCoordinates(svg, event);
       p1.y = y * 2 - (p0.y + p2.y) / 2;
     }
   }

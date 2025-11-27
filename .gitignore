@@ -20,9 +20,10 @@ pnpm-debug.log*
 # macOS-specific files
 .DS_Store
 
-# jetbrains setting folder
-.idea/
-
 # settings folder
 .vscode/
 .zed/
+.idea/
+
+# assetpack cache
+.assetpack/

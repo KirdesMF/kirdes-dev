@@ -1,55 +1,36 @@
-<div
-	data-lens
-	class="fixed size-(--lens-radius) top-0 left-0 rounded-full z-10 border border-dashed pointer-events-none"
-></div>
+<div data-lens class="fixed size-lens-radius top-0 left-0 rounded-full z-10 pointer-events-none">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="size-full overflow-visible">
+    <circle cx="50" cy="50" r="50" class="stroke-current fill-none" stroke-width="0.75"></circle>
+    <line x1="50" y1="48" x2="50" y2="52" class="stroke-current" stroke-linecap="round" stroke-width="0.75"></line>
+    <line x1="48" y1="50" x2="52" y2="50" class="stroke-current" stroke-linecap="round" stroke-width="0.75"></line>
+  </svg>
+</div>
 
 <script>
-	import { gsap } from "gsap";
+  import { gsap } from "gsap";
 
-	function setupLens() {
-		const root = document.documentElement;
-		const lens = document.querySelector<HTMLDivElement>("[data-lens]");
-		if (!lens) return;
+  const root = document.documentElement;
+  const lens = document.querySelector<HTMLDivElement>("[data-lens]");
 
-		const radius = 150;
-		let isHidden = true;
-		root.style.setProperty("--lens-radius", `${radius}px`);
+  if (!lens) throw new Error("Lens element not found");
 
-		const showLens = () => {
-			if (!isHidden) return;
-			isHidden = false;
-			gsap.to(lens, { opacity: 1, duration: 0.25, overwrite: "auto" });
-		};
+  function onMove(event: MouseEvent) {
+    const x = event.clientX;
+    const y = event.clientY;
 
-		const hideLens = () => {
-			if (isHidden) return;
-			isHidden = true;
-			gsap.to(lens, { opacity: 0, duration: 0.25, overwrite: "auto" });
-		};
+    // Animer la lens avec GSAP
+    gsap.to(lens, {
+      x: x,
+      y: y,
+      xPercent: -50,
+      yPercent: -50,
+      duration: 0.3,
+      ease: "power2.out",
+    });
 
-		const handleMouseMove = (event: MouseEvent) => {
-			const mouseX = event.clientX;
-			const mouseY = event.clientY;
+    root.style.setProperty("--mouse-x", `${x}px`);
+    root.style.setProperty("--mouse-y", `${y}px`);
+  }
 
-			// CSS vars globales pour le reste du layout (parallax, mask, etc.)
-			root.style.setProperty("--lens-x", `${mouseX}px`);
-			root.style.setProperty("--lens-y", `${mouseY}px`);
-
-			showLens();
-
-			// position the circle center on the cursor
-			gsap.to(lens, {
-				x: mouseX - radius / 2,
-				y: mouseY - radius / 2,
-				duration: 0.3,
-				ease: "power2.out",
-				overwrite: "auto",
-			});
-		};
-
-		window.addEventListener("mousemove", handleMouseMove, { passive: true });
-		window.addEventListener("mouseleave", hideLens);
-	}
-
-	setupLens();
+  document.addEventListener("mousemove", onMove, { passive: true });
 </script>

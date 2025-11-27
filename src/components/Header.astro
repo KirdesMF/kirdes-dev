@@ -6,14 +6,14 @@ import LanguagePicker from "./LanguagePicker.astro";
 import MenuButton from "./menu/MenuButton.astro";
 ---
 
-<header class="pt-40 px-12">
-  <div class="container mx-auto">
-    <GridLayout>
-      <FrameStriped class="col-span-7" />
-      <Frame class="col-span-1">
-        <div class="size-full grid place-items-end"><MenuButton /></div>
-      </Frame>
-      <!-- <LanguagePicker /> -->
-    </GridLayout>
-  </div>
+<header class="pt-40">
+	<GridLayout>
+		<FrameStriped class="col-start-2 col-span-7"/>
+		<Frame class="col-span-1">
+			<div class="size-full grid place-items-end">
+				<MenuButton/>
+			</div>
+		</Frame>
+		<!-- <LanguagePicker /> -->
+	</GridLayout>
 </header>
