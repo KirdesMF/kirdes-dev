@@ -1,23 +1,25 @@
-export type RgbFloat = {
-	r: number;
-	g: number;
-	b: number;
-};
+let colorCanvas: HTMLCanvasElement | null = null;
+let colorCtx: CanvasRenderingContext2D | null = null;
 
-/**
- * Convert a CSS color (including OKLCH) to linear-ish RGB floats in [0, 1].
- * Uses a 1×1 canvas so the browser does the parsing and conversion.
- */
-export function convertCssColorToRgbFloat(input: string): RgbFloat {
-	const canvas = document.createElement("canvas");
-	canvas.width = 1;
-	canvas.height = 1;
+function getColorContext(): CanvasRenderingContext2D {
+	if (!colorCanvas || !colorCtx) {
+		colorCanvas = document.createElement("canvas");
+		colorCanvas.width = 1;
+		colorCanvas.height = 1;
 
-	const ctx = canvas.getContext("2d");
-	if (!ctx) throw new Error("no canvas context to use");
+		const ctx = colorCanvas.getContext("2d", { willReadFrequently: true });
+		if (!ctx) throw new Error("Canvas 2D context not supported");
+		colorCtx = ctx;
+	}
+
+	return colorCtx;
+}
+
+export function cssColorToVec3(color: string): [number, number, number] {
+	const ctx = getColorContext();
 
 	ctx.clearRect(0, 0, 1, 1);
-	ctx.fillStyle = input;
+	ctx.fillStyle = color;
 	ctx.fillRect(0, 0, 1, 1);
 
 	const data = ctx.getImageData(0, 0, 1, 1).data;
@@ -25,30 +27,5 @@ export function convertCssColorToRgbFloat(input: string): RgbFloat {
 	const g = data[1] / 255;
 	const b = data[2] / 255;
 
-	return { r, g, b };
-}
-
-export type ThemeColorsFloat = {
-	background: RgbFloat;
-	foreground: RgbFloat;
-};
-
-export function readThemeColorsFromCss(): ThemeColorsFloat {
-	const rootStyle = getComputedStyle(document.documentElement);
-	const bgRaw =
-		rootStyle.getPropertyValue("--color-background").trim() || "#000000";
-	const fgRaw =
-		rootStyle.getPropertyValue("--color-foreground").trim() || "#ffffff";
-
-	return {
-		background: convertCssColorToRgbFloat(bgRaw),
-		foreground: convertCssColorToRgbFloat(fgRaw),
-	};
-}
-
-export function rgbFloatToHex(color: RgbFloat): number {
-	const r = Math.round(color.r * 255);
-	const g = Math.round(color.g * 255);
-	const b = Math.round(color.b * 255);
-	return (r << 16) | (g << 8) | b;
+	return [r, g, b];
 }

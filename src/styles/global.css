@@ -2,36 +2,14 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* commissioner-latin-wght-normal */
-@font-face {
-	font-family: "Commissioner Variable";
-	font-style: oblique 0deg 12deg;
-	font-display: swap;
-	font-weight: 100 900;
-	src: url("@fontsource-variable/commissioner/files/commissioner-latin-slnt-normal.woff2") format("woff2-variations");
-	unicode-range:
-		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
-/* mona-sans-latin-wght-normal */
-@font-face {
-	font-family: "Mona Sans Variable";
-	font-style: normal;
-	font-display: swap;
-	font-weight: 200 900;
-	font-stretch: 75% 125%;
-	src: url("@fontsource-variable/mona-sans/files/mona-sans-latin-wdth-normal.woff2") format("woff2-variations");
-	unicode-range:
-		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-
 /* hubot-sans-latin-wght-normal */
 @font-face {
 	font-family: "Hubot Sans Variable";
-	font-style: normal;
+	font-style: oblique 0deg 10deg;
 	font-display: swap;
 	font-weight: 200 900;
-	src: url("@fontsource-variable/hubot-sans/files/hubot-sans-latin-wght-normal.woff2") format("woff2-variations");
+	font-stretch: 75% 150%;
+	src: url("/assets/fonts/Hubot-Sans.woff2") format("woff2-variations");
 	unicode-range:
 		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
@@ -50,8 +28,6 @@ html {
 
 	--color-background: var(--white);
 	--color-foreground: var(--black);
-	--hero-bg: var(--color-background);
-	--hero-fg: var(--color-foreground);
 
 	--lens-radius: 250px;
 	--mask-radius: calc(var(--lens-radius) / 2);
@@ -62,14 +38,10 @@ html {
 :root.dark {
 	--color-background: var(--black);
 	--color-foreground: var(--white);
-	--hero-bg: var(--color-background);
-	--hero-fg: var(--color-foreground);
 }
 
 @theme {
-	--font-heading: "Commissioner Variable", sans-serif;
-	--font-body: "Mono Sans Variable", sans-serif;
-	--font-code: "Hubot Sans Variable", sans-serif;
+	--font-body: "Hubot Sans Variable", sans-serif;
 
 	--color-background: var(--color-background);
 	--color-foreground: var(--color-foreground);
@@ -113,4 +85,8 @@ html {
 		linear-gradient(var(--color-foreground) 1px, transparent 1px),
 		linear-gradient(to right, var(--color-foreground) 1px, transparent 1px);
 	background-size: calc(--value(integer) * 1px) calc(--value(integer) * 1px);
+}
+
+@utility writing-mode-* {
+	writing-mode: --value("sideways-lr", "sideways-rl", "vertical-rl", "vertical-lr");
 }

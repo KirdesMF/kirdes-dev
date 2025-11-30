@@ -1,4 +1,4 @@
-<div data-lens class="fixed size-lens-radius top-0 left-0 rounded-full z-10 pointer-events-none">
+<div data-lens class="fixed size-lens-radius top-0 left-0 rounded-full pointer-events-none">
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="size-full overflow-visible">
     <circle cx="50" cy="50" r="50" class="stroke-current fill-none" stroke-width="0.75"></circle>
     <line x1="50" y1="48" x2="50" y2="52" class="stroke-current" stroke-linecap="round" stroke-width="0.75"></line>
@@ -14,23 +14,30 @@
 
   if (!lens) throw new Error("Lens element not found");
 
-  function onMove(event: MouseEvent) {
-    const x = event.clientX;
-    const y = event.clientY;
+  const state = { x: 0, y: 0 };
 
-    // Animer la lens avec GSAP
-    gsap.to(lens, {
-      x: x,
-      y: y,
+  const quickX = gsap.quickTo(state, "x", { duration: 0.3, ease: "power2.out" });
+  const quickY = gsap.quickTo(state, "y", { duration: 0.3, ease: "power2.out" });
+
+  function updatePositions() {
+    gsap.set(lens, {
+      x: state.x,
+      y: state.y,
       xPercent: -50,
       yPercent: -50,
-      duration: 0.3,
-      ease: "power2.out",
+      duration: 0.2,
     });
 
-    root.style.setProperty("--mouse-x", `${x}px`);
-    root.style.setProperty("--mouse-y", `${y}px`);
+    root.style.setProperty("--mouse-x", `${state.x}px`);
+    root.style.setProperty("--mouse-y", `${state.y}px`);
   }
+
+  function onMove(event: MouseEvent) {
+    quickX(event.clientX);
+    quickY(event.clientY);
+  }
+
+  gsap.ticker.add(updatePositions);
 
   document.addEventListener("mousemove", onMove, { passive: true });
 </script>

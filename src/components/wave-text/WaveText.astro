@@ -1,0 +1,22 @@
+<canvas data-wave-text-canvas class="size-full block"></canvas>
+
+<script>
+  import { Scene } from "./scene";
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-wave-text-canvas]");
+  if (!canvas) throw new Error("Canvas for wave-text element not found");
+
+  const scene = new Scene(canvas);
+  scene.start();
+
+  window.addEventListener("beforeunload", () => {
+    scene.stop();
+  });
+
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      scene.stop();
+    } else {
+      scene.start();
+    }
+  });
+</script>

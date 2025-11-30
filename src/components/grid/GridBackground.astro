@@ -8,16 +8,16 @@ const LINES = [
 ];
 
 const PATH_CONFIG = {
-	strokeWidth: "0.5",
-	dashArray: "5 5",
+	strokeWidth: "0.75",
+	dashArray: "5 3",
 	fill: "none",
 	color: "stroke-foreground/25",
 };
 
 const GRID_CLASSES = "fixed inset-0 px-32 grid grid-cols-12 gap-3";
 const LAYERS = [
-	{ name: "solid", className: GRID_CLASSES, dashed: false },
-	{ name: "dashed", className: `${GRID_CLASSES} masked-reveal bg-background`, dashed: true },
+	{ name: "solid", className: `${GRID_CLASSES} -z-2`, dashed: false },
+	{ name: "dashed", className: `${GRID_CLASSES} masked-reveal bg-background -z-2`, dashed: true },
 ];
 ---
 
@@ -127,8 +127,12 @@ const LAYERS = [
     }
 
     const d = toQuadraticPath(line);
-    line.solidPaths.forEach((path) => path.setAttribute("d", d));
-    line.dashedPaths.forEach((path) => path.setAttribute("d", d));
+    line.solidPaths.forEach((path) => {
+      path.setAttribute("d", d);
+    });
+    line.dashedPaths.forEach((path) => {
+      path.setAttribute("d", d);
+    });
   }
 
   function getSVGCoordinates(svg: SVGSVGElement, event: PointerEvent) {
@@ -248,9 +252,9 @@ const LAYERS = [
     lines.forEach(updateLine);
   });
 
-  container.addEventListener("pointermove", onPointerMove, { passive: true });
-  container.addEventListener("pointerleave", onPointerLeave);
-  container.addEventListener("pointercancel", onPointerLeave);
+  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerleave", onPointerLeave);
+  window.addEventListener("pointercancel", onPointerLeave);
 
   requestRender();
 </script>

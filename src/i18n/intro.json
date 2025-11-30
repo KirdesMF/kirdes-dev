@@ -1,0 +1,90 @@
+{
+	"en": {
+		"phrases": [
+			{
+				"a": "meaningful interfaces",
+				"b": "Performance"
+			},
+			{
+				"a": "digital experiences",
+				"b": "Clarity"
+			},
+			{
+				"a": "modular interfaces",
+				"b": "Structure"
+			},
+			{
+				"a": "crafted interactions",
+				"b": "Precision"
+			},
+			{
+				"a": "elegant interfaces",
+				"b": "Efficiency"
+			},
+			{
+				"a": "engaging products",
+				"b": "Reliability"
+			},
+			{
+				"a": "robust UIs",
+				"b": "Resilience"
+			},
+			{
+				"a": "digital experiences",
+				"b": "Scalability"
+			},
+			{
+				"a": "meaningful interfaces",
+				"b": "Craft"
+			},
+			{
+				"a": "crafted interactions",
+				"b": "Focus"
+			}
+		]
+	},
+	"fr": {
+		"phrases": [
+			{
+				"a": "des interfaces pertinentes",
+				"b": "la Performance"
+			},
+			{
+				"a": "des expériences numériques",
+				"b": "la Clarté"
+			},
+			{
+				"a": "des interfaces modulaires",
+				"b": "la Structure"
+			},
+			{
+				"a": "des interactions soignées",
+				"b": "la Précision"
+			},
+			{
+				"a": "des interfaces élégantes",
+				"b": "l’Efficacité"
+			},
+			{
+				"a": "des expériences engageantes",
+				"b": "la Fiabilité"
+			},
+			{
+				"a": "des interfaces robustes",
+				"b": "la Résilience"
+			},
+			{
+				"a": "des expériences numériques",
+				"b": "la Scalabilité"
+			},
+			{
+				"a": "des interfaces pertinentes",
+				"b": "le Savoir-faire"
+			},
+			{
+				"a": "des interactions soignées",
+				"b": "le Focus"
+			}
+		]
+	}
+}

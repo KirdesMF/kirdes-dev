@@ -2,6 +2,7 @@
 import Lens from "../../components/Lens.astro";
 import RippleText from "../../components/ripple-text/RippleText.astro";
 import PortfolioTissue from "../../components/text-tissue/PortfolioTissue.astro";
+import WaveText from "../../components/wave-text/WaveText.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
 
@@ -15,5 +16,25 @@ export async function getStaticPaths() {
 
 <Layout>
   <Lens />
-  <main></main>
+  <button data-theme class="border p-4 fixed">Toggle theme</button>
+  <main class="min-h-dvh grid place-items-center">
+    <div class="w-full h-[60vh] relative">
+      <div class="absolute inset-0 size-full">
+        <WaveText />
+      </div>
+    </div>
+  </main>
 </Layout>
+
+<script>
+  import { events, state } from "../../lib/states";
+
+  const btn = document.querySelector<HTMLButtonElement>("[data-theme]");
+  console.log("Button found:", btn);
+
+  btn?.addEventListener("click", () => {
+    const newTheme = state.getTheme() === "dark" ? "light" : "dark";
+    events.emitThemeChange(newTheme);
+    console.log("Theme changed to", newTheme);
+  });
+</script>
