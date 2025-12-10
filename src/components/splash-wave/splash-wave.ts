@@ -424,7 +424,7 @@ export class SplashWaveScene {
 				fixEdges: false,
 			},
 			text: {
-				content: "PORTFOLIO ",
+				content: "CREATIVE DEV ",
 				angleDeg: -35,
 				scale: 2,
 				lineGap: 0.8,

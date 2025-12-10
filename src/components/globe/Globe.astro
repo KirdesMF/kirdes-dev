@@ -1,0 +1,193 @@
+---
+import type { Vector3, Quaternion } from "./globe";
+import { generateGraticule, computeGridPath } from "./globe";
+
+export interface Props {
+  size: number;
+}
+
+const { size } = Astro.props;
+
+// Shared geometry + initial orientation (same as ton composant React)
+const geometry: Vector3[][] = generateGraticule(15);
+const initialQ: Quaternion = [0.707, 0.4, -0.4, 0.4];
+
+// Path SSR, pour avoir un globe déjà dessiné sans JS
+const initialPath = computeGridPath(geometry, initialQ, size, size);
+
+const radius = size / 2 - 10;
+const cx = size / 2;
+const cy = size / 2;
+---
+
+<svg width={size} height={size} class="cursor-crosshair touch-none overflow-visible" data-globe="true">
+  <path
+    data-role="grid-path"
+    d={initialPath}
+    class="fill-none stroke-foreground"
+    fill="none"
+    stroke="#FFF"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"></path>
+
+  <circle cx={cx} cy={cy} r={radius} class="fill-none stroke-foreground" stroke-width="2"></circle>
+</svg>
+
+<script>
+  import gsap from "gsap";
+  import type { Vector3, Quaternion } from "./globe";
+  import {
+    generateGraticule,
+    computeGridPath,
+    quatMultiply,
+    getDeltaQuaternion,
+    getVersor,
+    scaleQuaternionAngle,
+    slerp,
+  } from "./globe";
+
+  const geometry: Vector3[][] = generateGraticule(15);
+
+  type CleanupFn = () => void;
+  const cleanups: CleanupFn[] = [];
+
+  function initGlobe(svg: SVGSVGElement): CleanupFn {
+    const path = svg.querySelector<SVGPathElement>('[data-role="grid-path"]');
+    const widthAttr = svg.getAttribute("width");
+    const heightAttr = svg.getAttribute("height");
+
+    if (!path || !widthAttr || !heightAttr) {
+      return () => {};
+    }
+
+    const width = Number(widthAttr);
+    const height = Number(heightAttr);
+
+    let q: Quaternion = [0.707, 0.4, -0.4, 0.4];
+    let velocity: Quaternion = [1, 0, 0, 0];
+    let isDragging = false;
+    let lastPos: Vector3 = [0, 0, 1];
+
+    const baseRotationSpeed = 0.005;
+    const baseRotationQ: Quaternion = [Math.cos(baseRotationSpeed / 2), 0, Math.sin(baseRotationSpeed / 2), 0];
+
+    function render(): void {
+      const d = computeGridPath(geometry, q, width, height);
+      path?.setAttribute("d", d);
+    }
+
+    function handlePointerDown(event: PointerEvent): void {
+      isDragging = true;
+      velocity = [1, 0, 0, 0];
+
+      try {
+        svg.setPointerCapture(event.pointerId);
+      } catch {
+        // Ignore capture errors
+      }
+
+      const rect = svg.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      lastPos = getVersor(x, y, width, height);
+    }
+
+    function handlePointerMove(event: PointerEvent): void {
+      if (!isDragging) {
+        return;
+      }
+
+      const rect = svg.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const currentPos = getVersor(x, y, width, height);
+
+      const dq = getDeltaQuaternion(lastPos, currentPos);
+      q = quatMultiply(dq, q);
+      velocity = dq;
+      lastPos = currentPos;
+
+      render();
+    }
+
+    function handlePointerUp(event: PointerEvent): void {
+      if (!isDragging) {
+        return;
+      }
+      isDragging = false;
+
+      try {
+        svg.releasePointerCapture(event.pointerId);
+      } catch {
+        // Ignore capture release errors
+      }
+    }
+
+    function handlePointerLeave(): void {
+      if (!isDragging) {
+        return;
+      }
+      isDragging = false;
+    }
+
+    function loop(): void {
+      let needsRender = false;
+
+      if (!isDragging) {
+        let v = velocity;
+        const currentAngle = 2 * Math.acos(v[0]);
+
+        if (currentAngle > baseRotationSpeed * 1.5) {
+          v = scaleQuaternionAngle(v, 0.98);
+        } else {
+          v = slerp(v, baseRotationQ, 0.05);
+        }
+
+        velocity = v;
+
+        const angle = 2 * Math.acos(v[0]);
+        if (angle > 0.0001) {
+          q = quatMultiply(v, q);
+          needsRender = true;
+        }
+      }
+
+      if (needsRender || isDragging) {
+        render();
+      }
+    }
+
+    svg.addEventListener("pointerdown", handlePointerDown);
+    svg.addEventListener("pointermove", handlePointerMove);
+    svg.addEventListener("pointerup", handlePointerUp);
+    svg.addEventListener("pointerleave", handlePointerLeave);
+
+    gsap.ticker.add(loop);
+
+    // Align client-rendered path with SSR path
+    render();
+
+    return () => {
+      gsap.ticker.remove(loop);
+      svg.removeEventListener("pointerdown", handlePointerDown);
+      svg.removeEventListener("pointermove", handlePointerMove);
+      svg.removeEventListener("pointerup", handlePointerUp);
+      svg.removeEventListener("pointerleave", handlePointerLeave);
+    };
+  }
+
+  function setupGlobes(): void {
+    const svgs = document.querySelectorAll<SVGSVGElement>('[data-globe="true"]');
+    svgs.forEach((svg) => {
+      cleanups.push(initGlobe(svg));
+    });
+  }
+
+  setupGlobes();
+
+  window.addEventListener("beforeunload", () => {
+    cleanups.forEach((fn) => fn());
+    cleanups.length = 0;
+  });
+</script>
