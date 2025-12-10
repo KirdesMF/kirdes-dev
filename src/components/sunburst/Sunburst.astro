@@ -1,0 +1,37 @@
+---
+
+---
+
+<div class="relative h-[500px] mt-32">
+  <canvas data-sunburst-canvas class="absolute inset-0 size-full"></canvas>
+  <div class="absolute inset-0 grid grid-cols-[repeat(2,1fr_24px)_1fr] pointer-events-none">
+    <div class="border"></div>
+    <div class="bg-background"></div>
+    <div class="border"></div>
+    <div class="bg-background"></div>
+    <div class="border"></div>
+  </div>
+</div>
+
+<script>
+  import { Sunburst } from "./sunburst";
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-sunburst-canvas]");
+
+  const config = {
+    rayCount: 16,
+    innerRadiusRatio: 0,
+    thicknessRatio: 1,
+    gapRatio: 0.8,
+    invertBend: false,
+  };
+
+  if (!canvas) throw new Error("Canvas element not found");
+
+  const sunburst = new Sunburst(canvas, config);
+  sunburst.start();
+
+  window.addEventListener("beforeunload", () => {
+    sunburst.destroy();
+  });
+</script>

@@ -2,6 +2,7 @@
 import Lens from "../../components/Lens.astro";
 import SmearText from "../../components/smear-text/SmearText.astro";
 import SplashWave from "../../components/splash-wave/SplashWave.astro";
+import Sunburst from "../../components/sunburst/Sunburst.astro";
 import WaveText from "../../components/wave-text/WaveText.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
@@ -10,7 +11,7 @@ const lang = getLangFromURL(Astro.url);
 const t = useTranslations(lang);
 
 export async function getStaticPaths() {
-	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
+  return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
 }
 ---
 
@@ -29,6 +30,12 @@ export async function getStaticPaths() {
         <div class="absolute inset-0 size-full">
           <WaveText />
         </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6 w-full">
+      <div class="col-span-full">
+        <Sunburst />
       </div>
     </div>
   </main>
