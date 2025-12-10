@@ -1,13 +1,16 @@
-import type { WaveLineUniforms } from "./wave-line";
+// FILE: src/components/ripple-text/lens.ts
+export type RippleLensUniforms = {
+	centerPx: { x: number; y: number };
+	radiusPx: number;
+	featherPx: number;
+};
 
-export type LensUniforms = WaveLineUniforms["lens"];
-
-export type LensOptions = {
+export type RippleLensOptions = {
 	canvas: HTMLCanvasElement;
 	followLerp: number;
 };
 
-export class Lens {
+export class RippleLens {
 	#canvas: HTMLCanvasElement;
 	#followLerp: number;
 
@@ -19,24 +22,20 @@ export class Lens {
 	#enabled = false;
 
 	#onPointerMoveBound: (event: PointerEvent) => void;
-	#onPointerLeaveBound: (event: PointerEvent) => void;
 
-	constructor({ canvas, followLerp }: LensOptions) {
+	constructor({ canvas, followLerp }: RippleLensOptions) {
 		this.#canvas = canvas;
 		this.#followLerp = followLerp;
 
-		const { radiusPx, featherPx } = Lens.#readCssRadius();
+		const { radiusPx, featherPx } = RippleLens.#readCssRadius();
 		this.#radiusPx = radiusPx;
 		this.#featherPx = featherPx;
 
 		this.#onPointerMoveBound = (event: PointerEvent) => {
 			this.#onPointerMove(event);
 		};
-		this.#onPointerLeaveBound = (event: PointerEvent) => {
-			this.#onPointerLeave(event);
-		};
+
 		this.#canvas.addEventListener("pointermove", this.#onPointerMoveBound);
-		this.#canvas.addEventListener("pointerleave", this.#onPointerLeaveBound);
 	}
 
 	static #readCssRadius(): { radiusPx: number; featherPx: number } {
@@ -50,7 +49,6 @@ export class Lens {
 		const numeric = parseFloat(raw);
 		const radiusPx = Number.isFinite(numeric) ? numeric : 200;
 
-		// Small feather for crisp edge, capped in px so it does not get too blurry
 		const featherPx = Math.min(radiusPx * 0.1, 4);
 
 		return { radiusPx, featherPx };
@@ -74,13 +72,8 @@ export class Lens {
 		}
 	}
 
-	#onPointerLeave(_event?: PointerEvent): void {
-		this.#enabled = false;
-	}
-
 	update(): void {
-		// Keep lens radius/feather in sync with CSS (theme changes, etc.)
-		const { radiusPx, featherPx } = Lens.#readCssRadius();
+		const { radiusPx, featherPx } = RippleLens.#readCssRadius();
 		this.#radiusPx = radiusPx;
 		this.#featherPx = featherPx;
 
@@ -91,7 +84,7 @@ export class Lens {
 		this.#centerCurrent.y += (this.#centerTarget.y - this.#centerCurrent.y) * k;
 	}
 
-	getUniforms(): LensUniforms {
+	getUniforms(): RippleLensUniforms {
 		if (!this.#enabled) {
 			return {
 				centerPx: { x: -1000, y: -1000 },
@@ -100,8 +93,6 @@ export class Lens {
 			};
 		}
 
-		// gl_FragCoord is bottom-left origin; canvas/pointer is top-left.
-		// Flip Y so the WebGL lens follows the CSS lens correctly.
 		const height = this.#canvas.height;
 		const flippedY = height - this.#centerCurrent.y;
 
@@ -117,6 +108,5 @@ export class Lens {
 
 	dispose(): void {
 		this.#canvas.removeEventListener("pointermove", this.#onPointerMoveBound);
-		this.#canvas.removeEventListener("pointerleave", this.#onPointerLeaveBound);
 	}
 }

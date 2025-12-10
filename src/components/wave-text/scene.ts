@@ -50,9 +50,9 @@ export type SceneConfig = {
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const PARAMS_DEFAULT: WaveParams = {
-	amplitude: 180,
-	frequency: 0.003,
-	speed: 3.5,
+	amplitude: 190,
+	frequency: 0.006,
+	speed: 4,
 };
 
 const DEFAULT_SCENE_CONFIG: SceneConfig = {
@@ -64,8 +64,8 @@ const DEFAULT_SCENE_CONFIG: SceneConfig = {
 		},
 	},
 	text: {
-		content: "WORKS",
-		scale: 8.0,
+		content: "PORTFOLIO",
+		scale: 4.0,
 		letterSpacing: 2,
 		offsetFromWavePx: 20,
 	},
@@ -75,10 +75,10 @@ const DEFAULT_SCENE_CONFIG: SceneConfig = {
 
 	sparkles: {
 		enabled: true,
-		scale: 4,
+		scale: 2,
 		offsetBetweenPx: 10,
 		offsetFromWavePx: 80,
-		offsetFromTextEdgePx: 100,
+		offsetFromTextEdgePx: 40,
 		deformStrength: 1,
 	},
 };

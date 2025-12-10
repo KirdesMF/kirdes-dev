@@ -1,0 +1,11 @@
+<canvas data-splash-wave class="size-full block"></canvas>
+
+<script>
+  import { SplashWaveScene } from "./splash-wave";
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-splash-wave]");
+  if (!canvas) throw new Error("canvas splash wave not found");
+
+  const scene = new SplashWaveScene(canvas);
+  scene.mount();
+</script>

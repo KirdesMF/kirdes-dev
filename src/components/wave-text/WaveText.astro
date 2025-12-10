@@ -13,10 +13,6 @@
   });
 
   window.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-      scene.stop();
-    } else {
-      scene.start();
-    }
+    document.visibilityState === "hidden" ? scene.stop() : scene.start();
   });
 </script>

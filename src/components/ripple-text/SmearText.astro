@@ -1,0 +1,19 @@
+<canvas data-smear-text class="size-full block"></canvas>
+
+<script>
+  import { RippleTextScene } from "./scene";
+
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-smear-text]");
+  if (!canvas) throw new Error("Smear text canvas not found");
+
+  const scene = new RippleTextScene(canvas);
+  scene.start();
+
+  window.addEventListener("beforeunload", () => {
+    scene.stop();
+  });
+
+  window.addEventListener("visibilitychange", () => {
+    document.visibilityState === "hidden" ? scene.stop() : scene.start();
+  });
+</script>

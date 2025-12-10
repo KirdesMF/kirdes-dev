@@ -1,3 +1,4 @@
+// FILE: src/components/ripple-text/marquee-text-msdf.ts
 import waveFontJson from "../../assets/msdf/wave-text.json";
 import { createProgram, getUniform } from "../../lib/webgl";
 
@@ -8,40 +9,28 @@ const vsSource = `#version 300 es
   layout(location = 1) in vec2 a_uv;
 
   uniform vec2  u_resolution;
-  uniform float u_phase;
-  uniform float u_amplitude;
-  uniform float u_frequency;
-  // u_offset.x: world X offset of the text block
-  // u_offset.y: vertical offset above the wave baseline (en px, >0 = above line)
-  uniform vec2  u_offset;
+  uniform vec2  u_baseOffset;
+  uniform float u_scrollX;
+  uniform float u_rotationRad;
 
   out vec2 v_uv;
 
   void main() {
     v_uv = a_uv;
 
-    // X world position (texte entier translaté par u_offset.x)
-    float xWorld = a_position.x + u_offset.x;
+    // Position du texte dans l'espace "monde" 2D (avant rotation)
+    vec2 worldPos = vec2(
+      a_position.x + u_baseOffset.x + u_scrollX,
+      a_position.y + u_baseOffset.y
+    );
 
-    // Même forme de wave que la line (sans envelope, même phase/frequency)
-    float arg   = xWorld * u_frequency + u_phase;
-    float wave  = sin(arg) * u_amplitude;
-
-    // Baseline centrée, sans point fixe (même logique que la line)
-    float baselineY = u_resolution.y * 0.5 + wave;
-
-    // Slope de la wave (dérivée)
-    float slope = cos(arg) * u_amplitude * u_frequency;
-
-    // Tangente et normale unitaires le long de la courbe
-    vec2 tangent = normalize(vec2(1.0, slope));
-    vec2 normal  = vec2(-tangent.y, tangent.x);
-
-    // Point sur la courbe pour ce x, décalé au-dessus de la wave via u_offset.y
-    vec2 basePos = vec2(xWorld, baselineY - u_offset.y);
-
-    // a_position.y est interprété comme distance le long de la normale
-    vec2 worldPos = basePos + normal * a_position.y;
+    // Rotation autour du centre de l'écran
+    vec2 center = 0.5 * u_resolution;
+    vec2 p = worldPos - center;
+    float s = sin(u_rotationRad);
+    float c = cos(u_rotationRad);
+    vec2 pr = vec2(p.x * c - p.y * s, p.x * s + p.y * c);
+    worldPos = pr + center;
 
     vec2 clip = vec2(
       (worldPos.x / u_resolution.x) * 2.0 - 1.0,
@@ -58,10 +47,8 @@ const fsSource = `#version 300 es
   uniform sampler2D u_atlas;
   uniform vec4      u_color;
   uniform float     u_pxRange;
-
-  uniform vec2  u_lensCenterPx;
-  uniform float u_lensRadiusPx;
-  uniform float u_lensFeatherPx;
+  uniform int       u_mode;         // 0 = fill, 1 = outline
+  uniform float     u_outlineWidth; // band width for outline
 
   in vec2 v_uv;
   out vec4 outColor;
@@ -74,28 +61,18 @@ const fsSource = `#version 300 es
     vec3 msd = texture(u_atlas, v_uv).rgb;
     float sd = median(msd.r, msd.g, msd.b) - 0.5;
 
-    // Fill alpha (hors lens)
     float alphaFill = clamp(sd * u_pxRange + 0.5, 0.0, 1.0);
 
-    // Bande d'outline autour de sd=0
-    float edgeWidth = 0.12;
+    float edgeWidth = max(u_outlineWidth, 0.0001);
     float edgeDist = abs(sd);
-    float outline = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
+    float alphaOutline = 1.0 - smoothstep(0.0, edgeWidth, edgeDist);
 
-    // Masque lens radial
-    float d = distance(gl_FragCoord.xy, u_lensCenterPx);
-    float m = 1.0 - smoothstep(
-      u_lensRadiusPx - u_lensFeatherPx,
-      u_lensRadiusPx + u_lensFeatherPx,
-      d
-    );
+    float alpha = alphaFill;
+    if (u_mode == 1) {
+      alpha = alphaOutline;
+    }
 
-    // Hors lens: texte plein
-    vec4 baseColor = vec4(u_color.rgb, u_color.a * alphaFill);
-    // Dans la lens: contour uniquement (même couleur)
-    vec4 lensColor = vec4(u_color.rgb, u_color.a * outline);
-
-    vec4 color = mix(baseColor, lensColor, m);
+    vec4 color = vec4(u_color.rgb, u_color.a * alpha);
 
     if (color.a <= 0.01) {
       discard;
@@ -150,46 +127,41 @@ type MsdfFontData = {
 
 const waveFontData = waveFontJson as unknown as MsdfFontData;
 
-export type WaveTextMsdfUniforms = {
+export type MarqueeTextRenderMode = "fill" | "outline";
+
+export type MarqueeTextUniforms = {
 	resolution: { width: number; height: number };
-	phase: number;
-	amplitude: number;
-	frequency: number;
-	offset: { x: number; y: number };
-	lens: {
-		centerPx: { x: number; y: number };
-		radiusPx: number;
-		featherPx: number;
-	};
+	baseOffset: { x: number; y: number };
+	scrollX: number;
+	rotationRad: number;
+	mode: MarqueeTextRenderMode;
+	outlineWidth: number;
+};
+
+export type MarqueeTextMsdfParams = {
+	text: string;
+	color: [number, number, number, number];
+	scale: number;
+	letterSpacing: number;
+	wordSpacingPx: number;
+};
+
+// Tesselation grid par glyphe
+const GLYPH_GRID_X = 24;
+const GLYPH_GRID_Y = 12;
+const GLYPH_GRID_MIN = 1;
+
+const DEFAULT_PARAMS: MarqueeTextMsdfParams = {
+	text: "PORTFOLIO",
+	color: [1, 1, 1, 1],
+	scale: 3.0,
+	letterSpacing: 0,
+	wordSpacingPx: 0,
 };
 
 type Glyph = MsdfFontChar;
 
-export type WaveTextMsdfParams = {
-	text: string;
-	color: [number, number, number, number];
-	/** Geometry scale factor relative to font units */
-	scale: number;
-	/**
-	 * Extra horizontal spacing between glyphs (in font units).
-	 * Positive = more spaced, negative = tighter.
-	 */
-	letterSpacing: number;
-};
-
-// Tesselation grid per glyph (in glyph local space)
-const GLYPH_GRID_X = 12;
-const GLYPH_GRID_Y = 6;
-const GLYPH_GRID_MIN = 1;
-
-const DEFAULT_PARAMS: WaveTextMsdfParams = {
-	text: "CEDRIC",
-	color: [1, 1, 1, 1],
-	scale: 3.0,
-	letterSpacing: 0,
-};
-
-export class WaveTextMsdf {
+export class MarqueeTextMsdf {
 	#gl: WebGL2RenderingContext;
 	#program: WebGLProgram;
 
@@ -201,23 +173,21 @@ export class WaveTextMsdf {
 	#indexCount = 0;
 
 	#uResolution: WebGLUniformLocation;
-	#uPhase: WebGLUniformLocation;
-	#uAmplitude: WebGLUniformLocation;
-	#uFrequency: WebGLUniformLocation;
-	#uOffset: WebGLUniformLocation;
+	#uBaseOffset: WebGLUniformLocation;
+	#uScrollX: WebGLUniformLocation;
+	#uRotationRad: WebGLUniformLocation;
+	#uMode: WebGLUniformLocation;
+	#uOutlineWidth: WebGLUniformLocation;
 	#uColor: WebGLUniformLocation;
 	#uAtlas: WebGLUniformLocation;
 	#uPxRange: WebGLUniformLocation;
 
-	#uLensCenterPx: WebGLUniformLocation;
-	#uLensRadiusPx: WebGLUniformLocation;
-	#uLensFeatherPx: WebGLUniformLocation;
-
 	#glyphsByChar: Map<string, Glyph>;
 	#kerningByPair: Map<number, number>;
 
-	#params: WaveTextMsdfParams;
+	#params: MarqueeTextMsdfParams;
 	#textWidth = 0;
+	#lineHeight = 0;
 	#pxRange: number;
 	#atlasUrl: string;
 	#isAtlasReady = false;
@@ -228,12 +198,14 @@ export class WaveTextMsdf {
 		color,
 		scale,
 		letterSpacing,
+		wordSpacingPx,
 	}: {
 		gl: WebGL2RenderingContext;
 		text?: string;
 		color?: [number, number, number, number];
 		scale?: number;
 		letterSpacing?: number;
+		wordSpacingPx?: number;
 	}) {
 		this.#gl = gl;
 		this.#program = createProgram({ gl, vsSource, fsSource });
@@ -243,20 +215,18 @@ export class WaveTextMsdf {
 			color: color ?? DEFAULT_PARAMS.color,
 			scale: scale ?? DEFAULT_PARAMS.scale,
 			letterSpacing: letterSpacing ?? DEFAULT_PARAMS.letterSpacing,
+			wordSpacingPx: wordSpacingPx ?? DEFAULT_PARAMS.wordSpacingPx,
 		};
 
 		this.#uResolution = getUniform(gl, this.#program, "u_resolution");
-		this.#uPhase = getUniform(gl, this.#program, "u_phase");
-		this.#uAmplitude = getUniform(gl, this.#program, "u_amplitude");
-		this.#uFrequency = getUniform(gl, this.#program, "u_frequency");
-		this.#uOffset = getUniform(gl, this.#program, "u_offset");
+		this.#uBaseOffset = getUniform(gl, this.#program, "u_baseOffset");
+		this.#uScrollX = getUniform(gl, this.#program, "u_scrollX");
+		this.#uRotationRad = getUniform(gl, this.#program, "u_rotationRad");
+		this.#uMode = getUniform(gl, this.#program, "u_mode");
+		this.#uOutlineWidth = getUniform(gl, this.#program, "u_outlineWidth");
 		this.#uColor = getUniform(gl, this.#program, "u_color");
 		this.#uAtlas = getUniform(gl, this.#program, "u_atlas");
 		this.#uPxRange = getUniform(gl, this.#program, "u_pxRange");
-
-		this.#uLensCenterPx = getUniform(gl, this.#program, "u_lensCenterPx");
-		this.#uLensRadiusPx = getUniform(gl, this.#program, "u_lensRadiusPx");
-		this.#uLensFeatherPx = getUniform(gl, this.#program, "u_lensFeatherPx");
 
 		this.#glyphsByChar = new Map<string, Glyph>();
 		for (const glyph of waveFontData.chars) {
@@ -282,14 +252,8 @@ export class WaveTextMsdf {
 		return this.#textWidth;
 	}
 
-	getScale(): number {
-		return this.#params.scale;
-	}
-
-	setText(text: string): void {
-		if (text === this.#params.text) return;
-		this.#params = { ...this.#params, text };
-		this.#buildGeometry(text);
+	getLineHeight(): number {
+		return this.#lineHeight;
 	}
 
 	setColor(color: [number, number, number, number]): void {
@@ -297,36 +261,45 @@ export class WaveTextMsdf {
 	}
 
 	setScale(scale: number): void {
-		const clamped = scale > 0 ? scale : DEFAULT_PARAMS.scale;
-		if (clamped === this.#params.scale) return;
-		this.#params = { ...this.#params, scale: clamped };
+		if (!Number.isFinite(scale) || scale <= 0) {
+			return;
+		}
+		if (scale === this.#params.scale) return;
+		this.#params = { ...this.#params, scale };
 		this.#buildGeometry(this.#params.text);
 	}
 
 	setLetterSpacing(letterSpacing: number): void {
+		if (!Number.isFinite(letterSpacing)) {
+			return;
+		}
 		if (letterSpacing === this.#params.letterSpacing) return;
-		this.#params = {
-			...this.#params,
-			letterSpacing,
-		};
+		this.#params = { ...this.#params, letterSpacing };
 		this.#buildGeometry(this.#params.text);
 	}
 
-	render(u: WaveTextMsdfUniforms): void {
+	setWordSpacing(px: number): void {
+		if (!Number.isFinite(px) || px < 0) return;
+		this.#params = { ...this.#params, wordSpacingPx: px };
+		this.#buildGeometry(this.#params.text);
+	}
+
+	render(u: MarqueeTextUniforms): void {
 		if (!this.#isAtlasReady || !this.#vao || this.#indexCount === 0) return;
 
 		const gl = this.#gl;
 		gl.useProgram(this.#program);
 
 		gl.uniform2f(this.#uResolution, u.resolution.width, u.resolution.height);
-		gl.uniform1f(this.#uPhase, u.phase);
-		gl.uniform1f(this.#uAmplitude, u.amplitude);
-		gl.uniform1f(this.#uFrequency, u.frequency);
-		gl.uniform2f(this.#uOffset, u.offset.x, u.offset.y);
+		gl.uniform2f(this.#uBaseOffset, u.baseOffset.x, u.baseOffset.y);
+		gl.uniform1f(this.#uScrollX, u.scrollX);
+		gl.uniform1f(this.#uRotationRad, u.rotationRad);
 
-		gl.uniform2f(this.#uLensCenterPx, u.lens.centerPx.x, u.lens.centerPx.y);
-		gl.uniform1f(this.#uLensRadiusPx, u.lens.radiusPx);
-		gl.uniform1f(this.#uLensFeatherPx, u.lens.featherPx);
+		const modeInt = u.mode === "outline" ? 1 : 0;
+		gl.uniform1i(this.#uMode, modeInt);
+
+		const outlineWidth = Number.isFinite(u.outlineWidth) && u.outlineWidth > 0 ? u.outlineWidth : 0.12;
+		gl.uniform1f(this.#uOutlineWidth, outlineWidth);
 
 		gl.uniform4f(
 			this.#uColor,
@@ -377,6 +350,7 @@ export class WaveTextMsdf {
 		const baseline = waveFontData.common.base;
 		const scale = this.#params.scale;
 		const letterSpacing = this.#params.letterSpacing;
+		const wordSpacingPx = this.#params.wordSpacingPx;
 
 		const gridX = Math.max(GLYPH_GRID_MIN, GLYPH_GRID_X);
 		const gridY = Math.max(GLYPH_GRID_MIN, GLYPH_GRID_Y);
@@ -385,20 +359,31 @@ export class WaveTextMsdf {
 		const penY = 0;
 		let prevId: number | null = null;
 
+		let minY = Number.POSITIVE_INFINITY;
+		let maxY = Number.NEGATIVE_INFINITY;
+
 		for (let i = 0; i < text.length; i++) {
 			const ch = text[i] ?? "";
+
+			if (ch === " ") {
+				if (Number.isFinite(wordSpacingPx) && wordSpacingPx > 0 && scale > 0) {
+					const deltaUnits = wordSpacingPx / scale;
+					penX += deltaUnits;
+				}
+				prevId = null;
+				continue;
+			}
+
 			const glyph = this.#glyphsByChar.get(ch);
 			if (!glyph) continue;
 
 			penX += this.#getKerning(prevId, glyph.id);
 
-			// Glyph rectangle in font units, baseline at y = 0 (then scaled to pixels)
 			const gx0 = penX + glyph.xoffset;
 			const gy0 = penY + glyph.yoffset - baseline;
 			const gx1 = gx0 + glyph.width;
 			const gy1 = gy0 + glyph.height;
 
-			// UV rectangle in atlas space
 			const u0 = glyph.x / scaleW;
 			const v0 = glyph.y / scaleH;
 			const u1 = (glyph.x + glyph.width) / scaleW;
@@ -406,7 +391,6 @@ export class WaveTextMsdf {
 
 			const baseIndex = positions.length / 2;
 
-			// Tesselate the glyph into a grid in local glyph space
 			for (let iy = 0; iy <= gridY; iy++) {
 				const ty = gridY > 0 ? iy / gridY : 0;
 				const gy = gy0 + (gy1 - gy0) * ty;
@@ -417,12 +401,17 @@ export class WaveTextMsdf {
 					const gx = gx0 + (gx1 - gx0) * tx;
 					const ux = u0 + (u1 - u0) * tx;
 
-					positions.push(gx * scale, gy * scale);
+					const px = gx * scale;
+					const py = gy * scale;
+
+					positions.push(px, py);
 					uvs.push(ux, vy);
+
+					if (py < minY) minY = py;
+					if (py > maxY) maxY = py;
 				}
 			}
 
-			// Triangles per cell in the grid
 			const vertsPerRow = gridX + 1;
 			for (let iy = 0; iy < gridY; iy++) {
 				for (let ix = 0; ix < gridX; ix++) {
@@ -436,12 +425,16 @@ export class WaveTextMsdf {
 				}
 			}
 
-			// Advance pen position with glyph advance + extra spacing
 			penX += glyph.xadvance + letterSpacing;
 			prevId = glyph.id;
 		}
 
-		this.#textWidth = penX * scale;
+		this.#textWidth = penX * this.#params.scale;
+		this.#lineHeight =
+			Number.isFinite(minY) && Number.isFinite(maxY)
+				? maxY - minY
+				: waveFontData.common.lineHeight * this.#params.scale;
+
 		this.#uploadGeometry(positions, uvs, indices);
 	}
 
@@ -462,7 +455,7 @@ export class WaveTextMsdf {
 		}
 
 		if (!this.#vao || !this.#vboPos || !this.#vboUv || !this.#ibo) {
-			throw new Error("WaveTextMsdf: failed to allocate geometry buffers");
+			throw new Error("MarqueeTextMsdf: failed to allocate geometry buffers");
 		}
 
 		gl.bindVertexArray(this.#vao);
@@ -510,7 +503,7 @@ export class WaveTextMsdf {
 
 		image.addEventListener("error", () => {
 			// eslint-disable-next-line no-console
-			console.error("WaveTextMsdf: failed to load atlas image", this.#atlasUrl);
+			console.error("MarqueeTextMsdf: failed to load atlas image", this.#atlasUrl);
 		});
 	}
 }
