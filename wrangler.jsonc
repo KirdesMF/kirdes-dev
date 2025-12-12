@@ -1,5 +1,5 @@
 {
-  "name": "kirdes-portfolio",
+  "name": "kirdes-dev",
   "compatibility_date": "2025-12-12", // Mettre à jour avec le jour de votre déploiement
   "assets": {
     "directory": "./dist",
