@@ -80,7 +80,7 @@ class TextRenderer {
 
 	constructor(getRect: () => DOMRect) {
 		this.#getRect = getRect;
-		this.#fontStack = "Hubot Sans Variable";
+		this.#fontStack = "SwissPoster Variable";
 	}
 
 	#measureSpaced(ctx: CanvasRenderingContext2D, text: string, ls?: number): number {
@@ -117,7 +117,7 @@ class TextRenderer {
 		const fontPx = this.#computeFontPx(rect, values);
 		ctx.textBaseline = "middle";
 		ctx.textAlign = "left";
-		ctx.font = `900 ${fontPx}px ${this.#fontStack}`;
+		ctx.font = `800 ${fontPx}px ${this.#fontStack}`;
 
 		const angleRad = ((values.text.angleDeg || 0) * Math.PI) / 180;
 		ctx.save();
@@ -426,10 +426,10 @@ export class SplashWaveScene {
 			text: {
 				content: "CREATIVE DEV ",
 				angleDeg: -35,
-				scale: 2,
+				scale: 3,
 				lineGap: 0.8,
 				hSpacing: 1,
-				letterSpacing: -3,
+				letterSpacing: 0.5,
 				scrollSpeed: 30,
 			},
 			idle: {

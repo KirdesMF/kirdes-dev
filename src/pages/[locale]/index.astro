@@ -1,53 +1,286 @@
 ---
-import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Lens from "../../components/Lens.astro";
+import SkillsGrid from "../../components/SkillsGrid.astro";
 import SplashWave from "../../components/splash-wave/SplashWave.astro";
 import Sunburst from "../../components/sunburst/Sunburst.astro";
 import WaveText from "../../components/wave-text/WaveText.astro";
+import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
 
 const lang = getLangFromURL(Astro.url);
 const t = useTranslations(lang);
 
 export async function getStaticPaths() {
-  return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
+	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
 }
+
+const splitedText = "Building".split("");
 ---
 
 <Layout>
   <Lens />
-  <button data-theme class="border px-4 py-2 fixed">Theme</button>
+  <button data-theme class="border px-4 py-1 fixed tracking-wider">Theme</button>
 
-  <main class="min-h-dvh grid px-32 py-42">
-    <div class="grid grid-cols-12 gap-6 w-full">
+  <main class="min-h-dvh grid px-32">
+    <section id="intro" class="grid py-48 place-items-center">
+      <div class="w-2/3 mx-auto">
+        <h1 class="sr-only">Building cool stuff for the web</h1>
+        <div aria-hidden="true" class="text-9xl font-bold text-center grid">
+          <div class="flex gap-4">
+            <div class="overflow-hidden relative">
+              <div data-motion="building">
+                {
+                  splitedText.map((letter) => (
+                    <span
+                      data-letter={letter}
+                      class:list={[
+                        "inline-block -translate-y-[105%] hover:font-extralight transition-[font-weight] duration-300 ease-in-out",
+                        "before:content-[attr(data-letter)] before:font-bold before:invisible before:block before:h-0",
+                      ]}
+                    >
+                      {letter}
+                    </span>
+                  ))
+                }
+              </div>
+            </div>
+            <span>cool</span>
+            <span class="border px-2 bg-foreground text-background">stuff</span>
+          </div>
+          <div class="flex gap-6">
+            <svg
+              data-arrow-svg
+              viewBox="0 0 100 100"
+              class="w-full h-[1em] overflow-visible"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                  <path d="M0 0 L10 5 L0 10 Z" fill="currentColor"></path>
+                </marker>
+              </defs>
+              <path
+                data-arrow-path
+                d="M0 50 Q42.5 50 85 50"
+                stroke="currentColor"
+                fill="none"
+                stroke-width="10"
+                stroke-linecap="round"
+                marker-end="url(#arrow)"
+                vector-effect="non-scaling-stroke"></path>
+            </svg>
+            <div class="flex gap-4">
+              <div class="grid relative">
+                <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">for</span>
+                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">for </span>
+              </div>
+              <span>the</span>
+              <span>web</span>
+              <div class="grid relative">
+                <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">.</span>
+                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="works" class="grid grid-cols-12 gap-6 w-full pb-48">
+      <div class="col-span-full">
+        <Sunburst />
+      </div>
+    </section>
+
+    <section id="about" class="grid grid-cols-12 gap-x-6 gap-y-12 w-full pb-48">
       <div class="col-span-4 relative border h-[60vh]">
         <div class="absolute inset-0 size-full">
           <SplashWave />
         </div>
       </div>
+
       <div class="col-span-8 relative border h-[60vh]">
         <div class="absolute inset-0 size-full">
           <WaveText />
         </div>
       </div>
-    </div>
 
-    <div class="grid grid-cols-12 gap-6 w-full">
-      <div class="col-span-full">
-        <Sunburst />
+      <div class="col-span-full grid place-items-center">
+        <SkillsGrid />
       </div>
-    </div>
+    </section>
+
+    <footer id="footer" class="grid grid-cols-12 gap-6"></footer>
   </main>
 </Layout>
 
 <script>
   import { events, state } from "../../lib/states";
+  import { gsap } from "gsap";
 
   const btn = document.querySelector<HTMLButtonElement>("[data-theme]");
 
   btn?.addEventListener("click", () => {
     const newTheme = state.getTheme() === "dark" ? "light" : "dark";
     events.emitThemeChange(newTheme);
-    console.log("Theme changed to", newTheme);
   });
+
+  //------------------------
+  const building = document.querySelector<HTMLDivElement>("[data-motion='building']")!.querySelectorAll("span");
+  const motionArray = gsap.utils.toArray(building);
+
+  gsap.to(motionArray, {
+    duration: 1,
+    y: "0%",
+    stagger: 0.1,
+    ease: "bounce",
+  });
+
+  //------------------------
+  const arrowSvg = document.querySelector<SVGSVGElement>("[data-arrow-svg]");
+  const arrowPath = arrowSvg?.querySelector<SVGPathElement>("[data-arrow-path]");
+
+  if (!arrowSvg || !arrowPath) throw new Error("Arrow SVG or Path not found");
+
+  const config = {
+    snapDistance: 6,
+    releaseDistance: 25,
+    duration: 1.1,
+    ease: "elastic.out(1, 0.2)",
+  };
+
+  type Point = { x: number; y: number };
+  const line = {
+    start: { x: 0, y: 50 },
+    control: { x: 42.5, y: 50 },
+    end: { x: 85, y: 50 },
+    defaultControlY: 50,
+    connected: false,
+  };
+
+  let needsRender = false;
+
+  function toQuadraticPath() {
+    const { start, control, end } = line;
+    return `M${start.x} ${start.y} Q${control.x} ${control.y} ${end.x} ${end.y}`;
+  }
+
+  function requestRender() {
+    needsRender = true;
+  }
+
+  function updateLine() {
+    if (line.connected && Math.abs(line.control.y - line.defaultControlY) > config.releaseDistance) {
+      releaseLine();
+    }
+    arrowPath?.setAttribute("d", toQuadraticPath());
+  }
+
+  function getSVGCoordinates(svg: SVGSVGElement, event: PointerEvent): Point {
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const ctm = svg.getScreenCTM();
+    return point.matrixTransform(ctm?.inverse());
+  }
+
+  function getPointOnCurve(t: number): Point {
+    const inv = 1 - t;
+    const { start, control, end } = line;
+    return {
+      x: inv * inv * start.x + 2 * inv * t * control.x + t * t * end.x,
+      y: inv * inv * start.y + 2 * inv * t * control.y + t * t * end.y,
+    };
+  }
+
+  function clamp01(value: number) {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  function getClosestParameter(point: Point) {
+    const { start, control, end } = line;
+
+    const ax = start.x - 2 * control.x + end.x;
+    const ay = start.y - 2 * control.y + end.y;
+    const bx = 2 * (control.x - start.x);
+    const by = 2 * (control.y - start.y);
+    const cx = start.x - point.x;
+    const cy = start.y - point.y;
+
+    const c0 = cx * bx + cy * by;
+    const c1 = cx * 2 * ax + bx * bx + cy * 2 * ay + by * by;
+    const c2 = 3 * ax * bx + 3 * ay * by;
+    const c3 = 2 * ax * ax + 2 * ay * ay;
+
+    let t = 0.5;
+    for (let i = 0; i < 5; i++) {
+      const g = ((c3 * t + c2) * t + c1) * t + c0;
+      const gPrime = c1 + 2 * c2 * t + 3 * c3 * t * t;
+      if (Math.abs(gPrime) < 1e-6) break;
+      t = clamp01(t - g / gPrime);
+    }
+
+    return clamp01(t);
+  }
+
+  function getDistanceToLine(point: Point) {
+    const t = getClosestParameter(point);
+    const candidates = [0, 1, t];
+    let minDistance = Infinity;
+
+    for (const candidate of candidates) {
+      const curvePoint = getPointOnCurve(candidate);
+      const distance = Math.hypot(point.x - curvePoint.x, point.y - curvePoint.y);
+      if (distance < minDistance) minDistance = distance;
+    }
+
+    return minDistance;
+  }
+
+  function connectLine() {
+    if (line.connected) return;
+    line.connected = true;
+    gsap.killTweensOf(line.control);
+  }
+
+  function releaseLine() {
+    if (!line.connected) return;
+    line.connected = false;
+    gsap.killTweensOf(line.control);
+    gsap.to(line.control, {
+      y: line.defaultControlY,
+      duration: config.duration,
+      ease: config.ease,
+      onUpdate: requestRender,
+    });
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    if (!arrowSvg) return;
+    const point = getSVGCoordinates(arrowSvg, event);
+    const distance = getDistanceToLine(point);
+    if (distance <= config.snapDistance) {
+      connectLine();
+    }
+
+    if (!line.connected) return;
+    line.control.y = point.y * 2 - (line.start.y + line.end.y) / 2;
+    requestRender();
+  }
+
+  function onPointerLeave() {
+    releaseLine();
+  }
+
+  gsap.ticker.add(() => {
+    if (!needsRender) return;
+    needsRender = false;
+    updateLine();
+  });
+
+  arrowSvg.addEventListener("pointermove", onPointerMove, { passive: true });
+  arrowSvg.addEventListener("pointerleave", onPointerLeave);
+  arrowSvg.addEventListener("pointercancel", onPointerLeave);
+
+  requestRender();
 </script>

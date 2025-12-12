@@ -19,6 +19,38 @@
   const quickX = gsap.quickTo(state, "x", { duration: 0.3, ease: "power2.out" });
   const quickY = gsap.quickTo(state, "y", { duration: 0.3, ease: "power2.out" });
 
+  const visibleInlineElements = new Set<HTMLElement>();
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const element = entry.target as HTMLElement;
+        if (entry.isIntersecting) {
+          visibleInlineElements.add(element);
+        } else {
+          visibleInlineElements.delete(element);
+        }
+      });
+    },
+    { threshold: 0, rootMargin: "100px" },
+  );
+
+  // Init et observe les éléments maskés
+  function initMaskedElements() {
+    // Déconnecte les observations précédentes
+    observer.disconnect();
+    visibleInlineElements.clear();
+
+    // Trouve tous les éléments maskés
+    const allMasked = document.querySelectorAll<HTMLElement>("[data-masked]");
+
+    allMasked.forEach((el) => {
+      observer.observe(el);
+    });
+  }
+
+  initMaskedElements();
+
   function updatePositions() {
     gsap.set(lens, {
       x: state.x,
@@ -30,6 +62,18 @@
 
     root.style.setProperty("--mouse-x", `${state.x}px`);
     root.style.setProperty("--mouse-y", `${state.y}px`);
+
+    // Variables relatives seulement pour les éléments inline VISIBLES
+    if (visibleInlineElements.size > 0) {
+      visibleInlineElements.forEach((element) => {
+        const rect = element.getBoundingClientRect();
+        const relativeX = state.x - rect.left;
+        const relativeY = state.y - rect.top;
+
+        element.style.setProperty("--mouse-x", `${relativeX}px`);
+        element.style.setProperty("--mouse-y", `${relativeY}px`);
+      });
+    }
   }
 
   function onMove(event: MouseEvent) {

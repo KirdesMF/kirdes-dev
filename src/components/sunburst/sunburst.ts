@@ -1,4 +1,3 @@
-// FILE: sunburst/sunburst.ts
 import { gsap } from "gsap";
 import { events } from "../../lib/states";
 
@@ -68,10 +67,7 @@ function getThemeColors(): SunburstColors {
 	return { foreground, background };
 }
 
-function createHatchPattern(
-	context: CanvasRenderingContext2D,
-	colors: SunburstColors,
-): CanvasPattern | null {
+function createHatchPattern(context: CanvasRenderingContext2D, colors: SunburstColors): CanvasPattern | null {
 	const patternCanvas = document.createElement("canvas");
 	const size = 10;
 	patternCanvas.width = size;
@@ -89,9 +85,21 @@ function createHatchPattern(
 	patternContext.strokeStyle = colors.foreground;
 	patternContext.lineWidth = 1;
 
+	// Ligne principale
 	patternContext.beginPath();
 	patternContext.moveTo(0, size);
 	patternContext.lineTo(size, 0);
+	patternContext.stroke();
+
+	// Lignes supplémentaires pour assurer la continuité
+	patternContext.beginPath();
+	patternContext.moveTo(-size, size);
+	patternContext.lineTo(0, 0);
+	patternContext.stroke();
+
+	patternContext.beginPath();
+	patternContext.moveTo(size, size);
+	patternContext.lineTo(size * 2, 0);
 	patternContext.stroke();
 
 	const pattern = context.createPattern(patternCanvas, "repeat");
@@ -226,7 +234,8 @@ export class Sunburst {
 			this.#transformReady = false;
 		}
 
-		const shouldResize = displayWidth !== this.#canvas.width || displayHeight !== this.#canvas.height || !this.#transformReady;
+		const shouldResize =
+			displayWidth !== this.#canvas.width || displayHeight !== this.#canvas.height || !this.#transformReady;
 
 		if (shouldResize) {
 			this.#canvas.width = displayWidth;
@@ -340,14 +349,15 @@ export class Sunburst {
 		const targetY = clamp(normY, 0, 1) * this.#size.height;
 
 		if (!this.#state.lensActive) {
+			// Positionner directement sans animation
 			this.#state.lensX = targetX;
 			this.#state.lensY = targetY;
+			this.#state.lensActive = true;
 		} else {
+			// Animer normalement avec quickTo
 			this.#quickLensX?.(targetX);
 			this.#quickLensY?.(targetY);
 		}
-
-		this.#state.lensActive = true;
 
 		this.#scheduleRelax();
 	}
@@ -370,6 +380,14 @@ export class Sunburst {
 			this.#relaxTimeoutId = null;
 		}
 		this.#animateBendTo(0, true);
+
+		// Tuer les tweens de position de la lens
+		gsap.killTweensOf(this.#state, "lensX,lensY");
+
+		// Recréer les quickTo pour la prochaine entrée
+		this.#quickLensX = gsap.quickTo(this.#state, "lensX", { duration: 0.3, ease: "power2.out" });
+		this.#quickLensY = gsap.quickTo(this.#state, "lensY", { duration: 0.3, ease: "power2.out" });
+
 		this.#state.lensActive = false;
 		this.#state.lastPointerAngle = null;
 	};
@@ -411,8 +429,7 @@ export class Sunburst {
 		const halfDiagonal = Math.sqrt(centerX * centerX + centerY * centerY);
 		const maxOuterRadius = halfDiagonal;
 		const availableThickness = maxOuterRadius - innerRadius;
-		const outerRadius =
-			innerRadius + availableThickness * clamp(this.#config.thicknessRatio, 0, 1);
+		const outerRadius = innerRadius + availableThickness * clamp(this.#config.thicknessRatio, 0, 1);
 
 		const rayCount = Math.max(3, Math.round(this.#config.rayCount));
 		const fullStep = (Math.PI * 2) / rayCount;
@@ -424,16 +441,7 @@ export class Sunburst {
 			const angleStart = index * fullStep + gap / 2 + this.#state.rotation;
 			const angleEnd = angleStart + arcAngle;
 
-			drawRayPath(
-				ctx,
-				centerX,
-				centerY,
-				innerRadius,
-				outerRadius,
-				angleStart,
-				angleEnd,
-				this.#state.bend,
-			);
+			drawRayPath(ctx, centerX, centerY, innerRadius, outerRadius, angleStart, angleEnd, this.#state.bend);
 			ctx.fill();
 		}
 
@@ -457,16 +465,7 @@ export class Sunburst {
 				const angleStart = index * fullStep + gap / 2 + this.#state.rotation;
 				const angleEnd = angleStart + arcAngle;
 
-				drawRayPath(
-					ctx,
-					centerX,
-					centerY,
-					innerRadius,
-					outerRadius,
-					angleStart,
-					angleEnd,
-					this.#state.bend,
-				);
+				drawRayPath(ctx, centerX, centerY, innerRadius, outerRadius, angleStart, angleEnd, this.#state.bend);
 				ctx.fill();
 				ctx.stroke();
 			}
