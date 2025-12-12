@@ -1,5 +1,7 @@
 {
   "name": "kirdes-portfolio",
   "compatibility_date": "2025-12-12", // Mettre à jour avec le jour de votre déploiement
-  "pages_build_output_dir": "./dist",
+  "assets": {
+    "directory": "./dist",
+  },
 }
