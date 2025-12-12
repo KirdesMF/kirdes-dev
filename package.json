@@ -13,7 +13,8 @@
 		"astro": "^5.16.0",
 		"gsap": "^3.13.0",
 		"matter-js": "^0.20.0",
-		"tailwindcss": "^4.1.17"
+		"tailwindcss": "^4.1.17",
+		"wrangler": "^4.54.0"
 	},
 	"trustedDependencies": [
 		"@tailwindcss/oxide",
