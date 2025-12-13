@@ -1,0 +1,75 @@
+---
+import type { CardData } from "./types";
+
+export interface Props {
+	items: CardData[];
+}
+
+const { items } = Astro.props;
+
+const CARD_WIDTH_PX = 300;
+const CARD_HEIGHT_PX = 380;
+---
+
+<div data-curved-gallery class="absolute inset-0 size-full cursor-grab active:cursor-grabbing touch-none select-none">
+  <svg class="absolute top-0 left-0 size-full z-20 overflow-visible">
+    <title>Curved Gallery</title>
+    <path
+      data-role="string-path"
+      fill="none"
+      stroke="black"
+      stroke-width="4"
+      class="drop-shadow-sm pointer-events-none"
+    >
+    </path>
+    <path
+      data-role="hit-path"
+      fill="none"
+      stroke="transparent"
+      stroke-width="100"
+      stroke-linecap="round"
+      class="pointer-events-auto hover:stroke-black/5 transition-colors duration-300"
+    >
+    </path>
+  </svg>
+
+  <div class="relative size-full z-30 pointer-events-none">
+    {
+      items.map((item) => (
+        <div
+          data-role="card"
+          class="absolute top-0 left-0 group pointer-events-auto will-change-transform"
+          style={{ width: CARD_WIDTH_PX, height: CARD_HEIGHT_PX }}
+        >
+          <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 t-[22px]">
+            <div class="relative w-8 h-16">
+              <div class="size-full border-[6px] rounded-full shadow-sm bg-transparent" />
+              <div class="absolute top-1 left-1 right-1 h-4 border-t-2 border-s-2 rounded-t-full" />
+            </div>
+          </div>
+
+          <div class="size-full bg-background rounded-sm p-4 pb-8 overflow-hidden border shadow-[4px_4px_0px_0px_var(--color-foreground)] flex flex-col transform transition-all duration-300 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_var(--color-foreground)]">
+            <div class="relative w-full h-48 rounded-3xl overflow-hidden mb-4" />
+
+            <div class="flex-1 px-2 flex flex-col">
+              <h3 class="text-2xl font-bold mb-1">{item.title}</h3>
+              <p class="text-sm font-medium">{item.description}</p>
+
+              <div class="mt-auto pt-4 flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-background bg-foreground px-3 py-1 rounded-full">
+                  {item.category}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  import { setupCurvedGalleries } from "./curved-gallery";
+
+  setupCurvedGalleries();
+</script>

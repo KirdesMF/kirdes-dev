@@ -1,0 +1,75 @@
+---
+import { getRoundedHexagonPath } from "./maths";
+import type { TechItem } from "./tech-stack";
+
+type HexagonProps = {
+	x: number;
+	y: number;
+	radius: number;
+	item: TechItem | null;
+	delay: number;
+	isEmpty?: boolean;
+};
+
+const { x, y, radius, item, delay, isEmpty = false } = Astro.props;
+
+const cornerRadius = 10;
+const pathData = getRoundedHexagonPath(radius, cornerRadius, x, y);
+
+const iconSize = radius * 0.8;
+
+const shadowOffset = 6;
+const shadowPathData = getRoundedHexagonPath(radius, cornerRadius, x + shadowOffset, y + shadowOffset);
+---
+
+{
+  isEmpty ? (
+    <g
+      data-hex-container
+      data-empty="true"
+      data-delay={delay}
+      data-x={x}
+      data-y={y}
+      style={`transform-origin:${x}px ${y}px;opacity:0;`}
+      class="pointer-events-none"
+    >
+      <path d={pathData} fill="none" stroke="black" stroke-width="1" stroke-dasharray="4 4" />
+    </g>
+  ) : !item ? null : (
+    <g
+      data-hex-container
+      data-empty="false"
+      data-delay={delay}
+      data-x={x}
+      data-y={y}
+      class="cursor-pointer group"
+      style={`transform-origin:${x}px ${y}px;opacity:0;`}
+    >
+      <path d={shadowPathData} class="fill-black" style="pointer-events:none;" />
+
+      <g data-hex-content style={`transform-origin:${x}px ${y}px;`}>
+        <path d={pathData} class="fill-white stroke-black" stroke-width="3" />
+
+        <foreignObject
+          x={x - iconSize / 2}
+          y={y - iconSize / 2}
+          width={iconSize}
+          height={iconSize}
+          class="pointer-events-none overflow-visible"
+        >
+          <div class="flex h-full w-full items-center justify-center">
+            <item.Icon width={iconSize * 0.6} height={iconSize * 0.6} style="color:black;" />
+          </div>
+        </foreignObject>
+
+        <foreignObject x={x - radius} y={y + radius / 2} width={radius * 2} height={30} class="pointer-events-none">
+          <div class="flex justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 translate-y-3">
+            <span class="bg-black px-3 py-1 text-[12px] font-bold uppercase tracking-wider text-white border border-white">
+              {item.name}
+            </span>
+          </div>
+        </foreignObject>
+      </g>
+    </g>
+  )
+}

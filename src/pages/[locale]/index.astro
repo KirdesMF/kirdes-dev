@@ -1,5 +1,8 @@
 ---
+import CurvedGallery from "../../components/curved-gallery/CurvedGallery.astro";
+import { demoCurvedGalleryItems } from "../../components/curved-gallery/demo";
 import Flag from "../../components/flag/Flag.astro";
+import HexGrid from "../../components/hex-grid/HexGrid.astro";
 import Lens from "../../components/Lens.astro";
 import SmearText from "../../components/smear-text/SmearText.astro";
 import SplashWave from "../../components/splash-wave/SplashWave.astro";
@@ -99,6 +102,10 @@ const splitedText = "Building".split("");
         <div class="col-span-6">
           <h2 class="text-[200px] font-bold">Works</h2>
         </div>
+
+        <div class="col-span-full h-100 relative border">
+          <CurvedGallery items={demoCurvedGalleryItems} />
+        </div>
       </div>
     </section>
 
@@ -171,6 +178,8 @@ const splitedText = "Building".split("");
           <h2 class="text-[200px] font-bold">About</h2>
         </div>
       </div>
+
+      <HexGrid />
     </section>
 
     <footer id="footer" class="pb-32">
