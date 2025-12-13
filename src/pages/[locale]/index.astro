@@ -1,8 +1,10 @@
 ---
+import Flag from "../../components/flag/Flag.astro";
 import Lens from "../../components/Lens.astro";
-import SkillsGrid from "../../components/SkillsGrid.astro";
+import SmearText from "../../components/smear-text/SmearText.astro";
 import SplashWave from "../../components/splash-wave/SplashWave.astro";
 import Sunburst from "../../components/sunburst/Sunburst.astro";
+import PortfolioTissue from "../../components/text-tissue/PortfolioTissue.astro";
 import WaveText from "../../components/wave-text/WaveText.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
@@ -22,7 +24,7 @@ const splitedText = "Building".split("");
   <button data-theme class="border px-4 py-1 fixed tracking-wider">Theme</button>
 
   <main class="min-h-dvh grid px-32">
-    <section id="intro" class="grid py-48 place-items-center">
+    <section id="intro" class="grid gap-32 py-48 place-items-center">
       <div class="w-2/3 mx-auto">
         <h1 class="sr-only">Building cool stuff for the web</h1>
         <div aria-hidden="true" class="text-9xl font-bold text-center grid">
@@ -54,19 +56,13 @@ const splitedText = "Building".split("");
               class="w-full h-[1em] overflow-visible"
               preserveAspectRatio="none"
             >
-              <defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M0 0 L10 5 L0 10 Z" fill="currentColor"></path>
-                </marker>
-              </defs>
               <path
                 data-arrow-path
-                d="M0 50 Q42.5 50 85 50"
+                d="M0 50 Q42.5 50 100 50"
                 stroke="currentColor"
                 fill="none"
                 stroke-width="10"
                 stroke-linecap="round"
-                marker-end="url(#arrow)"
                 vector-effect="non-scaling-stroke"></path>
             </svg>
             <div class="flex gap-4">
@@ -84,33 +80,108 @@ const splitedText = "Building".split("");
           </div>
         </div>
       </div>
-    </section>
 
-    <section id="works" class="grid grid-cols-12 gap-6 w-full pb-48">
-      <div class="col-span-full">
-        <Sunburst />
+      <div class="grid grid-cols-12 gap-6 w-full">
+        <div class="col-span-full">
+          <Sunburst />
+        </div>
+
+        <div class="col-span-full relative border h-112.5">
+          <div class="absolute inset-0 size-full">
+            <SmearText />
+          </div>
+        </div>
       </div>
     </section>
 
-    <section id="about" class="grid grid-cols-12 gap-x-6 gap-y-12 w-full pb-48">
-      <div class="col-span-4 relative border h-[60vh]">
-        <div class="absolute inset-0 size-full">
-          <SplashWave />
+    <section id="works" class="pb-48">
+      <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-6">
+          <h2 class="text-[200px] font-bold">Works</h2>
+        </div>
+      </div>
+    </section>
+
+    <section id="process" class="pb-48">
+      <div class="grid grid-cols-12 gap-6">
+        <div class="col-start-7 col-span-6">
+          <h2 class="text-[200px] font-bold">Process</h2>
         </div>
       </div>
 
-      <div class="col-span-8 relative border h-[60vh]">
-        <div class="absolute inset-0 size-full">
-          <WaveText />
+      <div class="grid h-svh grid-cols-12 gap-6">
+        <div class="p-2 relative col-span-3">
+          <div class="grid relative">
+            <p data-masked class="text-[30vh] text-center col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">1</p>
+            <p data-masked class="text-[30vh] text-center absolute inset-0 text-stroke text-transparent masked-reveal">
+              1
+            </p>
+          </div>
         </div>
-      </div>
+        <div class="p-2 relative col-span-3">
+          <div>
+            <p class="text-[30vh] text-center">2</p>
+          </div>
 
-      <div class="col-span-full grid place-items-center">
-        <SkillsGrid />
+          <svg
+            class="absolute inset-y-0 start-0 w-px h-full"
+            viewBox="0 0 1 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path d="M0.5 0 V100" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+          </svg>
+        </div>
+
+        <div class="p-2 relative col-span-3">
+          <div>
+            <p class="text-[30vh] text-center">3</p>
+          </div>
+
+          <svg
+            class="absolute inset-y-0 start-0 w-px h-full"
+            viewBox="0 0 1 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path d="M0.5 0 V100" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+          </svg>
+        </div>
+
+        <div class="p-2 relative col-span-3">
+          <div>
+            <p class="text-[30vh] text-center">4</p>
+          </div>
+
+          <svg
+            class="absolute inset-y-0 start-0 w-px h-full"
+            viewBox="0 0 1 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path d="M0.5 0 V100" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+          </svg>
+        </div>
       </div>
     </section>
 
-    <footer id="footer" class="grid grid-cols-12 gap-6"></footer>
+    <section id="about" class="pb-48">
+      <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-6">
+          <h2 class="text-[200px] font-bold">About</h2>
+        </div>
+      </div>
+    </section>
+
+    <footer id="footer" class="pb-32">
+      <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-full relative border h-[60vh]">
+          <div class="absolute inset-0 size-full">
+            <WaveText />
+          </div>
+        </div>
+      </div>
+    </footer>
   </main>
 </Layout>
 
@@ -153,7 +224,7 @@ const splitedText = "Building".split("");
   const line = {
     start: { x: 0, y: 50 },
     control: { x: 42.5, y: 50 },
-    end: { x: 85, y: 50 },
+    end: { x: 100, y: 50 },
     defaultControlY: 50,
     connected: false,
   };

@@ -1,0 +1,39 @@
+---
+interface Props {
+	frequency?: number;
+	amplitude?: number;
+	speed?: number;
+	rotation?: number;
+	class?: string;
+}
+
+const { frequency = 0.9, amplitude = 90, speed = 0.125, rotation = 40, class: className } = Astro.props;
+---
+
+<div
+  class:list={["flag-container w-full h-full overflow-hidden relative", className]}
+  data-frequency={frequency}
+  data-amplitude={amplitude}
+  data-speed={speed}
+  data-rotation={rotation}
+>
+  <span class="sr-only">Available to work</span>
+</div>
+
+<script>
+  import { Flag } from "./flag";
+
+  const containers = document.querySelectorAll(".flag-container");
+  containers.forEach((container) => {
+    if (!(container instanceof HTMLElement)) return;
+    const flag = new Flag(container);
+
+    document.addEventListener(
+      "astro:before-swap",
+      () => {
+        flag.destroy();
+      },
+      { once: true },
+    );
+  });
+</script>

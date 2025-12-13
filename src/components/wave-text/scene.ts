@@ -64,7 +64,7 @@ const DEFAULT_SCENE_CONFIG: SceneConfig = {
 		},
 	},
 	text: {
-		content: "PORTFOLIO",
+		content: "THANK YOU",
 		scale: 4.0,
 		letterSpacing: 2,
 		offsetFromWavePx: 20,

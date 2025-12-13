@@ -1,0 +1,99 @@
+<div class="relative size-full">
+  <canvas data-smear-text-canvas class="size-full block"></canvas>
+
+  <div
+    class="absolute top-2 left-2 z-10 pointer-events-auto bg-background/70 backdrop-blur border px-3 py-2 grid gap-2 text-xs w-60"
+    data-smear-text-controls
+  >
+    <label class="grid gap-1">
+      <span>Rotate Y</span>
+      <input data-smear-rot-y type="range" min="-180" max="180" value="-25" step="1" />
+    </label>
+    <label class="grid gap-1">
+      <span>Rotate X</span>
+      <input data-smear-rot-x type="range" min="-70" max="70" value="-5" step="1" />
+    </label>
+    <label class="grid gap-1">
+      <span>Smear Area</span>
+      <input data-smear-area type="range" min="0.4" max="3" value="1" step="0.01" />
+    </label>
+    <label class="grid gap-1">
+      <span>Deform Amount</span>
+      <input data-smear-deform type="range" min="0" max="3" value="2" step="0.01" />
+    </label>
+  </div>
+</div>
+
+<script>
+  import { Scene } from "./scene";
+  const canvas = document.querySelector<HTMLCanvasElement>("[data-smear-text-canvas]");
+  if (!canvas) throw new Error("Canvas for smear-text element not found");
+
+  const scene = new Scene(canvas);
+
+  const rotY = document.querySelector<HTMLInputElement>("[data-smear-rot-y]");
+  const rotX = document.querySelector<HTMLInputElement>("[data-smear-rot-x]");
+  const area = document.querySelector<HTMLInputElement>("[data-smear-area]");
+  const deform = document.querySelector<HTMLInputElement>("[data-smear-deform]");
+
+  function updateRotation() {
+    const yawDeg = Number(rotY?.value ?? 0);
+    const pitchDeg = Number(rotX?.value ?? 0);
+    scene.setRotation({ yawDeg, pitchDeg });
+  }
+
+  function updateArea() {
+    const areaScale = Number(area?.value ?? 1);
+    scene.setSmearArea(areaScale);
+  }
+
+  function updateDeform() {
+    const amount = Number(deform?.value ?? 1);
+    scene.setDeformAmount(amount);
+  }
+
+  rotY?.addEventListener("input", updateRotation, { passive: true });
+  rotX?.addEventListener("input", updateRotation, { passive: true });
+  area?.addEventListener("input", updateArea, { passive: true });
+  deform?.addEventListener("input", updateDeform, { passive: true });
+  updateRotation();
+  updateArea();
+  updateDeform();
+
+  let isInViewport = true;
+  let isDocumentVisible = document.visibilityState !== "hidden";
+
+  function syncRunningState() {
+    const shouldRun = isInViewport && isDocumentVisible;
+    shouldRun ? scene.start() : scene.stop();
+  }
+
+  const observer =
+    "IntersectionObserver" in window
+      ? new IntersectionObserver(
+          (entries) => {
+            const entry = entries[0];
+            isInViewport = entry?.isIntersecting ?? false;
+            syncRunningState();
+          },
+          { threshold: 0 },
+        )
+      : null;
+
+  if (observer) {
+    isInViewport = false;
+    observer.observe(canvas);
+  }
+
+  syncRunningState();
+
+  window.addEventListener("beforeunload", () => {
+    scene.stop();
+    observer?.disconnect();
+  });
+
+  window.addEventListener("visibilitychange", () => {
+    isDocumentVisible = document.visibilityState !== "hidden";
+    syncRunningState();
+  });
+</script>

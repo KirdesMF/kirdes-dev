@@ -4,6 +4,9 @@ interface Props {
 	amplitude?: number;
 	speed?: number;
 	rotation?: number;
+	textRotation?: number;
+	textScale?: number;
+	wordSpacing?: number;
 	class?: string;
 }
 
@@ -12,18 +15,24 @@ const {
 	amplitude = 60,
 	speed = 0.1,
 	rotation = 45,
+	textRotation = -45,
+	textScale = 1.6,
+	wordSpacing = 80,
 	class: className,
 } = Astro.props;
 ---
 
 <div
-	class:list={["portfolio-tissue-container w-full h-full overflow-hidden relative", className]}
-	data-frequency={frequency}
-	data-amplitude={amplitude}
-	data-speed={speed}
-	data-rotation={rotation}
+  class:list={["portfolio-tissue-container w-full h-full overflow-hidden relative", className]}
+  data-frequency={frequency}
+  data-amplitude={amplitude}
+  data-speed={speed}
+  data-rotation={rotation}
+  data-text-rotation={textRotation}
+  data-text-scale={textScale}
+  data-word-spacing={wordSpacing}
 >
-	{
+  {
     import.meta.env.DEV && (
       <div class="absolute top-4 right-4 z-50 bg-white/80 p-4 rounded shadow-lg backdrop-blur-sm w-64">
         <h3 class="text-sm font-bold mb-3 text-black">Dev Controls</h3>
@@ -56,6 +65,51 @@ const {
             </div>
             <input type="range" id="rot-slider" min="0" max="360" step="1" value={rotation} class="w-full" />
           </label>
+          <label class="text-xs text-black flex flex-col gap-1">
+            <div class="flex justify-between">
+              <span>Text rotation</span>
+              <span id="text-rot-val">{textRotation}</span>
+            </div>
+            <input
+              type="range"
+              id="text-rot-slider"
+              min="-180"
+              max="180"
+              step="1"
+              value={textRotation}
+              class="w-full"
+            />
+          </label>
+          <label class="text-xs text-black flex flex-col gap-1">
+            <div class="flex justify-between">
+              <span>Text scale</span>
+              <span id="text-scale-val">{textScale}</span>
+            </div>
+            <input
+              type="range"
+              id="text-scale-slider"
+              min="0.5"
+              max="3.5"
+              step="0.05"
+              value={textScale}
+              class="w-full"
+            />
+          </label>
+          <label class="text-xs text-black flex flex-col gap-1">
+            <div class="flex justify-between">
+              <span>Word spacing</span>
+              <span id="word-spacing-val">{wordSpacing}</span>
+            </div>
+            <input
+              type="range"
+              id="word-spacing-slider"
+              min="0"
+              max="200"
+              step="1"
+              value={wordSpacing}
+              class="w-full"
+            />
+          </label>
         </div>
       </div>
     )
@@ -63,67 +117,97 @@ const {
 </div>
 
 <script>
-	import { PortfolioTissue } from "./text-tissue";
+  import { PortfolioTissue } from "./text-tissue";
 
-	// Initialize all instances
-	const containers = document.querySelectorAll(".portfolio-tissue-container");
-	containers.forEach((container) => {
-		if (container instanceof HTMLElement) {
-			const tissue = new PortfolioTissue(container);
+  // Initialize all instances
+  const containers = document.querySelectorAll(".portfolio-tissue-container");
+  containers.forEach((container) => {
+    if (container instanceof HTMLElement) {
+      const tissue = new PortfolioTissue(container);
 
-			// Dev controls
-			if (import.meta.env.DEV) {
-				const freqSlider = container.querySelector("#freq-slider");
-				const ampSlider = container.querySelector("#amp-slider");
-				const speedSlider = container.querySelector("#speed-slider");
+      // Dev controls
+      if (import.meta.env.DEV) {
+        const freqSlider = container.querySelector("#freq-slider");
+        const ampSlider = container.querySelector("#amp-slider");
+        const speedSlider = container.querySelector("#speed-slider");
 
-				const freqVal = container.querySelector("#freq-val");
-				const ampVal = container.querySelector("#amp-val");
-				const speedVal = container.querySelector("#speed-val");
+        const freqVal = container.querySelector("#freq-val");
+        const ampVal = container.querySelector("#amp-val");
+        const speedVal = container.querySelector("#speed-val");
 
-				if (freqSlider && freqVal) {
-					freqSlider.addEventListener("input", (e) => {
-						const val = parseFloat((e.target as HTMLInputElement).value);
-						tissue.frequency = val;
-						freqVal.textContent = val.toFixed(1);
-					});
-				}
+        if (freqSlider && freqVal) {
+          freqSlider.addEventListener("input", (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            tissue.frequency = val;
+            freqVal.textContent = val.toFixed(1);
+          });
+        }
 
-				if (ampSlider && ampVal) {
-					ampSlider.addEventListener("input", (e) => {
-						const val = parseFloat((e.target as HTMLInputElement).value);
-						tissue.amplitude = val;
-						ampVal.textContent = val.toFixed(0);
-					});
-				}
+        if (ampSlider && ampVal) {
+          ampSlider.addEventListener("input", (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            tissue.amplitude = val;
+            ampVal.textContent = val.toFixed(0);
+          });
+        }
 
-				if (speedSlider && speedVal) {
-					speedSlider.addEventListener("input", (e) => {
-						const val = parseFloat((e.target as HTMLInputElement).value);
-						tissue.speed = val;
-						speedVal.textContent = val.toFixed(2);
-					});
-				}
+        if (speedSlider && speedVal) {
+          speedSlider.addEventListener("input", (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            tissue.speed = val;
+            speedVal.textContent = val.toFixed(2);
+          });
+        }
 
-				const rotSlider = container.querySelector("#rot-slider");
-				const rotVal = container.querySelector("#rot-val");
-				if (rotSlider && rotVal) {
-					rotSlider.addEventListener("input", (e) => {
-						const val = parseFloat((e.target as HTMLInputElement).value);
-						tissue.rotation = val;
-						rotVal.textContent = val.toFixed(0);
-					});
-				}
-			}
+        const rotSlider = container.querySelector("#rot-slider");
+        const rotVal = container.querySelector("#rot-val");
+        if (rotSlider && rotVal) {
+          rotSlider.addEventListener("input", (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            tissue.rotation = val;
+            rotVal.textContent = val.toFixed(0);
+          });
+        }
 
-			// Cleanup on swap
-			document.addEventListener(
-				"astro:before-swap",
-				() => {
-					tissue.destroy();
-				},
-				{ once: true },
-			);
-		}
-	});
+        const textRotSlider = container.querySelector("#text-rot-slider");
+        const textRotVal = container.querySelector("#text-rot-val");
+        if (textRotSlider && textRotVal) {
+          textRotSlider.addEventListener("input", (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            tissue.textRotation = val;
+            textRotVal.textContent = val.toFixed(0);
+          });
+        }
+
+        const textScaleSlider = container.querySelector("#text-scale-slider");
+        const textScaleVal = container.querySelector("#text-scale-val");
+        if (textScaleSlider && textScaleVal) {
+          textScaleSlider.addEventListener("input", (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            tissue.textScale = val;
+            textScaleVal.textContent = val.toFixed(2);
+          });
+        }
+
+        const wordSpacingSlider = container.querySelector("#word-spacing-slider");
+        const wordSpacingVal = container.querySelector("#word-spacing-val");
+        if (wordSpacingSlider && wordSpacingVal) {
+          wordSpacingSlider.addEventListener("input", (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            tissue.wordSpacing = val;
+            wordSpacingVal.textContent = val.toFixed(0);
+          });
+        }
+      }
+
+      // Cleanup on swap
+      document.addEventListener(
+        "astro:before-swap",
+        () => {
+          tissue.destroy();
+        },
+        { once: true },
+      );
+    }
+  });
 </script>

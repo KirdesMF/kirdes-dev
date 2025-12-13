@@ -14,7 +14,7 @@ export default defineConfig({
 					{
 						input: "raw-assets/fonts/SwisspoTrial-Black{msdf}{family=Swiss}.ttf",
 						outputName: "wave-text",
-						charset: "WORKSABOUTCONTACTPROJECTFLIVDG",
+						charset: "THANKYUPORTFLI",
 					},
 				],
 			}),
