@@ -17,18 +17,17 @@ const CARD_HEIGHT_PX = 380;
     <path
       data-role="string-path"
       fill="none"
-      stroke="black"
       stroke-width="4"
-      class="drop-shadow-sm pointer-events-none"
+      class="drop-shadow-sm pointer-events-none fill-none stroke-foreground"
     >
     </path>
     <path
       data-role="hit-path"
       fill="none"
       stroke="transparent"
-      stroke-width="100"
+      stroke-width="4"
       stroke-linecap="round"
-      class="pointer-events-auto hover:stroke-black/5 transition-colors duration-300"
+      class="pointer-events-auto"
     >
     </path>
   </svg>
@@ -41,15 +40,15 @@ const CARD_HEIGHT_PX = 380;
           class="absolute top-0 left-0 group pointer-events-auto will-change-transform"
           style={{ width: CARD_WIDTH_PX, height: CARD_HEIGHT_PX }}
         >
-          <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 t-[22px]">
+          <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 top-5">
             <div class="relative w-8 h-16">
               <div class="size-full border-[6px] rounded-full shadow-sm bg-transparent" />
               <div class="absolute top-1 left-1 right-1 h-4 border-t-2 border-s-2 rounded-t-full" />
             </div>
           </div>
 
-          <div class="size-full bg-background rounded-sm p-4 pb-8 overflow-hidden border shadow-[4px_4px_0px_0px_var(--color-foreground)] flex flex-col transform transition-all duration-300 hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_var(--color-foreground)]">
-            <div class="relative w-full h-48 rounded-3xl overflow-hidden mb-4" />
+          <div class="size-full bg-background rounded-sm p-4 pb-8 overflow-hidden border flex flex-col">
+            <div class="w-full h-48 rounded-3xl overflow-hidden mb-4" />
 
             <div class="flex-1 px-2 flex flex-col">
               <h3 class="text-2xl font-bold mb-1">{item.title}</h3>

@@ -4,10 +4,9 @@ import { demoCurvedGalleryItems } from "../../components/curved-gallery/demo";
 import Flag from "../../components/flag/Flag.astro";
 import HexGrid from "../../components/hex-grid/HexGrid.astro";
 import Lens from "../../components/Lens.astro";
+import ProcessCard from "../../components/ProcessCard.astro";
 import SmearText from "../../components/smear-text/SmearText.astro";
-import SplashWave from "../../components/splash-wave/SplashWave.astro";
 import Sunburst from "../../components/sunburst/Sunburst.astro";
-import PortfolioTissue from "../../components/text-tissue/PortfolioTissue.astro";
 import WaveText from "../../components/wave-text/WaveText.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
@@ -26,8 +25,8 @@ const splitedText = "Building".split("");
   <Lens />
   <button data-theme class="border px-4 py-1 fixed tracking-wider">Theme</button>
 
-  <main class="min-h-dvh grid px-32">
-    <section id="intro" class="grid gap-32 py-48 place-items-center">
+  <main class="min-h-dvh grid">
+    <section id="intro" class="grid gap-32 py-48 px-32 place-items-center">
       <div class="w-2/3 mx-auto">
         <h1 class="sr-only">Building cool stuff for the web</h1>
         <div aria-hidden="true" class="text-9xl font-bold text-center grid">
@@ -98,18 +97,17 @@ const splitedText = "Building".split("");
     </section>
 
     <section id="works" class="pb-48">
-      <div class="grid grid-cols-12 gap-6">
+      <div class="grid grid-cols-12 gap-6 px-32">
         <div class="col-span-6">
           <h2 class="text-[200px] font-bold">Works</h2>
         </div>
-
-        <div class="col-span-full h-100 relative border">
-          <CurvedGallery items={demoCurvedGalleryItems} />
-        </div>
+      </div>
+      <div class="h-100 relative">
+        <CurvedGallery items={demoCurvedGalleryItems} />
       </div>
     </section>
 
-    <section id="process" class="pb-48">
+    <section id="process" class="pb-48 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-start-7 col-span-6">
           <h2 class="text-[200px] font-bold">Process</h2>
@@ -117,62 +115,14 @@ const splitedText = "Building".split("");
       </div>
 
       <div class="grid h-svh grid-cols-12 gap-6">
-        <div class="p-2 relative col-span-3">
-          <div class="grid relative">
-            <p data-masked class="text-[30vh] text-center col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">1</p>
-            <p data-masked class="text-[30vh] text-center absolute inset-0 text-stroke text-transparent masked-reveal">
-              1
-            </p>
-          </div>
-        </div>
-        <div class="p-2 relative col-span-3">
-          <div>
-            <p class="text-[30vh] text-center">2</p>
-          </div>
-
-          <svg
-            class="absolute inset-y-0 start-0 w-px h-full"
-            viewBox="0 0 1 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <path d="M0.5 0 V100" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></path>
-          </svg>
-        </div>
-
-        <div class="p-2 relative col-span-3">
-          <div>
-            <p class="text-[30vh] text-center">3</p>
-          </div>
-
-          <svg
-            class="absolute inset-y-0 start-0 w-px h-full"
-            viewBox="0 0 1 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <path d="M0.5 0 V100" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></path>
-          </svg>
-        </div>
-
-        <div class="p-2 relative col-span-3">
-          <div>
-            <p class="text-[30vh] text-center">4</p>
-          </div>
-
-          <svg
-            class="absolute inset-y-0 start-0 w-px h-full"
-            viewBox="0 0 1 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <path d="M0.5 0 V100" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke"></path>
-          </svg>
-        </div>
+        <ProcessCard count={1} hasLine={false} class="col-span-3" />
+        <ProcessCard count={2} class="col-span-3" />
+        <ProcessCard count={3} class="col-span-3" />
+        <ProcessCard count={4} class="col-span-3" />
       </div>
     </section>
 
-    <section id="about" class="pb-48">
+    <section id="about" class="pb-48 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-span-6">
           <h2 class="text-[200px] font-bold">About</h2>
@@ -182,7 +132,7 @@ const splitedText = "Building".split("");
       <HexGrid />
     </section>
 
-    <footer id="footer" class="pb-32">
+    <footer id="footer" class="pb-32 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-span-full relative border h-[60vh]">
           <div class="absolute inset-0 size-full">

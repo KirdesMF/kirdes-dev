@@ -40,3 +40,10 @@ All commands are run from the root of the project, from a terminal:
 This project uses Biome for formatting and linting, but actually biome can only format frontmatter in astro file, so we also need prettier to format the rest of the code.
 
 ## TODO
+
+- [ ] Footer animation
+- [ ] Hero animation Rive
+- [ ] About animation Rive
+- [ ] About picture puzzle
+- [ ] Mobile view
+- [ ] Review components

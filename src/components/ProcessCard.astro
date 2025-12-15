@@ -1,0 +1,33 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+export type Props = {
+	count: number;
+	hasLine?: boolean;
+	class?: string;
+};
+
+const { count, hasLine = true, class: className = "" } = Astro.props;
+---
+
+<div class:list={["relative p-2", className]}>
+  <div class="grid relative">
+    <p data-masked class="text-[30vh] text-center col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">{count}</p>
+    <p data-masked class="text-[30vh] text-center absolute inset-0 text-stroke text-transparent masked-reveal">
+      {count}
+    </p>
+  </div>
+
+  {
+    hasLine && (
+      <svg
+        class="absolute inset-y-0 start-0 w-px h-full"
+        viewBox="0 0 1 100"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path d="M0.5 0 V100" stroke="currentColor" stroke-width="1" vector-effect="non-scaling-stroke" />
+      </svg>
+    )
+  }
+</div>
