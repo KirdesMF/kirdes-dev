@@ -16,6 +16,7 @@ import TailwindIcon from "../icons/TailwindIcon.astro";
 import TanstackIcon from "../icons/TanstackIcon.astro";
 import TypeScriptIcon from "../icons/TypeScriptIcon.astro";
 import ViteIcon from "../icons/ViteIcon.astro";
+import VueIcon from "../icons/VueIcon.astro";
 import WebGLIcon from "../icons/WebGLIcon.astro";
 import ZodIcon from "../icons/ZodIcon.astro";
 
@@ -35,6 +36,7 @@ export const techStack: TechItem[] = [
 	{ id: "typescript", name: "TypeScript", color: "#000000", Icon: TypeScriptIcon },
 	{ id: "git", name: "Git", color: "#000000", Icon: GitIcon },
 	{ id: "react", name: "React", color: "#000000", Icon: ReactIcon },
+	{ id: "vue", name: "Vue", color: "#000000", Icon: VueIcon },
 	{ id: "node", name: "Node.js", color: "#000000", Icon: NodeIcon },
 	{ id: "next", name: "Next.js", color: "#000000", Icon: NextJSIcon },
 	{ id: "tailwind", name: "Tailwind", color: "#000000", Icon: TailwindIcon },

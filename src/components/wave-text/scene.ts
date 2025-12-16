@@ -51,7 +51,7 @@ export type SceneConfig = {
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const PARAMS_DEFAULT: WaveParams = {
 	amplitude: 190,
-	frequency: 0.006,
+	frequency: 0.002,
 	speed: 4,
 };
 
@@ -105,6 +105,9 @@ export class Scene {
 
 	#waveParamsCurrent: WaveParams;
 	#waveParamsTarget: WaveParams;
+
+	#slideProgressCurrent = 0;
+	#slideProgressTarget = 0;
 
 	#reduceMotion = false;
 	#reduceMotionMql: MediaQueryList | null = null;
@@ -246,6 +249,14 @@ export class Scene {
 		this.#waveParamsTarget = { ...this.#waveParamsTarget, ...params };
 	}
 
+	setSlideProgress(progress: number): void {
+		const clamped = Math.max(0, Math.min(1, Number.isFinite(progress) ? progress : 0));
+		this.#slideProgressTarget = clamped;
+		if (this.#reduceMotion) {
+			this.#slideProgressCurrent = clamped;
+		}
+	}
+
 	// API pour une future UI de réglages
 	setTextOffsetFromWave(offsetPx: number): void {
 		this.#textOffsetFromWavePx = offsetPx;
@@ -357,6 +368,10 @@ export class Scene {
 			speed: this.#lerp(this.#waveParamsCurrent.speed, this.#waveParamsTarget.speed, smoothing),
 		};
 
+		this.#slideProgressCurrent = this.#reduceMotion
+			? this.#slideProgressTarget
+			: this.#lerp(this.#slideProgressCurrent, this.#slideProgressTarget, 0.12);
+
 		const baseSpeed = this.#waveParamsCurrent.speed;
 		const speed = this.#reduceMotion ? baseSpeed * 0.5 : baseSpeed;
 		const phaseStep = 0.02 * speed * deltaRatio;
@@ -394,7 +409,9 @@ export class Scene {
 
 		const textWidth = this.#text.getTextWidth();
 		const offsetY = this.#textOffsetFromWavePx;
-		const offsetX = (width - textWidth) * 0.5;
+		const offsetXCentered = (width - textWidth) * 0.5;
+		const offsetXLeft = -textWidth - width * 0.1;
+		const offsetX = this.#lerp(offsetXLeft, offsetXCentered, this.#slideProgressCurrent);
 
 		this.#text.render({
 			resolution: { width, height },

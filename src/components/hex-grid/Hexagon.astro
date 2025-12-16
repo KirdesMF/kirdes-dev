@@ -33,7 +33,7 @@ const shadowPathData = getRoundedHexagonPath(radius, cornerRadius, x + shadowOff
       style={`transform-origin:${x}px ${y}px;opacity:0;`}
       class="pointer-events-none"
     >
-      <path d={pathData} fill="none" stroke="black" stroke-width="1" stroke-dasharray="4 4" />
+      <path d={pathData} class="fill-none stroke-foreground stroke-1" stroke-dasharray="4 4" />
     </g>
   ) : !item ? null : (
     <g
@@ -45,10 +45,10 @@ const shadowPathData = getRoundedHexagonPath(radius, cornerRadius, x + shadowOff
       class="cursor-pointer group"
       style={`transform-origin:${x}px ${y}px;opacity:0;`}
     >
-      <path d={shadowPathData} class="fill-black" style="pointer-events:none;" />
+      <path d={shadowPathData} class="fill-foreground dark:fill-black" style="pointer-events:none;" />
 
       <g data-hex-content style={`transform-origin:${x}px ${y}px;`}>
-        <path d={pathData} class="fill-white stroke-black" stroke-width="3" />
+        <path d={pathData} class="fill-background stroke-foreground stroke-3" />
 
         <foreignObject
           x={x - iconSize / 2}
@@ -58,15 +58,7 @@ const shadowPathData = getRoundedHexagonPath(radius, cornerRadius, x + shadowOff
           class="pointer-events-none overflow-visible"
         >
           <div class="flex h-full w-full items-center justify-center">
-            <item.Icon width={iconSize * 0.6} height={iconSize * 0.6} style="color:black;" />
-          </div>
-        </foreignObject>
-
-        <foreignObject x={x - radius} y={y + radius / 2} width={radius * 2} height={30} class="pointer-events-none">
-          <div class="flex justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 translate-y-3">
-            <span class="bg-black px-3 py-1 text-[12px] font-bold uppercase tracking-wider text-white border border-white">
-              {item.name}
-            </span>
+            <item.Icon width={iconSize * 0.6} height={iconSize * 0.6} class="text-foreground" />
           </div>
         </foreignObject>
       </g>

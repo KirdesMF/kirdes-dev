@@ -90,8 +90,6 @@ const gridCenter = (() => {
 <script>
   import { gsap } from "gsap";
 
-  // `document.currentScript` is `null` for module scripts (Astro/Vite outputs ESM),
-  // so find grids by selector instead of "closest()".
   const roots = Array.from(document.querySelectorAll<HTMLElement>("[data-hex-grid]"));
   for (const root of roots) {
     const hexes = Array.from(root.querySelectorAll<SVGGElement>("[data-hex-container]"));

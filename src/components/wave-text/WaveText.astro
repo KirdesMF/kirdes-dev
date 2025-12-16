@@ -1,4 +1,4 @@
-<canvas data-wave-text-canvas class="size-full block"></canvas>
+<canvas data-wave-text-canvas class="size-full block touch-none select-none" style="touch-action: none;"></canvas>
 
 <script>
   import { Scene } from "./scene";
@@ -6,13 +6,139 @@
   if (!canvas) throw new Error("Canvas for wave-text element not found");
 
   const scene = new Scene(canvas);
-  scene.start();
+  scene.setSlideProgress(0);
+
+  let isInViewport = true;
+  let isDocumentVisible = document.visibilityState !== "hidden";
+  let isInteracting = false;
+
+  function syncRunningState() {
+    const shouldRun = (isInViewport || isInteracting) && isDocumentVisible;
+    shouldRun ? scene.start() : scene.stop();
+  }
+
+  type WaveParams = { amplitude: number; frequency: number; speed: number };
+  const waveParams: WaveParams = { amplitude: 190, frequency: 0.006, speed: 4 };
+
+  function clamp(value: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function setWaveParams(next: Partial<WaveParams>) {
+    if (typeof next.amplitude === "number") waveParams.amplitude = next.amplitude;
+    if (typeof next.frequency === "number") waveParams.frequency = next.frequency;
+    if (typeof next.speed === "number") waveParams.speed = next.speed;
+    scene.setParams({ ...waveParams });
+  }
+
+  let activePointerId: number | null = null;
+  let lastX = 0;
+  let lastY = 0;
+
+  const SENSITIVITY = {
+    amplitudePerPx: 0.9,
+    frequencyPerPx: 0.00001,
+    speedPerPx: 0.02,
+  } as const;
+
+  const LIMITS = {
+    amplitude: { min: 0, max: 500 },
+    frequency: { min: 0.0005, max: 0.02 },
+    speed: { min: 0, max: 20 },
+  } as const;
+
+  function onPointerDown(event: PointerEvent) {
+    if (activePointerId !== null) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+
+    activePointerId = event.pointerId;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    isInteracting = true;
+    syncRunningState();
+
+    canvas?.setPointerCapture?.(event.pointerId);
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    if (activePointerId === null || event.pointerId !== activePointerId) return;
+
+    const dx = event.clientX - lastX;
+    const dy = event.clientY - lastY;
+    lastX = event.clientX;
+    lastY = event.clientY;
+
+    if (event.shiftKey) {
+      const nextSpeed = clamp(waveParams.speed - dy * SENSITIVITY.speedPerPx, LIMITS.speed.min, LIMITS.speed.max);
+      setWaveParams({ speed: nextSpeed });
+      return;
+    }
+
+    const nextAmplitude = clamp(
+      waveParams.amplitude - dy * SENSITIVITY.amplitudePerPx,
+      LIMITS.amplitude.min,
+      LIMITS.amplitude.max,
+    );
+    const nextFrequency = clamp(
+      waveParams.frequency + dx * SENSITIVITY.frequencyPerPx,
+      LIMITS.frequency.min,
+      LIMITS.frequency.max,
+    );
+    setWaveParams({ amplitude: nextAmplitude, frequency: nextFrequency });
+  }
+
+  function endPointer(event: PointerEvent) {
+    if (activePointerId === null || event.pointerId !== activePointerId) return;
+    activePointerId = null;
+    isInteracting = false;
+    syncRunningState();
+    canvas?.releasePointerCapture?.(event.pointerId);
+  }
+
+  canvas.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("pointermove", onPointerMove);
+  canvas.addEventListener("pointerup", endPointer);
+  canvas.addEventListener("pointercancel", endPointer);
+
+  const target = canvas.closest("footer") ?? canvas;
+
+  const thresholds = Array.from({ length: 21 }, (_, i) => i / 20);
+  const observer =
+    "IntersectionObserver" in window
+      ? new IntersectionObserver(
+          (entries) => {
+            const entry = entries[0];
+            const ratio = entry?.isIntersecting ? entry.intersectionRatio : 0;
+
+            const startRatio = 0.05;
+            const endRatio = 0.4;
+            const progress = Math.max(0, Math.min(1, (ratio - startRatio) / (endRatio - startRatio)));
+
+            scene.setSlideProgress(progress);
+
+            isInViewport = entry?.isIntersecting ?? false;
+            syncRunningState();
+          },
+          { threshold: thresholds },
+        )
+      : null;
+
+  if (observer) {
+    isInViewport = false;
+    observer.observe(target);
+  } else {
+    scene.setSlideProgress(1);
+  }
+
+  syncRunningState();
 
   window.addEventListener("beforeunload", () => {
     scene.stop();
+    observer?.disconnect();
   });
 
   window.addEventListener("visibilitychange", () => {
-    document.visibilityState === "hidden" ? scene.stop() : scene.start();
+    isDocumentVisible = document.visibilityState !== "hidden";
+    syncRunningState();
   });
 </script>

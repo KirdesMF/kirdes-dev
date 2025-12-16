@@ -12,7 +12,7 @@ const vsSource = `#version 300 es
   uniform float u_amplitude;
   uniform float u_frequency;
   // u_offset.x: world X offset of the text block
-  // u_offset.y: vertical offset above the wave baseline (en px, >0 = above line)
+  // u_offset.y: offset from the wave baseline along the curve normal (px, >0 = above line)
   uniform vec2  u_offset;
 
   out vec2 v_uv;
@@ -37,8 +37,9 @@ const vsSource = `#version 300 es
     vec2 tangent = normalize(vec2(1.0, slope));
     vec2 normal  = vec2(-tangent.y, tangent.x);
 
-    // Point sur la courbe pour ce x, décalé au-dessus de la wave via u_offset.y
-    vec2 basePos = vec2(xWorld, baselineY - u_offset.y);
+    // Point sur la courbe pour ce x, décalé via u_offset.y (le long de la normale)
+    vec2 curvePos = vec2(xWorld, baselineY);
+    vec2 basePos = curvePos - normal * u_offset.y;
 
     // a_position.y est interprété comme distance le long de la normale
     vec2 worldPos = basePos + normal * a_position.y;
@@ -381,12 +382,20 @@ export class WaveTextMsdf {
 		const gridX = Math.max(GLYPH_GRID_MIN, GLYPH_GRID_X);
 		const gridY = Math.max(GLYPH_GRID_MIN, GLYPH_GRID_Y);
 
+		const spaceAdvance = waveFontData.common.lineHeight * 0.25;
+
 		let penX = 0;
 		const penY = 0;
 		let prevId: number | null = null;
 
 		for (let i = 0; i < text.length; i++) {
 			const ch = text[i] ?? "";
+			if (ch === " ") {
+				penX += spaceAdvance + letterSpacing;
+				prevId = null;
+				continue;
+			}
+
 			const glyph = this.#glyphsByChar.get(ch);
 			if (!glyph) continue;
 
