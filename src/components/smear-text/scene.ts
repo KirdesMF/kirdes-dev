@@ -49,6 +49,13 @@ export class Scene {
 	#gl: WebGL2RenderingContext;
 	#isRunning = false;
 
+	#camera = {
+		fovDeg: 45,
+		distance: 1.2,
+		height: 1.1,
+		targetZOffset: 0,
+	};
+
 	#text: SmearTextMsdf;
 	#yearText: SmearTextMsdf;
 	#yearOffset = { x: 0, z: 0 };
@@ -239,6 +246,27 @@ export class Scene {
 		this.#updateEffectParams();
 	}
 
+	setCameraOptions(options: {
+		fovDeg?: number;
+		distance?: number;
+		height?: number;
+		targetZOffset?: number;
+	}): void {
+		const fovDeg = options.fovDeg;
+		const distance = options.distance;
+		const height = options.height;
+		const targetZOffset = options.targetZOffset;
+
+		if (fovDeg !== undefined && Number.isFinite(fovDeg)) this.#camera.fovDeg = Math.max(10, Math.min(fovDeg, 120));
+		if (distance !== undefined && Number.isFinite(distance))
+			this.#camera.distance = Math.max(0.1, Math.min(distance, 5));
+		if (height !== undefined && Number.isFinite(height)) this.#camera.height = Math.max(0, Math.min(height, 5));
+		if (targetZOffset !== undefined && Number.isFinite(targetZOffset))
+			this.#camera.targetZOffset = Math.max(-5000, Math.min(targetZOffset, 5000));
+
+		this.#updateCamera();
+	}
+
 	#subscribeToThemeChange(): void {
 		this.#unsubscribeTheme = events.onThemeChange(() => {
 			this.setColorsFromTheme();
@@ -273,16 +301,21 @@ export class Scene {
 		const height = this.#canvas.height;
 		const aspect = width > 0 && height > 0 ? width / height : 1;
 
-		const fovRad = (45 * Math.PI) / 180;
+		const fovRad = (this.#camera.fovDeg * Math.PI) / 180;
 		mat4Perspective(this.#proj, fovRad, aspect, 0.1, 5000);
 
 		const bounds = this.#layoutBounds;
 		const halfWidth = Math.max(1, Math.max(Math.abs(this.#layoutMinX), Math.abs(this.#layoutMaxX))) * 1.1;
 		const hFov = 2 * Math.atan(Math.tan(fovRad * 0.5) * aspect);
-		const zDist = halfWidth / Math.tan(hFov * 0.5);
+		const baseZDist = halfWidth / Math.tan(hFov * 0.5);
+		const zDist = baseZDist * this.#camera.distance;
 
-		const eye: [number, number, number] = [0, Math.max(bounds.depth * 1.1, zDist * 0.7), zDist * 1.2];
-		const target: [number, number, number] = [0, 0, this.#pivotZ];
+		const eye: [number, number, number] = [
+			0,
+			Math.max(bounds.depth * this.#camera.height, baseZDist * 0.7),
+			zDist,
+		];
+		const target: [number, number, number] = [0, 0, this.#pivotZ + this.#camera.targetZOffset];
 		mat4LookAt(this.#view, eye, target, [0, 1, 0]);
 		mat4Multiply(this.#viewProj, this.#proj, this.#view);
 

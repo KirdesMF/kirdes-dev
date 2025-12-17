@@ -13,9 +13,6 @@ type SunburstState = {
 	rotation: number; // radians
 	bend: number; // -0.5..0.5
 	lastPointerAngle: number | null;
-	lensActive: boolean;
-	lensX: number;
-	lensY: number;
 };
 
 type CanvasSize = {
@@ -65,45 +62,6 @@ function getThemeColors(): SunburstColors {
 	const background = style.getPropertyValue("--color-background").trim() || "#ffffff";
 
 	return { foreground, background };
-}
-
-function createHatchPattern(context: CanvasRenderingContext2D, colors: SunburstColors): CanvasPattern | null {
-	const patternCanvas = document.createElement("canvas");
-	const size = 10;
-	patternCanvas.width = size;
-	patternCanvas.height = size;
-	const patternContext = patternCanvas.getContext("2d");
-
-	if (patternContext === null) {
-		return null;
-	}
-
-	patternContext.clearRect(0, 0, size, size);
-	patternContext.fillStyle = colors.background;
-	patternContext.fillRect(0, 0, size, size);
-
-	patternContext.strokeStyle = colors.foreground;
-	patternContext.lineWidth = 1;
-
-	// Ligne principale
-	patternContext.beginPath();
-	patternContext.moveTo(0, size);
-	patternContext.lineTo(size, 0);
-	patternContext.stroke();
-
-	// Lignes supplémentaires pour assurer la continuité
-	patternContext.beginPath();
-	patternContext.moveTo(-size, size);
-	patternContext.lineTo(0, 0);
-	patternContext.stroke();
-
-	patternContext.beginPath();
-	patternContext.moveTo(size, size);
-	patternContext.lineTo(size * 2, 0);
-	patternContext.stroke();
-
-	const pattern = context.createPattern(patternCanvas, "repeat");
-	return pattern;
 }
 
 function drawRayPath(
@@ -165,18 +123,10 @@ export class Sunburst {
 		rotation: 0,
 		bend: 0,
 		lastPointerAngle: null,
-		lensActive: false,
-		lensX: 0,
-		lensY: 0,
 	};
-	#hatchPattern: CanvasPattern | null = null;
-	#relaxTimeoutId: number | null = null;
 	#transformReady = false;
 	#colors: SunburstColors = getThemeColors();
 	#resizeObserver: ResizeObserver | null = null;
-	#lensRadiusPx = Sunburst.#readCssLensRadius();
-	#quickLensX: ((value: number) => gsap.core.Tween) | null = null;
-	#quickLensY: ((value: number) => gsap.core.Tween) | null = null;
 	#isRunning = false;
 
 	#unsubscribeTheme: (() => void) | null = null;
@@ -186,13 +136,8 @@ export class Sunburst {
 		this.#config = { ...DEFAULT_CONFIG, ...config };
 
 		this.resize();
-		this.#state.lensX = this.#size.width / 2;
-		this.#state.lensY = this.#size.height / 2;
 		this.#updateColorsFromTheme();
 		this.#subscribeToThemeChanges();
-
-		this.#quickLensX = gsap.quickTo(this.#state, "lensX", { duration: 0.3, ease: "power2.out" });
-		this.#quickLensY = gsap.quickTo(this.#state, "lensY", { duration: 0.3, ease: "power2.out" });
 
 		this.#canvas.addEventListener("mousemove", this.#handleMouseMove);
 		this.#canvas.addEventListener("mouseleave", this.#handleMouseLeave);
@@ -243,10 +188,6 @@ export class Sunburst {
 			this.#context.setTransform(dpr, 0, 0, dpr, 0, 0);
 			this.#transformReady = true;
 		}
-
-		if (this.#hatchPattern === null) {
-			this.#hatchPattern = createHatchPattern(this.#context, this.#colors);
-		}
 	}
 
 	destroy(): void {
@@ -255,11 +196,6 @@ export class Sunburst {
 		this.#canvas.removeEventListener("mouseleave", this.#handleMouseLeave);
 		this.#canvas.removeEventListener("touchmove", this.#handleTouchMove);
 		this.#canvas.removeEventListener("touchend", this.#handleMouseLeave);
-
-		if (this.#relaxTimeoutId !== null) {
-			window.clearTimeout(this.#relaxTimeoutId);
-			this.#relaxTimeoutId = null;
-		}
 
 		this.#resizeObserver?.disconnect();
 
@@ -276,23 +212,6 @@ export class Sunburst {
 
 	#updateColorsFromTheme(): void {
 		this.#colors = getThemeColors();
-		this.#lensRadiusPx = Sunburst.#readCssLensRadius();
-		if (this.#context !== null) {
-			this.#hatchPattern = createHatchPattern(this.#context, this.#colors);
-		}
-	}
-
-	static #readCssLensRadius(): number {
-		if (typeof document === "undefined") {
-			return 200;
-		}
-		const style = getComputedStyle(document.documentElement);
-		const raw = style.getPropertyValue("--lens-radius").trim();
-		const numeric = parseFloat(raw);
-		const diameterPx = Number.isFinite(numeric) ? numeric : 200;
-
-		// CSS variable is the diameter; canvas needs radius.
-		return Math.max(0, diameterPx * 0.5);
 	}
 
 	#animateBendTo(target: number, elastic: boolean): void {
@@ -303,15 +222,6 @@ export class Sunburst {
 			duration: elastic ? 1.25 : 0.2,
 			ease: elastic ? "elastic.out(1, 0.1)" : "power2.out",
 		});
-	}
-
-	#scheduleRelax(): void {
-		if (this.#relaxTimeoutId !== null) {
-			window.clearTimeout(this.#relaxTimeoutId);
-		}
-		this.#relaxTimeoutId = window.setTimeout(() => {
-			this.#animateBendTo(0, true);
-		}, 150);
 	}
 
 	#handlePointerMove(clientX: number, clientY: number): void {
@@ -341,25 +251,6 @@ export class Sunburst {
 		}
 
 		this.#state.lastPointerAngle = angle;
-
-		const normX = (pointerX - rect.left) / rect.width;
-		const normY = (pointerY - rect.top) / rect.height;
-
-		const targetX = clamp(normX, 0, 1) * this.#size.width;
-		const targetY = clamp(normY, 0, 1) * this.#size.height;
-
-		if (!this.#state.lensActive) {
-			// Positionner directement sans animation
-			this.#state.lensX = targetX;
-			this.#state.lensY = targetY;
-			this.#state.lensActive = true;
-		} else {
-			// Animer normalement avec quickTo
-			this.#quickLensX?.(targetX);
-			this.#quickLensY?.(targetY);
-		}
-
-		this.#scheduleRelax();
 	}
 
 	#handleMouseMove = (event: MouseEvent): void => {
@@ -375,20 +266,7 @@ export class Sunburst {
 	};
 
 	#handleMouseLeave = (): void => {
-		if (this.#relaxTimeoutId !== null) {
-			window.clearTimeout(this.#relaxTimeoutId);
-			this.#relaxTimeoutId = null;
-		}
 		this.#animateBendTo(0, true);
-
-		// Tuer les tweens de position de la lens
-		gsap.killTweensOf(this.#state, "lensX,lensY");
-
-		// Recréer les quickTo pour la prochaine entrée
-		this.#quickLensX = gsap.quickTo(this.#state, "lensX", { duration: 0.3, ease: "power2.out" });
-		this.#quickLensY = gsap.quickTo(this.#state, "lensY", { duration: 0.3, ease: "power2.out" });
-
-		this.#state.lensActive = false;
 		this.#state.lastPointerAngle = null;
 	};
 
@@ -396,7 +274,7 @@ export class Sunburst {
 		const deltaRatio = gsap.ticker.deltaRatio(60);
 		const dtSec = deltaRatio / 60;
 
-		if (!this.#state.lensActive) {
+		if (this.#state.lastPointerAngle === null) {
 			this.#state.rotation += IDLE_ROTATION_SPEED * dtSec;
 			if (this.#state.rotation > Math.PI * 2 || this.#state.rotation < -Math.PI * 2) {
 				this.#state.rotation = ((this.#state.rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
@@ -443,35 +321,6 @@ export class Sunburst {
 
 			drawRayPath(ctx, centerX, centerY, innerRadius, outerRadius, angleStart, angleEnd, this.#state.bend);
 			ctx.fill();
-		}
-
-		if (this.#state.lensActive && this.#hatchPattern !== null) {
-			this.#lensRadiusPx = Sunburst.#readCssLensRadius();
-			const lensRadius = this.#lensRadiusPx;
-
-			ctx.save();
-			ctx.beginPath();
-			ctx.arc(this.#state.lensX, this.#state.lensY, lensRadius, 0, Math.PI * 2);
-			ctx.clip();
-
-			const strokeScale = Math.max(1, Math.min(width, height) / 500);
-
-			ctx.fillStyle = this.#hatchPattern;
-			ctx.strokeStyle = this.#colors.background;
-			ctx.lineWidth = strokeScale;
-			ctx.setLineDash([6 * strokeScale, 4 * strokeScale]);
-
-			for (let index = 0; index < rayCount; index += 1) {
-				const angleStart = index * fullStep + gap / 2 + this.#state.rotation;
-				const angleEnd = angleStart + arcAngle;
-
-				drawRayPath(ctx, centerX, centerY, innerRadius, outerRadius, angleStart, angleEnd, this.#state.bend);
-				ctx.fill();
-				ctx.stroke();
-			}
-
-			ctx.setLineDash([]);
-			ctx.restore();
 		}
 
 		if (innerRadius > 0) {

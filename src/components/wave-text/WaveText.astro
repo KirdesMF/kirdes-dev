@@ -11,9 +11,14 @@
   let isInViewport = true;
   let isDocumentVisible = document.visibilityState !== "hidden";
   let isInteracting = false;
+  let isSettlingSlide = false;
+  let settleTimeoutId: number | null = null;
+
+  const VIEW_THRESHOLD = 0.2;
+  const SLIDE_SETTLE_MS = 650;
 
   function syncRunningState() {
-    const shouldRun = (isInViewport || isInteracting) && isDocumentVisible;
+    const shouldRun = (isInViewport || isInteracting || isSettlingSlide) && isDocumentVisible;
     shouldRun ? scene.start() : scene.stop();
   }
 
@@ -102,24 +107,44 @@
 
   const target = canvas.closest("footer") ?? canvas;
 
-  const thresholds = Array.from({ length: 21 }, (_, i) => i / 20);
+  function cancelSlideSettle() {
+    if (settleTimeoutId === null) return;
+    window.clearTimeout(settleTimeoutId);
+    settleTimeoutId = null;
+    isSettlingSlide = false;
+  }
+
+  function startSlideSettle() {
+    cancelSlideSettle();
+    isSettlingSlide = true;
+    settleTimeoutId = window.setTimeout(() => {
+      isSettlingSlide = false;
+      settleTimeoutId = null;
+      syncRunningState();
+    }, SLIDE_SETTLE_MS);
+  }
+
   const observer =
     "IntersectionObserver" in window
       ? new IntersectionObserver(
           (entries) => {
             const entry = entries[0];
-            const ratio = entry?.isIntersecting ? entry.intersectionRatio : 0;
+            const ratio = entry?.intersectionRatio ?? 0;
+            const nextInView = ratio >= VIEW_THRESHOLD;
 
-            const startRatio = 0.05;
-            const endRatio = 0.4;
-            const progress = Math.max(0, Math.min(1, (ratio - startRatio) / (endRatio - startRatio)));
+            if (nextInView) {
+              cancelSlideSettle();
+              scene.setSlideProgress(1);
+              isInViewport = true;
+            } else {
+              scene.setSlideProgress(0);
+              isInViewport = false;
+              startSlideSettle();
+            }
 
-            scene.setSlideProgress(progress);
-
-            isInViewport = entry?.isIntersecting ?? false;
             syncRunningState();
           },
-          { threshold: thresholds },
+          { threshold: VIEW_THRESHOLD },
         )
       : null;
 
@@ -127,6 +152,7 @@
     isInViewport = false;
     observer.observe(target);
   } else {
+    isInViewport = true;
     scene.setSlideProgress(1);
   }
 
@@ -135,6 +161,7 @@
   window.addEventListener("beforeunload", () => {
     scene.stop();
     observer?.disconnect();
+    cancelSlideSettle();
   });
 
   window.addEventListener("visibilitychange", () => {

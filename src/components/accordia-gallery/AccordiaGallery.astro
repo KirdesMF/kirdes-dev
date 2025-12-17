@@ -1,0 +1,486 @@
+---
+import type { CardData } from "./types";
+
+export type Props = {
+	cards?: CardData[];
+	class?: string;
+	id?: string;
+};
+
+const CARD_W = 350;
+const CARD_H = 500;
+const VISIBLE_SPINE = 160;
+const START_OFFSET = 100;
+const EXPANSION_WIDTH = CARD_W - VISIBLE_SPINE; // 190
+
+const getPath = (p: number, c: number) => {
+	const currentY = CARD_H * (1 - p);
+
+	return `
+		M 0 ${CARD_H}
+		L 0 ${currentY}
+		Q ${CARD_W / 2} ${currentY + c} ${CARD_W} ${currentY}
+		L ${CARD_W} ${CARD_H}
+		Z
+	`;
+};
+
+const INITIAL_PATH = getPath(0, 0).trim();
+
+const DEFAULT_CARDS: CardData[] = [
+	{
+		id: "card-1",
+		title: "Design Systems",
+		description: "Token-driven UI foundations with pragmatic components and motion.",
+		hexColor: "#FF4D6D",
+		category: "Design",
+		accentColor: "#FF4D6D",
+	},
+	{
+		id: "card-2",
+		title: "Interactive UX",
+		description: "Scroll, drag, and micro-interactions that feel physical and intentional.",
+		hexColor: "#4D7CFE",
+		category: "Motion",
+		accentColor: "#4D7CFE",
+	},
+	{
+		id: "card-3",
+		title: "Type & Layout",
+		description: "Bold typography, grids, and rhythm tuned for readability and impact.",
+		hexColor: "#22C55E",
+		category: "Type",
+		accentColor: "#22C55E",
+	},
+	{
+		id: "card-4",
+		title: "Performance",
+		description: "Ship less JS: progressive enhancement, smart loading, and static-first UX.",
+		hexColor: "#F59E0B",
+		category: "Build",
+		accentColor: "#F59E0B",
+	},
+	{
+		id: "card-5",
+		title: "Delight",
+		description: "Small surprises, strong affordances, and polish across all devices.",
+		hexColor: "#A855F7",
+		category: "Craft",
+		accentColor: "#A855F7",
+	},
+];
+
+const { cards = DEFAULT_CARDS, class: className = "", id } = Astro.props;
+---
+
+<div
+  id={id}
+  data-accordia-gallery
+  data-card-w={CARD_W}
+  data-card-h={CARD_H}
+  data-visible-spine={VISIBLE_SPINE}
+  data-start-offset={START_OFFSET}
+  data-expansion-width={EXPANSION_WIDTH}
+  class:list={["relative w-full", className]}
+>
+  <div class="absolute inset-0 -z-10 bg-background" aria-hidden="true"></div>
+
+  <div data-accordia-wrapper class="w-full h-175 flex items-center cursor-grab active:cursor-grabbing select-none">
+    <div
+      data-accordia-track
+      class="flex flex-row items-center w-max will-change-transform touch-none"
+      style={`padding-left: ${START_OFFSET}px; padding-right: ${START_OFFSET}px;`}
+    >
+      {
+        cards.map((card, index) => (
+          <div
+            data-accordia-card
+            data-card-index={index}
+            tabindex="0"
+            class="relative shrink-0 will-change-transform select-none group"
+            style={{
+              marginLeft: index === 0 ? "0px" : `-${EXPANSION_WIDTH}px`,
+              zIndex: index,
+              width: `${CARD_W}px`,
+              height: `${CARD_H}px`,
+            }}
+          >
+            <div class="absolute inset-0 rounded-xl overflow-hidden border shadow-2xl transform transition-transform duration-500 group-hover:scale-[1.02] group-focus-within:scale-[1.02] bg-background border-foreground">
+              <div class="absolute inset-0 z-0 pointer-events-none">
+                <svg
+                  width={CARD_W}
+                  height={CARD_H}
+                  viewBox={`0 0 ${CARD_W} ${CARD_H}`}
+                  class="w-full h-full block"
+                  aria-hidden="true"
+                >
+                  <path
+                    data-accordia-liquid-path
+                    d={INITIAL_PATH}
+                    fill="var(--color-foreground)"
+                    class="transition-colors duration-500"
+                  />
+                </svg>
+              </div>
+
+              <div
+                class="relative z-10 w-full h-full flex flex-col justify-between p-8 mix-blend-difference"
+                style="color: var(--white);"
+              >
+                <div class="flex justify-between items-start">
+                  <div class="font-mono text-sm opacity-60 tracking-widest border border-current px-2 py-1 rounded-full">
+                    No {index + 1}
+                  </div>
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center border border-current">
+                    <svg viewBox="0 0 24 24" class="size-4.5" aria-hidden="true">
+                      <path
+                        d="M7 17L17 7M17 7H9M17 7V15"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none">
+                  <span class="text-[10rem] font-black leading-none tracking-tighter opacity-100">{index + 1}</span>
+                </div>
+
+                <div class="space-y-4">
+                  <div class="inline-block px-3 py-1 rounded-full border border-current text-[10px] font-bold uppercase tracking-wider">
+                    {card.category}
+                  </div>
+
+                  <h3 class="text-3xl font-bold leading-none tracking-tight" style={{ color: card.hexColor }}>
+                    {card.title}
+                  </h3>
+
+                  <p class="text-sm opacity-80 leading-relaxed max-w-[90%]">{card.description}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+<script>
+  import { gsap } from "gsap";
+  import { Draggable, InertiaPlugin } from "gsap/all";
+
+  gsap.registerPlugin(Draggable, InertiaPlugin);
+
+  type CleanupFn = () => void;
+  const cleanups: CleanupFn[] = [];
+
+  function getNumberFromDataset(el: HTMLElement, key: string, fallback: number): number {
+    const raw = el.dataset[key];
+    const value = raw ? Number(raw) : fallback;
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  function getPath(width: number, height: number, progress: number, curve: number): string {
+    const currentY = height * (1 - progress);
+    return `M 0 ${height} L 0 ${currentY} Q ${width / 2} ${currentY + curve} ${width} ${currentY} L ${width} ${height} Z`;
+  }
+
+  function initGallery(root: HTMLElement): CleanupFn {
+    const wrapper = root.querySelector<HTMLDivElement>("[data-accordia-wrapper]");
+    const track = root.querySelector<HTMLDivElement>("[data-accordia-track]");
+    const cards = Array.from(root.querySelectorAll<HTMLDivElement>("[data-accordia-card]"));
+
+    if (!wrapper || !track || cards.length === 0) return () => {};
+
+    const cardW = getNumberFromDataset(root, "cardW", 350);
+    const cardH = getNumberFromDataset(root, "cardH", 500);
+    const visibleSpine = getNumberFromDataset(root, "visibleSpine", 160);
+    const startOffset = getNumberFromDataset(root, "startOffset", 100);
+    const expansionWidth = getNumberFromDataset(root, "expansionWidth", 190);
+
+    const paths = cards.map((card) => card.querySelector<SVGPathElement>("[data-accordia-liquid-path]"));
+    const fillStates = cards.map(() => ({ progress: 0, curve: 0 }));
+
+    paths.forEach((path) => {
+      if (!path) return;
+      path.setAttribute("d", getPath(cardW, cardH, 0, 0));
+    });
+
+    let activeIndex: number | null = null;
+
+    const handleEnter = (index: number) => {
+      activeIndex = index;
+
+      const path = paths[index];
+      const state = fillStates[index];
+      if (!path || !state) return;
+
+      gsap.killTweensOf(state);
+
+      const tl = gsap.timeline({
+        onUpdate: () => {
+          path.setAttribute("d", getPath(cardW, cardH, state.progress, state.curve));
+        },
+      });
+
+      tl.to(
+        state,
+        {
+          progress: 1,
+          duration: 0.8,
+          ease: "power2.out",
+        },
+        0,
+      );
+
+      tl.to(
+        state,
+        {
+          curve: -60,
+          duration: 0.2,
+          ease: "power1.out",
+        },
+        0,
+      );
+
+      tl.to(
+        state,
+        {
+          curve: 0,
+          duration: 1.0,
+          ease: "elastic.out(1, 0.4)",
+        },
+        0.2,
+      );
+    };
+
+    const handleLeave = (index: number) => {
+      if (activeIndex === index) activeIndex = null;
+
+      const path = paths[index];
+      const state = fillStates[index];
+      if (!path || !state) return;
+
+      gsap.killTweensOf(state);
+
+      const tl = gsap.timeline({
+        onUpdate: () => {
+          path.setAttribute("d", getPath(cardW, cardH, state.progress, state.curve));
+        },
+      });
+
+      tl.to(
+        state,
+        {
+          progress: 0,
+          duration: 0.6,
+          ease: "power2.in",
+        },
+        0,
+      );
+
+      tl.to(
+        state,
+        {
+          curve: 60,
+          duration: 0.3,
+          ease: "power1.in",
+        },
+        0,
+      );
+
+      tl.to(
+        state,
+        {
+          curve: 0,
+          duration: 0.4,
+          ease: "back.out(2)",
+        },
+        0.3,
+      );
+    };
+
+    const cardCleanupFns: CleanupFn[] = [];
+    cards.forEach((card, index) => {
+      const onEnter = () => handleEnter(index);
+      const onLeave = () => handleLeave(index);
+      const onFocusIn = () => handleEnter(index);
+      const onFocusOut = () => handleLeave(index);
+
+      card.addEventListener("mouseenter", onEnter);
+      card.addEventListener("mouseleave", onLeave);
+      card.addEventListener("focusin", onFocusIn);
+      card.addEventListener("focusout", onFocusOut);
+
+      cardCleanupFns.push(() => {
+        card.removeEventListener("mouseenter", onEnter);
+        card.removeEventListener("mouseleave", onLeave);
+        card.removeEventListener("focusin", onFocusIn);
+        card.removeEventListener("focusout", onFocusOut);
+      });
+    });
+
+    const cardShifts = new Array(cards.length).fill(0);
+    const entranceAnim = cards.map(() => ({ v: 0 }));
+
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+    let entrancePlayed = false;
+
+    const playEntrance = () => {
+      if (entrancePlayed) return;
+      entrancePlayed = true;
+
+      if (reduceMotion) {
+        entranceAnim.forEach((state) => {
+          state.v = 1;
+        });
+        return;
+      }
+
+      gsap.to(entranceAnim, {
+        v: 1,
+        duration: 1.2,
+        stagger: 0.08,
+        ease: "power3.out",
+      });
+    };
+
+    const getBounds = () => {
+      const collapsedWidth = startOffset + cards.length * visibleSpine + expansionWidth + startOffset;
+      const available = window.innerWidth - collapsedWidth;
+      const centerX = available / 2;
+
+      if (available >= 0) {
+        return { minX: centerX, maxX: centerX, minY: -250, maxY: 250 };
+      }
+
+      return { minX: available, maxX: 0, minY: -250, maxY: 250 };
+    };
+
+    const bounds = getBounds();
+    const proxy = document.createElement("div");
+    gsap.set(proxy, { x: (bounds.minX + bounds.maxX) / 2, y: 0 });
+
+    const draggable = Draggable.create(proxy, {
+      trigger: wrapper,
+      type: "x,y",
+      bounds,
+      inertia: true,
+      edgeResistance: 0.5,
+      zIndexBoost: false,
+      onRelease: () => {
+        gsap.to(proxy, {
+          y: 0,
+          duration: 0.8,
+          ease: "elastic.out(1, 0.4)",
+          overwrite: "auto",
+        });
+      },
+    })[0];
+
+    const onResize = () => {
+      const nextBounds = getBounds();
+      draggable.applyBounds(nextBounds);
+
+      if (draggable.isDragging) return;
+
+      const currentX = gsap.getProperty(proxy, "x") as number;
+      const clampedX = Math.min(nextBounds.maxX, Math.max(nextBounds.minX, currentX));
+
+      if (nextBounds.minX === nextBounds.maxX) {
+        gsap.set(proxy, { x: nextBounds.minX });
+        return;
+      }
+
+      if (clampedX !== currentX) {
+        gsap.set(proxy, { x: clampedX });
+      }
+    };
+
+    window.addEventListener("resize", onResize);
+
+    let entranceObserver: IntersectionObserver | null = null;
+    if (!reduceMotion && "IntersectionObserver" in window) {
+      entranceObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            playEntrance();
+            entranceObserver?.disconnect();
+            entranceObserver = null;
+          });
+        },
+        { threshold: 0.25 },
+      );
+      entranceObserver.observe(root);
+    } else {
+      playEntrance();
+    }
+
+    const tick = () => {
+      const trackX = gsap.getProperty(proxy, "x") as number;
+      const bendY = gsap.getProperty(proxy, "y") as number;
+
+      gsap.set(track, { x: trackX });
+
+      const isDragging = draggable?.isDragging;
+      const screenCenter = window.innerWidth / 2;
+
+      cards.forEach((card, i) => {
+        let targetShift = 0;
+        const isBending = Math.abs(bendY) > 10;
+
+        if (!isDragging && !isBending && activeIndex !== null && i > activeIndex) {
+          targetShift = expansionWidth;
+        }
+
+        const currentShift = cardShifts[i] || 0;
+        const nextShift = currentShift + (targetShift - currentShift) * 0.05;
+        cardShifts[i] = nextShift;
+
+        const cardBaseX = startOffset + i * visibleSpine;
+        const cardScreenX = trackX + cardBaseX + nextShift + cardW / 2;
+
+        const distFromCenter = cardScreenX - screenCenter;
+        const gaussian = Math.exp(-(distFromCenter ** 2) / 600000);
+        const curveY = bendY * gaussian;
+        const rotation = -(distFromCenter / 1500) * curveY * 0.1;
+
+        const entranceOffset = (1 - entranceAnim[i].v) * -1000;
+
+        gsap.set(card, {
+          x: nextShift + entranceOffset,
+          y: curveY,
+          rotation,
+          transformOrigin: "center bottom",
+          opacity: entranceAnim[i].v,
+        });
+      });
+    };
+
+    gsap.ticker.add(tick);
+
+    return () => {
+      entranceObserver?.disconnect();
+      window.removeEventListener("resize", onResize);
+      gsap.ticker.remove(tick);
+      draggable?.kill();
+      cardCleanupFns.forEach((fn) => fn());
+    };
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-accordia-gallery]").forEach((root) => {
+    if (root.dataset.accordiaInit === "true") return;
+    root.dataset.accordiaInit = "true";
+    cleanups.push(initGallery(root));
+  });
+
+  window.addEventListener("beforeunload", () => {
+    cleanups.forEach((fn) => fn());
+    cleanups.length = 0;
+  });
+</script>

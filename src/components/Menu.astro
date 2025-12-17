@@ -1,0 +1,171 @@
+<div data-menu-root class="contents">
+	<button
+		type="button"
+		data-menu-toggle
+		class="border px-4 py-1 fixed tracking-wider right-4 top-4 z-50"
+		aria-haspopup="dialog"
+		aria-expanded="false"
+	>
+		Menu
+	</button>
+
+	<div data-menu class="fixed inset-0 z-40 opacity-0 pointer-events-none" aria-hidden="true" inert>
+		<svg
+			data-menu-svg
+			viewBox="0 0 100 100"
+			preserveAspectRatio="none"
+			class="absolute inset-0 size-full pointer-events-none"
+			aria-hidden="true"
+		>
+			<defs>
+				<mask
+					id="menu-zigzag-mask"
+					x="-30"
+					y="-30"
+					width="160"
+					height="160"
+					maskUnits="userSpaceOnUse"
+					maskContentUnits="userSpaceOnUse"
+				>
+					<rect x="-30" y="-30" width="160" height="160" fill="black"></rect>
+					<path
+						data-menu-mask-path
+						fill="none"
+						stroke="white"
+						stroke-width="32"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					></path>
+				</mask>
+			</defs>
+			<rect
+				x="0"
+				y="0"
+				width="100"
+				height="100"
+				fill="var(--color-foreground)"
+				mask="url(#menu-zigzag-mask)"
+			></rect>
+		</svg>
+
+		<nav class="absolute inset-0 grid place-items-center pointer-events-none">
+			<ul class="text-7xl font-bold tracking-tight leading-none space-y-4 pointer-events-auto text-background">
+				<li><a data-menu-item href="#intro">Intro</a></li>
+				<li><a data-menu-item href="#works">Works</a></li>
+				<li><a data-menu-item href="#process">Process</a></li>
+				<li><a data-menu-item href="#about">About</a></li>
+				<li><a data-menu-item href="#footer">Footer</a></li>
+			</ul>
+		</nav>
+	</div>
+</div>
+
+<script>
+	import { events } from "../lib/states";
+	import { gsap } from "gsap";
+
+	const format = (value: number) => Number(value.toFixed(4));
+	const zigzagPath = (segments = 16) => {
+		const overshoot = 20;
+		const left = -overshoot;
+		const right = 100 + overshoot;
+		const top = -overshoot;
+		const totalHeight = 100 + overshoot * 2;
+		const step = totalHeight / segments;
+
+		let d = `M${left} ${top}`;
+		for (let i = 0; i < segments; i++) {
+			const x = i % 2 === 0 ? right : left;
+			const y = top + (i + 1) * step;
+			d += ` L${x} ${format(y)}`;
+		}
+		return d;
+	};
+
+	document.querySelectorAll<HTMLElement>("[data-menu-root]").forEach((root) => {
+		const menuToggleBtn = root.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+		const menu = root.querySelector<HTMLDivElement>("[data-menu]");
+		const menuMaskPath = root.querySelector<SVGPathElement>("[data-menu-mask-path]");
+		const menuItems = Array.from(root.querySelectorAll<HTMLElement>("[data-menu-item]"));
+
+		if (!menuToggleBtn || !menu) return;
+
+		const MENU_DURATION = 1.1;
+		let isMenuOpen = false;
+		const menuToggleLabel = menuToggleBtn.textContent ?? "Menu";
+
+		const setupMenuMask = () => {
+			if (!menuMaskPath) return null;
+			menuMaskPath.setAttribute("d", zigzagPath(16));
+
+			const length = menuMaskPath.getTotalLength();
+			gsap.set(menuMaskPath, {
+				attr: { "stroke-dasharray": length, "stroke-dashoffset": length },
+			});
+			return length;
+		};
+
+		const menuMaskLength = setupMenuMask();
+
+		const menuTl = gsap.timeline({
+			paused: true,
+			defaults: { duration: MENU_DURATION, ease: "power2.inOut" },
+			onStart: () => {
+				menu.style.pointerEvents = "auto";
+				menu.style.opacity = "1";
+				menu.removeAttribute("inert");
+				menu.setAttribute("aria-hidden", "false");
+				document.documentElement.style.overflow = "hidden";
+			},
+			onReverseComplete: () => {
+				menu.style.pointerEvents = "none";
+				menu.style.opacity = "0";
+				menu.setAttribute("inert", "");
+				menu.setAttribute("aria-hidden", "true");
+				document.documentElement.style.overflow = "";
+			},
+		});
+
+		menuTl.set(menuItems, { opacity: 0, y: 18 }, 0);
+		if (menuMaskPath && typeof menuMaskLength === "number") {
+			menuTl.set(menuMaskPath, { attr: { "stroke-dashoffset": menuMaskLength } }, 0);
+			menuTl.to(menuMaskPath, { attr: { "stroke-dashoffset": 0 }, ease: "none" }, 0);
+		}
+		menuTl.to(
+			menuItems,
+			{ opacity: 1, y: 0, duration: 0.55, ease: "power2.out", stagger: 0.08 },
+			MENU_DURATION
+		);
+
+		const closeMenu = () => {
+			if (!isMenuOpen) return;
+			isMenuOpen = false;
+			events.emitMenuToggle(false);
+			menuToggleBtn.setAttribute("aria-expanded", "false");
+			menuToggleBtn.textContent = menuToggleLabel;
+			menuTl.reverse();
+		};
+
+		const openMenu = () => {
+			if (isMenuOpen) return;
+			isMenuOpen = true;
+			events.emitMenuToggle(true);
+			menuToggleBtn.setAttribute("aria-expanded", "true");
+			menuToggleBtn.textContent = "Close";
+			menuTl.play(0);
+		};
+
+		const toggleMenu = () => (isMenuOpen ? closeMenu() : openMenu());
+
+		menuToggleBtn.addEventListener("click", toggleMenu);
+		menu.addEventListener("click", (event) => {
+			if (event.target === menu) closeMenu();
+		});
+		window.addEventListener("keydown", (event) => {
+			if (event.key === "Escape") closeMenu();
+		});
+		menu.querySelectorAll<HTMLAnchorElement>("[data-menu-item]").forEach((link) => {
+			link.addEventListener("click", () => closeMenu());
+		});
+	});
+</script>

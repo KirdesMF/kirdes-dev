@@ -257,4 +257,10 @@ const LAYERS = [
   window.addEventListener("pointercancel", onPointerLeave);
 
   requestRender();
+
+  window.addEventListener("beforeunload", () => {
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerleave", onPointerLeave);
+    window.removeEventListener("pointercancel", onPointerLeave);
+  });
 </script>

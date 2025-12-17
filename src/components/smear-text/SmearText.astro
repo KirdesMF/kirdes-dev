@@ -1,27 +1,54 @@
+---
+const showControls = import.meta.env.DEV;
+---
+
 <div class="relative size-full">
   <canvas data-smear-text-canvas class="size-full block"></canvas>
 
-  <div
-    class="absolute top-2 left-2 z-10 pointer-events-auto bg-background/70 backdrop-blur border px-3 py-2 grid gap-2 text-xs w-60"
-    data-smear-text-controls
-  >
-    <label class="grid gap-1">
-      <span>Rotate Y</span>
-      <input data-smear-rot-y type="range" min="-180" max="180" value="-25" step="1" />
-    </label>
-    <label class="grid gap-1">
-      <span>Rotate X</span>
-      <input data-smear-rot-x type="range" min="-70" max="70" value="-5" step="1" />
-    </label>
-    <label class="grid gap-1">
-      <span>Smear Area</span>
-      <input data-smear-area type="range" min="0.4" max="3" value="1" step="0.01" />
-    </label>
-    <label class="grid gap-1">
-      <span>Deform Amount</span>
-      <input data-smear-deform type="range" min="0" max="3" value="2" step="0.01" />
-    </label>
-  </div>
+  {
+    showControls && (
+      <div
+        class="absolute top-2 left-2 z-10 pointer-events-auto bg-background/70 backdrop-blur border px-3 py-2 grid gap-2 text-xs w-60"
+        data-smear-text-controls
+      >
+        <label class="grid gap-1">
+          <span>Rotate Y</span>
+          <input data-smear-rot-y type="range" min="-180" max="180" value="-25" step="1" />
+        </label>
+        <label class="grid gap-1">
+          <span>Rotate X</span>
+          <input data-smear-rot-x type="range" min="-70" max="70" value="-5" step="1" />
+        </label>
+        <label class="grid gap-1">
+          <span>Smear Area</span>
+          <input data-smear-area type="range" min="0.4" max="3" value="1" step="0.01" />
+        </label>
+        <label class="grid gap-1">
+          <span>Deform Amount</span>
+          <input data-smear-deform type="range" min="0" max="3" value="2" step="0.01" />
+        </label>
+
+        <div class="my-1 h-px bg-foreground/15" />
+
+        <label class="grid gap-1">
+          <span>Camera FOV</span>
+          <input data-smear-cam-fov type="range" min="20" max="90" value="45" step="1" />
+        </label>
+        <label class="grid gap-1">
+          <span>Camera Distance</span>
+          <input data-smear-cam-distance type="range" min="0.6" max="2.5" value="1.2" step="0.01" />
+        </label>
+        <label class="grid gap-1">
+          <span>Camera Height</span>
+          <input data-smear-cam-height type="range" min="0.2" max="2.5" value="1.1" step="0.01" />
+        </label>
+        <label class="grid gap-1">
+          <span>Camera Target Z</span>
+          <input data-smear-cam-target-z type="range" min="-400" max="400" value="0" step="1" />
+        </label>
+      </div>
+    )
+  }
 </div>
 
 <script>
@@ -31,34 +58,66 @@
 
   const scene = new Scene(canvas);
 
+  const defaults = {
+    yawDeg: -25,
+    pitchDeg: -5,
+    areaScale: 1,
+    deformAmount: 2,
+    camFovDeg: 45,
+    camDistance: 1.2,
+    camHeight: 1.1,
+    camTargetZOffset: 0,
+  };
+
   const rotY = document.querySelector<HTMLInputElement>("[data-smear-rot-y]");
   const rotX = document.querySelector<HTMLInputElement>("[data-smear-rot-x]");
   const area = document.querySelector<HTMLInputElement>("[data-smear-area]");
   const deform = document.querySelector<HTMLInputElement>("[data-smear-deform]");
+  const camFov = document.querySelector<HTMLInputElement>("[data-smear-cam-fov]");
+  const camDistance = document.querySelector<HTMLInputElement>("[data-smear-cam-distance]");
+  const camHeight = document.querySelector<HTMLInputElement>("[data-smear-cam-height]");
+  const camTargetZ = document.querySelector<HTMLInputElement>("[data-smear-cam-target-z]");
 
   function updateRotation() {
-    const yawDeg = Number(rotY?.value ?? 0);
-    const pitchDeg = Number(rotX?.value ?? 0);
+    const yawDeg = Number(rotY?.value ?? defaults.yawDeg);
+    const pitchDeg = Number(rotX?.value ?? defaults.pitchDeg);
     scene.setRotation({ yawDeg, pitchDeg });
   }
 
   function updateArea() {
-    const areaScale = Number(area?.value ?? 1);
+    const areaScale = Number(area?.value ?? defaults.areaScale);
     scene.setSmearArea(areaScale);
   }
 
   function updateDeform() {
-    const amount = Number(deform?.value ?? 1);
+    const amount = Number(deform?.value ?? defaults.deformAmount);
     scene.setDeformAmount(amount);
   }
 
-  rotY?.addEventListener("input", updateRotation, { passive: true });
-  rotX?.addEventListener("input", updateRotation, { passive: true });
-  area?.addEventListener("input", updateArea, { passive: true });
-  deform?.addEventListener("input", updateDeform, { passive: true });
+  function updateCamera() {
+    const fovDeg = Number(camFov?.value ?? defaults.camFovDeg);
+    const distance = Number(camDistance?.value ?? defaults.camDistance);
+    const height = Number(camHeight?.value ?? defaults.camHeight);
+    const targetZOffset = Number(camTargetZ?.value ?? defaults.camTargetZOffset);
+    scene.setCameraOptions({ fovDeg, distance, height, targetZOffset });
+  }
+
   updateRotation();
   updateArea();
   updateDeform();
+  updateCamera();
+
+  if (import.meta.env.DEV) {
+    rotY?.addEventListener("input", updateRotation, { passive: true });
+    rotX?.addEventListener("input", updateRotation, { passive: true });
+    area?.addEventListener("input", updateArea, { passive: true });
+    deform?.addEventListener("input", updateDeform, { passive: true });
+
+    camFov?.addEventListener("input", updateCamera, { passive: true });
+    camDistance?.addEventListener("input", updateCamera, { passive: true });
+    camHeight?.addEventListener("input", updateCamera, { passive: true });
+    camTargetZ?.addEventListener("input", updateCamera, { passive: true });
+  }
 
   let isInViewport = true;
   let isDocumentVisible = document.visibilityState !== "hidden";
