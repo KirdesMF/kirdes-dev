@@ -45,5 +45,6 @@ This project uses Biome for formatting and linting, but actually biome can only 
 - [ ] Hero animation Rive
 - [ ] About animation Rive
 - [ ] About picture puzzle
+- [ ] store - matter.js animation
 - [ ] Mobile view
 - [ ] Review components
