@@ -12,8 +12,8 @@ interface CurvedGalleryConfig {
 	paddingEdgePx?: number;
 }
 
-const DEFAULT_CARD_WIDTH_PX = 300;
-const DEFAULT_CARD_SPACING_PX = 340; // Width + gap
+const DEFAULT_CARD_WIDTH_PX = 400;
+const DEFAULT_CARD_SPACING_PX = 350; // Width + gap
 const DEFAULT_PADDING_EDGE_PX = 50;
 
 function initCurvedGallery(container: HTMLElement, config: CurvedGalleryConfig = {}): CleanupFn {

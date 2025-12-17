@@ -6,7 +6,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Nebula Notes",
 		category: "Design",
 		description: "UI experiments with bold type and soft motion.",
-		imageUrl: "/assets/curved-gallery/demo-1.svg",
 		color: "#f97316",
 	},
 	{
@@ -14,7 +13,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Spline Study",
 		category: "WebGL",
 		description: "A tiny exploration of curves, depth, and parallax.",
-		imageUrl: "/assets/curved-gallery/demo-2.svg",
 		color: "#22c55e",
 	},
 	{
@@ -22,7 +20,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Poster System",
 		category: "Brand",
 		description: "Modular layouts built for quick iteration.",
-		imageUrl: "/assets/curved-gallery/demo-3.svg",
 		color: "#06b6d4",
 	},
 	{
@@ -30,7 +27,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Type Playground",
 		category: "Typography",
 		description: "Heavy headlines, light details, crisp contrast.",
-		imageUrl: "/assets/curved-gallery/demo-4.svg",
 		color: "#a855f7",
 	},
 	{
@@ -38,7 +34,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Motion Kit",
 		category: "Animation",
 		description: "Springy interactions tuned for delight.",
-		imageUrl: "/assets/curved-gallery/demo-5.svg",
 		color: "#ef4444",
 	},
 	{
@@ -46,7 +41,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Canvas Lab",
 		category: "Creative Code",
 		description: "Particles, trails, and procedural textures.",
-		imageUrl: "/assets/curved-gallery/demo-6.svg",
 		color: "#eab308",
 	},
 	{
@@ -54,7 +48,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Grid Riffs",
 		category: "Layout",
 		description: "A few grid compositions for responsive systems.",
-		imageUrl: "/assets/curved-gallery/demo-7.svg",
 		color: "#3b82f6",
 	},
 	{
@@ -62,7 +55,6 @@ export const demoCurvedGalleryItems: CardData[] = [
 		title: "Paper Cutouts",
 		category: "Illustration",
 		description: "Layered shapes with a tactile vibe.",
-		imageUrl: "/assets/curved-gallery/demo-8.svg",
 		color: "#f43f5e",
 	},
 ];

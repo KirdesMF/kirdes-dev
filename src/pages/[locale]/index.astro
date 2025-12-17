@@ -1,4 +1,5 @@
 ---
+import CutoutTypography from "../../components/CutoutTypography.astro";
 import CurvedGallery from "../../components/curved-gallery/CurvedGallery.astro";
 import { demoCurvedGalleryItems } from "../../components/curved-gallery/demo";
 import Flag from "../../components/flag/Flag.astro";
@@ -6,6 +7,7 @@ import HexGrid from "../../components/hex-grid/HexGrid.astro";
 import Lens from "../../components/Lens.astro";
 import ProcessCard from "../../components/ProcessCard.astro";
 import SmearText from "../../components/smear-text/SmearText.astro";
+import SplitHeading from "../../components/split-heading/SplitHeading.astro";
 import Sunburst from "../../components/sunburst/Sunburst.astro";
 import WaveText from "../../components/wave-text/WaveText.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
@@ -86,7 +88,7 @@ const splitedText = "Building".split("");
       <div class="grid grid-cols-12 gap-6 w-full">
         <div class="col-span-full">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 394.84" class="size-full overflow-visible">
-            <g class="fill-foreground stroke-2">
+            <g class="fill-none stroke-foreground stroke-3">
               <path
                 d="M0,338.46V56.56C0,15.31,20.31,0,68.54,0s68.54,15.31,68.54,56.56v94.27h-58.52V60.83c0-8.89-3.52-11.69-10.02-11.69s-10.02,2.81-10.02,11.69v273.35c0,8.89,3.52,11.69,10.02,11.69s10.02-2.81,10.02-11.69v-89.99h58.52v94.27c0,41.25-20.31,56.38-68.54,56.38S0,379.71,0,338.46Z"
               ></path>
@@ -103,7 +105,7 @@ const splitedText = "Building".split("");
                 d="M609.34,338.46V56.56c0-41.25,20.31-56.56,68.54-56.56s68.54,15.31,68.54,56.56v94.27h-58.52V60.83c0-8.89-3.52-11.69-10.02-11.69s-10.02,2.81-10.02,11.69v273.35c0,8.89,3.52,11.69,10.02,11.69s10.02-2.81,10.02-11.69v-89.99h58.52v94.27c0,41.25-20.31,56.38-68.54,56.38s-68.54-15.13-68.54-56.38Z"
               ></path>
             </g>
-            <g class="fill-foreground stroke-foreground stroke-2">
+            <g class="fill-none stroke-foreground stroke-3">
               <path
                 d="M802.85,344.68V56.56c0-41.25,20.31-56.56,68.54-56.56s68.54,15.31,68.54,56.56v92.45h-58.52V60.83c0-8.89-3.52-11.69-10.02-11.69s-10.02,2.81-10.02,11.69v273.35c0,8.89,3.52,11.69,10.02,11.69s10.02-2.81,10.02-11.69v-110.36h-15v-49.64h73.52v216.7h-57.61v-12.4c-5.66,10.41-21.74,16.35-35.66,16.35-26.56,0-43.81-12.63-43.81-50.16Z"
               ></path>
@@ -141,7 +143,9 @@ const splitedText = "Building".split("");
     <section id="works" class="pb-48">
       <div class="grid grid-cols-12 gap-6 px-32">
         <div class="col-span-6">
-          <h2 class="text-[200px] font-bold">Works</h2>
+          <h2 class="text-[200px] font-bold">
+            <SplitHeading text="Works" />
+          </h2>
         </div>
       </div>
       <div class="h-100 relative">
@@ -152,7 +156,9 @@ const splitedText = "Building".split("");
     <section id="process" class="pb-48 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-start-7 col-span-6 flex justify-end">
-          <h2 class="text-[200px] font-bold">Process</h2>
+          <h2 class="text-[200px] font-bold">
+            <SplitHeading text="Process" />
+          </h2>
         </div>
       </div>
 
@@ -167,7 +173,9 @@ const splitedText = "Building".split("");
     <section id="about" class="pb-48 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-span-6">
-          <h2 class="text-[200px] font-bold">About</h2>
+          <h2 class="text-[200px] font-bold">
+            <SplitHeading text="About" />
+          </h2>
         </div>
       </div>
 

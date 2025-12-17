@@ -3,7 +3,6 @@ export interface CardData {
 	title: string;
 	category: string;
 	description: string;
-	imageUrl: string;
 	color: string;
 }
 

@@ -7,8 +7,8 @@ export interface Props {
 
 const { items } = Astro.props;
 
-const CARD_WIDTH_PX = 400;
-const CARD_HEIGHT_PX = 300;
+const CARD_WIDTH_PX = 300;
+const CARD_HEIGHT_PX = 250;
 ---
 
 <div data-curved-gallery class="absolute inset-0 size-full cursor-grab active:cursor-grabbing touch-none select-none">
@@ -37,8 +37,8 @@ const CARD_HEIGHT_PX = 300;
       items.map((item) => (
         <div
           data-role="card"
-          class="absolute top-0 left-0 group pointer-events-auto will-change-transform"
-          style={{ width: CARD_WIDTH_PX, height: CARD_HEIGHT_PX }}
+          class="absolute top-0 left-0 pointer-events-auto will-change-transform"
+          style={`width: ${CARD_WIDTH_PX}px; height: ${CARD_HEIGHT_PX}px;`}
         >
           <div class="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 top-5">
             <div class="relative w-8 h-16">
