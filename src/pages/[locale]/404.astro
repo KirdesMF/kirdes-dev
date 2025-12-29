@@ -1,0 +1,10 @@
+---
+export async function getStaticPaths() {
+	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
+}
+---
+
+<div>
+  <h1>This page does not exist</h1>
+  <a href="/">go back to home</a>
+</div>

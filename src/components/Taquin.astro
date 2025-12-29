@@ -1,0 +1,258 @@
+---
+const SIZE = 3; // 3x3
+
+const TILES = Array.from({ length: SIZE * SIZE }, (_, index) => {
+	return {
+		x: index % SIZE,
+		y: Math.floor(index / SIZE),
+	};
+});
+---
+
+<div class="p-4 border rounded-sm w-fit bg-background grid gap-4">
+  <div data-taquin="grid" data-taquin-size={SIZE} class="grid grid-cols-3 size-75 gap-1 relative">
+    {
+      TILES.map(({ x, y }, idx) => {
+        const isLast = idx === TILES.length - 1;
+
+        return isLast ? (
+          <div
+            data-taquin="tile"
+            data-taquin-id={idx}
+            data-taquin-empty={isLast}
+            style={{
+              "--taquin-tile-x": x,
+              "--taquin-tile-y": y,
+              gridColumn: x + 1,
+              gridRow: y + 1,
+            }}
+            class:list={["tile rounded-sm aspect-square pointer-events-none relative"]}
+          >
+            <svg viewBox="0 0 100 100" class="absolute inset-0">
+              <rect x="0" y="0" width="100%" height="100%" class="fill-background stroke-foreground" />
+              <rect x="0" y="0" width="100%" height="100%" fill="url(#pattern-frame-striped)" />
+            </svg>
+          </div>
+        ) : (
+          <div
+            data-taquin="tile"
+            data-taquin-id={idx}
+            data-taquin-empty={isLast}
+            style={{
+              "--taquin-tile-x": x,
+              "--taquin-tile-y": y,
+              gridColumn: x + 1,
+              gridRow: y + 1,
+            }}
+            class:list={["tile border rounded-sm aspect-square"]}
+          />
+        );
+      })
+    }
+  </div>
+
+  <div class="h-16 border rounded-sm"></div>
+</div>
+
+<div data-taquin="victory" class="hidden fixed inset-0 bg-black/50 items-center justify-center">
+  <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+    <h2 class="text-3xl font-bold mb-4">🎉 Gagné !</h2>
+    <button data-taquin="restart" class="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"> Rejouer </button>
+  </div>
+</div>
+
+<script>
+  import { gsap } from "gsap";
+  import { Flip } from "gsap/all";
+
+  gsap.registerPlugin(Flip);
+
+  const grid = document.querySelector<HTMLDivElement>("[data-taquin='grid']");
+  const tiles = Array.from(document.querySelectorAll<HTMLDivElement>("[data-taquin='tile']"));
+  const victoryScreen = document.querySelector<HTMLDivElement>("[data-taquin='victory']");
+  const restartBtn = document.querySelector<HTMLButtonElement>("[data-taquin='restart']");
+
+  if (!grid || !tiles || !victoryScreen || !restartBtn) {
+    throw new Error("Missing required elements");
+  }
+
+  const SIZE = parseInt(grid?.getAttribute("data-taquin-size") || "3");
+
+  let isAnimating = false;
+
+  // Track current position of each tile by its ID
+  // Using a Map for O(1) lookups instead of array.find()
+  const positions = new Map();
+  tiles.forEach((tile, idx) => {
+    const id = parseInt(tile.getAttribute("data-taquin-id") || "0");
+    positions.set(id, {
+      x: idx % SIZE,
+      y: Math.floor(idx / SIZE),
+    });
+  });
+
+  /**
+   * Get position of the empty tile
+   */
+  function getEmptyPosition() {
+    return positions.get(SIZE * SIZE - 1);
+  }
+
+  /**
+   * Check if two positions are adjacent (horizontally or vertically)
+   */
+  function areAdjacent(pos1: { x: number; y: number }, pos2: { x: number; y: number }) {
+    const dx = Math.abs(pos1.x - pos2.x);
+    const dy = Math.abs(pos1.y - pos2.y);
+    return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+  }
+
+  /**
+   * Check if the puzzle is solved
+   * Each tile should be at its original position (id matches grid index)
+   */
+  function isPuzzleSolved() {
+    for (const [id, pos] of positions) {
+      const expectedX = id % SIZE;
+      const expectedY = Math.floor(id / SIZE);
+      if (pos.x !== expectedX || pos.y !== expectedY) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Show victory screen
+   */
+  function showVictory() {
+    if (!victoryScreen) return;
+
+    victoryScreen.classList.remove("hidden");
+    gsap.from(victoryScreen.querySelector("div"), {
+      scale: 0.5,
+      opacity: 0,
+      duration: 0.5,
+      ease: "back.out(1.7)",
+    });
+  }
+
+  /**
+   * Update all tiles' grid positions based on current positions Map
+   */
+  function updateTilesGridPosition() {
+    tiles.forEach((tile) => {
+      const id = parseInt(tile.getAttribute("data-taquin-id") || "0");
+      const pos = positions.get(id);
+      if (pos) {
+        tile.style.gridColumn = String(pos.x + 1);
+        tile.style.gridRow = String(pos.y + 1);
+      }
+    });
+  }
+
+  /**
+   * Swap two tiles' positions in the grid
+   */
+  function swapTiles(tile1Id: number, tile2Id: number) {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    const pos1 = positions.get(tile1Id);
+    const pos2 = positions.get(tile2Id);
+
+    // Capture state before changes
+    const state = Flip.getState(tiles);
+
+    // Swap coordinates
+    [pos1.x, pos2.x] = [pos2.x, pos1.x];
+    [pos1.y, pos2.y] = [pos2.y, pos1.y];
+
+    // Update grid positions
+    updateTilesGridPosition();
+
+    Flip.from(state, {
+      duration: 0.3,
+      ease: "pow.inOut",
+      onComplete: () => {
+        isAnimating = false;
+
+        // Check for victory after animation completes
+        if (isPuzzleSolved()) {
+          setTimeout(showVictory, 300);
+        }
+      },
+    });
+  }
+
+  /**
+   * Generate a solvable shuffle by performing random valid moves
+   * This ensures the puzzle is always solvable
+   */
+  function shufflePuzzle(moves = 100) {
+    let lastMove: number | null = null;
+
+    for (let i = 0; i < moves; i++) {
+      const empty = getEmptyPosition();
+
+      // Find all adjacent tiles to the empty space
+      const adjacent = Array.from(positions.entries())
+        .filter(([id, pos]) => id !== SIZE * SIZE - 1 && areAdjacent(pos, empty))
+        .map(([id]) => id);
+
+      // Avoid immediately undoing the last move for better shuffling
+      const validMoves = lastMove !== null ? adjacent.filter((id) => id !== lastMove) : adjacent;
+
+      const choices = validMoves.length > 0 ? validMoves : adjacent;
+      const randomTileId = choices[Math.floor(Math.random() * choices.length)];
+      const randomTile = positions.get(randomTileId);
+
+      // Swap without animation during shuffle
+      [empty.x, empty.y, randomTile.x, randomTile.y] = [randomTile.x, randomTile.y, empty.x, empty.y];
+
+      lastMove = SIZE * SIZE - 1; // Track that empty was the last move
+    }
+
+    // Update DOM to reflect shuffled state (without animation)
+    updateTilesGridPosition();
+  }
+
+  /**
+   * Handle tile click - move if adjacent to empty space
+   */
+  function handleTileClick(event: MouseEvent) {
+    const tile = event.currentTarget as HTMLElement;
+    const tileId = parseInt(tile.getAttribute("data-taquin-id") || "");
+    const emptyId = SIZE * SIZE - 1;
+
+    // Don't allow clicking the empty tile
+    if (tileId === emptyId || isAnimating) return;
+
+    const tilePos = positions.get(tileId);
+    const emptyPos = getEmptyPosition();
+
+    // Only swap if tiles are adjacent
+    if (areAdjacent(tilePos, emptyPos)) {
+      swapTiles(tileId, emptyId);
+    }
+  }
+
+  /**
+   * Reset the puzzle
+   */
+  function resetPuzzle() {
+    victoryScreen?.classList.add("hidden");
+    shufflePuzzle();
+  }
+
+  // Attach click handlers to all tiles
+  tiles.forEach((tile) => {
+    tile.addEventListener("click", handleTileClick);
+  });
+
+  // Restart button handler
+  restartBtn?.addEventListener("click", resetPuzzle);
+
+  // Shuffle the puzzle on load
+  shufflePuzzle();
+</script>

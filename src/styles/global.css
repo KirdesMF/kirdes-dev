@@ -32,6 +32,11 @@ html {
 	--mask-radius: calc(var(--lens-radius) / 2);
 	--mouse-x: 0;
 	--mouse-y: 0;
+
+	--taquin-grid-size: 3;
+	--taquin-tile-size: 100px;
+	--taquin-tile-x: 0px;
+	--taquin-tile-y: 0px;
 }
 
 :root.dark {
@@ -96,4 +101,14 @@ html {
 
 @utility writing-mode-* {
 	writing-mode: --value("sideways-lr", "sideways-rl", "vertical-rl", "vertical-lr");
+}
+
+@utility tile {
+	width: var(--taquin-size);
+	height: var(--taquin-size);
+	background-image: url("/test.png");
+	background-size: calc(var(--taquin-tile-size) * var(--taquin-grid-size)) auto;
+
+	background-position: calc(var(--taquin-tile-x) * -1 * var(--taquin-tile-size))
+		calc(var(--taquin-tile-y) * -1 * var(--taquin-tile-size));
 }

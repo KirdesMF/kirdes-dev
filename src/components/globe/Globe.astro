@@ -1,9 +1,9 @@
 ---
-import type { Vector3, Quaternion } from "./globe";
-import { generateGraticule, computeGridPath } from "./globe";
+import type { Quaternion, Vector3 } from "./globe";
+import { computeGridPath, generateGraticule } from "./globe";
 
 export interface Props {
-  size: number;
+	size: number;
 }
 
 const { size } = Astro.props;

@@ -2,26 +2,29 @@
 import AccordiaGallery from "../../components/accordia-gallery/AccordiaGallery.astro";
 import CutoutTypography from "../../components/CutoutTypography.astro";
 import Flag from "../../components/flag/Flag.astro";
+import Globe from "../../components/globe/Globe.astro";
 import HexGrid from "../../components/hex-grid/HexGrid.astro";
 import CreativeDev from "../../components/illustrations/CreativeDev.astro";
+import ElasticArrow from "../../components/illustrations/ElasticArrow.astro";
 import GetInTouch from "../../components/illustrations/GetInTouch.astro";
+import Sparkle from "../../components/illustrations/Sparkle.astro";
 import Lens from "../../components/Lens.astro";
 import Menu from "../../components/Menu.astro";
-import ProcessCard from "../../components/ProcessCard.astro";
 import SplitHeading from "../../components/SplitHeading.astro";
+import ServiceCards from "../../components/service-cards/ServiceCards.astro";
 import SmearText from "../../components/smear-text/SmearText.astro";
 import Sunburst from "../../components/sunburst/Sunburst.astro";
+import Taquin from "../../components/Taquin.astro";
+import Vortex from "../../components/Vortex.astro";
 import WaveText from "../../components/wave-text/WaveText.astro";
-import Layout from "../../layouts/Layout.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
-import Sparkle from "../../components/illustrations/Sparkle.astro";
-import ElasticArrow from "../../components/illustrations/ElasticArrow.astro";
+import Layout from "../../layouts/Layout.astro";
 
 const lang = getLangFromURL(Astro.url);
 const t = useTranslations(lang);
 
 export async function getStaticPaths() {
-  return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
+	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
 }
 
 const splitedText = "Building".split("");
@@ -45,10 +48,7 @@ const splitedText = "Building".split("");
       <div class="w-2/3 mx-auto">
         <h1 class="sr-only">{t("hero.title")}</h1>
         <div aria-hidden="true" class="text-9xl font-bold text-center grid">
-          <div class="flex gap-4 relative">
-            <Sparkle class="absolute -top-15 -end-15 fill-foreground w-24 h-24" />
-            <Sparkle class="absolute -top-2 -end-25 fill-foreground w-20 h-20" />
-
+          <div class="flex gap-4">
             <div class="overflow-hidden relative">
               <div data-motion="building">
                 {
@@ -69,6 +69,8 @@ const splitedText = "Building".split("");
             <span>cool</span>
             <span class="border px-4 bg-foreground text-background relative">
               <span>stuff</span>
+              <Sparkle class="absolute -top-15 -end-20 fill-foreground w-24 h-24" />
+              <Sparkle class="absolute -top-2 -end-30 fill-foreground w-20 h-20" />
             </span>
           </div>
           <div class="flex gap-6">
@@ -80,8 +82,16 @@ const splitedText = "Building".split("");
                 <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">for </span>
               </div>
               <span>the</span>
-              <span>web</span>
-              <div class="grid relative">
+              <span class="relative inline-grid place-items-center">
+                <span
+                  aria-hidden="true"
+                  class="absolute left-1/2 top-1/2 -translate-x-[20%] -translate-y-[30%] opacity-25 z-0"
+                >
+                  <Globe size={220} />
+                </span>
+                <span class="relative z-10 pointer-events-none">web</span>
+              </span>
+              <div class="grid relative pointer-events-none">
                 <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">.</span>
                 <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">.</span>
               </div>
@@ -122,26 +132,27 @@ const splitedText = "Building".split("");
     <section id="process" class="pb-48 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-start-7 col-span-6 flex justify-end">
-          <h2 class="text-[200px] font-bold">
-            <SplitHeading text="Process" />
+          <h2 class="text-[200px] font-bold leading-none">
+            <SplitHeading text="Services" />
           </h2>
         </div>
       </div>
 
-      <div class="grid h-svh grid-cols-12 gap-6">
-        <ProcessCard count={1} hasLine={false} class="col-span-3" />
-        <ProcessCard count={2} class="col-span-3" />
-        <ProcessCard count={3} class="col-span-3" />
-        <ProcessCard count={4} class="col-span-3" />
-      </div>
+      <ServiceCards class="h-svh" />
     </section>
 
     <section id="about" class="pb-48 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-span-6">
-          <h2 class="text-[200px] font-bold">
+          <h2 class="text-[200px] font-bold leading-none">
             <SplitHeading text="About" />
           </h2>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-12 gap-6">
+        <div class="col-start-8">
+          <Taquin />
         </div>
       </div>
 

@@ -1,0 +1,145 @@
+---
+export interface Props {
+	text: string;
+	rings?: number;
+	shape?: "circle" | "square";
+	speed?: number;
+	twist?: number;
+	duration?: number;
+	baseScale?: number;
+	fontSizeOffset?: number;
+	direction?: 1 | -1;
+	alternating?: boolean;
+	class?: string;
+}
+
+const {
+	text,
+	rings = 10,
+	shape = "circle",
+	speed = 1,
+	twist = 18,
+	duration = 1.8,
+	baseScale = 22,
+	fontSizeOffset = 0,
+	direction = 1,
+	alternating = true,
+	class: className,
+} = Astro.props;
+
+const ringCount = Math.max(1, Math.floor(rings));
+
+const ringElements = Array.from({ length: ringCount }).map((_, index) => {
+	const step = 100 / ringCount;
+	const sizePercentage = 100 - index * step;
+
+	return {
+		index,
+		size: `${sizePercentage}%`,
+		zIndex: index + 10,
+	};
+});
+
+const shapeClass = shape === "circle" ? "rounded-full" : "rounded-none";
+---
+
+<div
+  class:list={["relative w-full h-full flex items-center justify-center overflow-hidden", className]}
+  data-vortex
+  data-speed={speed}
+  data-twist={twist}
+  data-duration={duration}
+  data-direction={direction}
+  data-alternating={alternating}
+>
+  <div class="relative w-[80vmin] h-[80vmin] max-w-200 max-h-200">
+    {
+      ringElements.map((ring) => (
+        <div
+          class:list={[
+            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden origin-center bg-[#1a1625] shadow-2xl ring-2 ring-[#1a1625]",
+            shapeClass,
+          ]}
+          style={{
+            width: ring.size,
+            height: ring.size,
+            zIndex: ring.zIndex,
+          }}
+          data-vortex-ring
+        >
+          <div class="size-full flex items-center justify-center" data-vortex-inner>
+            <span
+              class="font-black text-[#FFF5E1] select-none leading-none block text-center whitespace-nowrap"
+              style={{ fontSize: `${baseScale + fontSizeOffset}vmin` }}
+            >
+              {text}
+            </span>
+          </div>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  import { gsap } from "gsap";
+
+  function initVortex(root: HTMLElement) {
+    if (root.dataset.vortexInitialized === "true") return;
+    root.dataset.vortexInitialized = "true";
+
+    const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const inners = Array.from(root.querySelectorAll<HTMLElement>("[data-vortex-inner]"));
+    if (inners.length === 0) return;
+
+    const speed = Number.parseFloat(root.dataset.speed ?? "1") || 1;
+    const twist = Number.parseFloat(root.dataset.twist ?? "0") || 0;
+    const duration = Number.parseFloat(root.dataset.duration ?? "1.8") || 1.8;
+    const direction = root.dataset.direction === "-1" ? -1 : 1;
+    const alternating = root.dataset.alternating === "true";
+
+    const spins = Math.max(1, Math.round(Math.abs(speed) * 3));
+
+    if (prefersReducedMotion) {
+      gsap.set(inners, { rotation: 0, transformOrigin: "50% 50%" });
+      return;
+    }
+
+    const tl = gsap.timeline();
+    (root as any).__vortexTimeline = tl;
+
+    inners.forEach((inner, index) => {
+      const ringDir = alternating ? (index % 2 === 0 ? 1 : -1) : 1;
+      const distanceBias = 1 + (inners.length - index - 1) / Math.max(1, inners.length);
+      const startRotation = index * twist + direction * ringDir * 360 * spins * distanceBias;
+
+      gsap.set(inner, { rotation: startRotation, transformOrigin: "50% 50%" });
+
+      tl.to(
+        inner,
+        {
+          rotation: 0,
+          duration: duration + (inners.length - index - 1) * 0.06,
+          ease: "power3.out",
+        },
+        0,
+      );
+    });
+  }
+
+  function initAllVortices() {
+    document.querySelectorAll<HTMLElement>("[data-vortex]").forEach((root) => {
+      const existing = (root as any).__vortexTimeline as gsap.core.Timeline | undefined;
+      if (existing) existing.kill();
+      root.dataset.vortexInitialized = "false";
+      initVortex(root);
+    });
+  }
+
+  if (!(window as any).__vortexGlobalInit) {
+    (window as any).__vortexGlobalInit = true;
+    document.addEventListener("astro:page-load", initAllVortices);
+  }
+
+  initAllVortices();
+</script>
