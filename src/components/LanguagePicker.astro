@@ -8,15 +8,28 @@ const curLang = getLangFromURL(Astro.url);
 function isActive(lang: string) {
 	return lang === curLang;
 }
+
+function getHref(lang: string) {
+	return route ? `/${lang}/${route}` : `/${lang}/`;
+}
 ---
 
-<nav>
-  <ul class="flex gap-2 px42 py-4 items-center justify-center">
+<nav
+  aria-label="Language switcher"
+  class="fixed left-1/2 top-4 z-50 -translate-x-1/2"
+>
+  <ul class="flex items-center rounded-full border bg-background/90 p-1 backdrop-blur-sm">
     {
       Object.entries(languages).map(([lang, label]) => (
         <li>
-          <a data-active={isActive(lang)} href={`/${lang}/${route}`} class="data-[active='true']:font-bold text-sm">
-            {label}
+          <a
+            data-active={isActive(lang)}
+            href={getHref(lang)}
+            hreflang={lang}
+            aria-current={isActive(lang) ? "page" : undefined}
+            class="block rounded-full px-3 py-1 text-xs tracking-[0.12em] uppercase transition-colors data-[active='true']:bg-foreground data-[active='true']:text-background"
+          >
+            {lang}
           </a>
         </li>
       ))

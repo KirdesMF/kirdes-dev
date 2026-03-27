@@ -1,10 +1,20 @@
 ---
+import { getLangFromURL, useTranslations } from "../../i18n/utils";
+import Layout from "../../layouts/Layout.astro";
+
+const lang = getLangFromURL(Astro.url);
+const t = useTranslations(lang);
+
 export async function getStaticPaths() {
 	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
 }
 ---
 
-<div>
-  <h1>This page does not exist</h1>
-  <a href="/">go back to home</a>
-</div>
+<Layout lang={lang}>
+  <div class="grid min-h-dvh place-items-center px-6 text-center">
+    <div class="grid gap-4">
+      <h1>{t("notFound.title")}</h1>
+      <a href={`/${lang}/`}>{t("notFound.home")}</a>
+    </div>
+  </div>
+</Layout>

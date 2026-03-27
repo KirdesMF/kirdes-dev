@@ -2,9 +2,9 @@
 import type { CardData } from "./types";
 
 export type Props = {
-	cards?: CardData[];
-	class?: string;
-	id?: string;
+  cards?: CardData[];
+  class?: string;
+  id?: string;
 };
 
 const CARD_W = 350;
@@ -14,9 +14,9 @@ const START_OFFSET = 100;
 const EXPANSION_WIDTH = CARD_W - VISIBLE_SPINE; // 190
 
 const getPath = (p: number, c: number) => {
-	const currentY = CARD_H * (1 - p);
+  const currentY = CARD_H * (1 - p);
 
-	return `
+  return `
 		M 0 ${CARD_H}
 		L 0 ${currentY}
 		Q ${CARD_W / 2} ${currentY + c} ${CARD_W} ${currentY}
@@ -28,46 +28,46 @@ const getPath = (p: number, c: number) => {
 const INITIAL_PATH = getPath(0, 0).trim();
 
 const DEFAULT_CARDS: CardData[] = [
-	{
-		id: "card-1",
-		title: "Design Systems",
-		description: "Token-driven UI foundations with pragmatic components and motion.",
-		hexColor: "#FF4D6D",
-		category: "Design",
-		accentColor: "#FF4D6D",
-	},
-	{
-		id: "card-2",
-		title: "Interactive UX",
-		description: "Scroll, drag, and micro-interactions that feel physical and intentional.",
-		hexColor: "#4D7CFE",
-		category: "Motion",
-		accentColor: "#4D7CFE",
-	},
-	{
-		id: "card-3",
-		title: "Type & Layout",
-		description: "Bold typography, grids, and rhythm tuned for readability and impact.",
-		hexColor: "#22C55E",
-		category: "Type",
-		accentColor: "#22C55E",
-	},
-	{
-		id: "card-4",
-		title: "Performance",
-		description: "Ship less JS: progressive enhancement, smart loading, and static-first UX.",
-		hexColor: "#F59E0B",
-		category: "Build",
-		accentColor: "#F59E0B",
-	},
-	{
-		id: "card-5",
-		title: "Delight",
-		description: "Small surprises, strong affordances, and polish across all devices.",
-		hexColor: "#A855F7",
-		category: "Craft",
-		accentColor: "#A855F7",
-	},
+  {
+    id: "card-1",
+    title: "Design Systems",
+    description: "Token-driven UI foundations with pragmatic components and motion.",
+    hexColor: "#FF4D6D",
+    category: "Design",
+    accentColor: "#FF4D6D",
+  },
+  {
+    id: "card-2",
+    title: "Interactive UX",
+    description: "Scroll, drag, and micro-interactions that feel physical and intentional.",
+    hexColor: "#4D7CFE",
+    category: "Motion",
+    accentColor: "#4D7CFE",
+  },
+  {
+    id: "card-3",
+    title: "Type & Layout",
+    description: "Bold typography, grids, and rhythm tuned for readability and impact.",
+    hexColor: "#22C55E",
+    category: "Type",
+    accentColor: "#22C55E",
+  },
+  {
+    id: "card-4",
+    title: "Performance",
+    description: "Ship less JS: progressive enhancement, smart loading, and static-first UX.",
+    hexColor: "#F59E0B",
+    category: "Build",
+    accentColor: "#F59E0B",
+  },
+  {
+    id: "card-5",
+    title: "Delight",
+    description: "Small surprises, strong affordances, and polish across all devices.",
+    hexColor: "#A855F7",
+    category: "Craft",
+    accentColor: "#A855F7",
+  },
 ];
 
 const { cards = DEFAULT_CARDS, class: className = "", id } = Astro.props;

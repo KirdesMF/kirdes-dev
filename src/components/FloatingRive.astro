@@ -1,0 +1,43 @@
+<div data-floating-rive class="col-start-9 col-span-4 flex justify-end pt-6">
+  <div data-floating-rive-frame class="relative w-full max-w-[420px] aspect-[1080/1920] border">
+    <canvas data-floating-rive-canvas class="absolute inset-0 size-full"></canvas>
+  </div>
+</div>
+
+<script>
+  import { initManagedRive } from "../lib/rive";
+
+  type CleanupFn = () => void;
+
+  const cleanups: CleanupFn[] = [];
+
+  document.querySelectorAll<HTMLElement>("[data-floating-rive]").forEach((root) => {
+    if (root.dataset.riveInit === "true") return;
+
+    const frame = root.querySelector<HTMLElement>("[data-floating-rive-frame]");
+    const canvas = root.querySelector<HTMLCanvasElement>("[data-floating-rive-canvas]");
+
+    if (!frame || !canvas) return;
+
+    root.dataset.riveInit = "true";
+
+    cleanups.push(
+      initManagedRive({
+        src: "/floating.riv",
+        canvas,
+        resizeTarget: frame,
+        intersectionTarget: frame,
+        visibilityThreshold: 0.15,
+        resetOnHidden: true,
+        autoplay: true,
+        autoBind: true,
+        stateMachines: "State Machine 1",
+      }),
+    );
+  });
+
+  window.addEventListener("beforeunload", () => {
+    cleanups.forEach((cleanup) => cleanup());
+    cleanups.length = 0;
+  });
+</script>

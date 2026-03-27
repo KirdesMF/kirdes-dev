@@ -16,20 +16,25 @@ import {
 import { SparkleSprites } from "./sparkles";
 import { SmearTextMsdf } from "./text-msdf";
 
-function getTheme(): { background: [number, number, number]; foreground: [number, number, number] } {
+type ThemeColors = {
+	background: [number, number, number];
+	foreground: [number, number, number];
+	skin: [number, number, number];
+};
+
+function getTheme(): ThemeColors {
 	const style = getComputedStyle(document.documentElement);
 	const background = style.getPropertyValue("--color-background");
 	const foreground = style.getPropertyValue("--color-foreground");
+	const skin = style.getPropertyValue("--color-skin");
 	return {
 		background: cssColorToVec3(background),
 		foreground: cssColorToVec3(foreground),
+		skin: cssColorToVec3(skin),
 	};
 }
 
-function getShadowColor(colors: {
-	background: [number, number, number];
-	foreground: [number, number, number];
-}): [number, number, number, number] {
+function getShadowColor(colors: ThemeColors): [number, number, number, number] {
 	const isDarkTheme = document.documentElement.classList.contains("dark");
 	if (!isDarkTheme) {
 		return [...colors.foreground, 0.25];
@@ -40,8 +45,8 @@ function getShadowColor(colors: {
 	return [br * darken, bg * darken, bb * darken, 0.35];
 }
 
-function getSparkleTint(colors: { foreground: [number, number, number] }): [number, number, number, number] {
-	return [...colors.foreground, 1];
+function getSparkleTint(colors: ThemeColors): [number, number, number, number] {
+	return [...colors.skin, 1];
 }
 
 export class Scene {
@@ -64,7 +69,7 @@ export class Scene {
 	#layoutMinX = 0;
 	#layoutMaxX = 0;
 
-	#colors = getTheme();
+	#colors: ThemeColors = getTheme();
 	#mainColor: [number, number, number, number];
 	#shadowColor: [number, number, number, number];
 	#unsubscribeTheme: (() => void) | null = null;
@@ -113,7 +118,7 @@ export class Scene {
 		this.#gl = getGL2Context(canvas);
 		this.#setupGLState();
 
-		this.#mainColor = [...this.#colors.foreground, 1];
+		this.#mainColor = [...this.#colors.skin, 1];
 		this.#shadowColor = getShadowColor(this.#colors);
 
 		this.#text = new SmearTextMsdf({
@@ -221,7 +226,7 @@ export class Scene {
 
 	setColorsFromTheme(): void {
 		this.#colors = getTheme();
-		this.#mainColor = [...this.#colors.foreground, 1];
+		this.#mainColor = [...this.#colors.skin, 1];
 		this.#shadowColor = getShadowColor(this.#colors);
 		this.#text.setColor(this.#mainColor);
 		this.#yearText.setColor(this.#mainColor);
@@ -246,12 +251,7 @@ export class Scene {
 		this.#updateEffectParams();
 	}
 
-	setCameraOptions(options: {
-		fovDeg?: number;
-		distance?: number;
-		height?: number;
-		targetZOffset?: number;
-	}): void {
+	setCameraOptions(options: { fovDeg?: number; distance?: number; height?: number; targetZOffset?: number }): void {
 		const fovDeg = options.fovDeg;
 		const distance = options.distance;
 		const height = options.height;
@@ -310,11 +310,7 @@ export class Scene {
 		const baseZDist = halfWidth / Math.tan(hFov * 0.5);
 		const zDist = baseZDist * this.#camera.distance;
 
-		const eye: [number, number, number] = [
-			0,
-			Math.max(bounds.depth * this.#camera.height, baseZDist * 0.7),
-			zDist,
-		];
+		const eye: [number, number, number] = [0, Math.max(bounds.depth * this.#camera.height, baseZDist * 0.7), zDist];
 		const target: [number, number, number] = [0, 0, this.#pivotZ + this.#camera.targetZOffset];
 		mat4LookAt(this.#view, eye, target, [0, 1, 0]);
 		mat4Multiply(this.#viewProj, this.#proj, this.#view);

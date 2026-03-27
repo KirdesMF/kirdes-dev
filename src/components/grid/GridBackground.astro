@@ -1,23 +1,23 @@
 ---
 const LINES = [
-	{ colStart: "col-start-1", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
-	{ colStart: "col-start-4", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
-	{ colStart: "col-start-7", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
-	{ colStart: "col-start-10", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
-	{ colStart: "col-start-12", start: { x: 100, y: 0 }, control: { x: 100, y: 50 }, end: { x: 100, y: 100 } },
+  { colStart: "col-start-1", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
+  { colStart: "col-start-4", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
+  { colStart: "col-start-7", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
+  { colStart: "col-start-10", start: { x: 0, y: 0 }, control: { x: 0, y: 50 }, end: { x: 0, y: 100 } },
+  { colStart: "col-start-12", start: { x: 100, y: 0 }, control: { x: 100, y: 50 }, end: { x: 100, y: 100 } },
 ];
 
 const PATH_CONFIG = {
-	strokeWidth: "0.75",
-	dashArray: "5 3",
-	fill: "none",
-	color: "stroke-foreground/25",
+  strokeWidth: "0.75",
+  dashArray: "5 3",
+  fill: "none",
+  color: "stroke-foreground/25",
 };
 
 const GRID_CLASSES = "fixed inset-0 px-32 grid grid-cols-12 gap-6";
 const LAYERS = [
-	{ name: "solid", className: `${GRID_CLASSES} -z-2`, dashed: false },
-	{ name: "dashed", className: `${GRID_CLASSES} masked-reveal bg-background -z-2`, dashed: true },
+  { name: "solid", className: `${GRID_CLASSES} -z-2`, dashed: false },
+  { name: "dashed", className: `${GRID_CLASSES} masked-reveal bg-background -z-2`, dashed: true },
 ];
 ---
 

@@ -2,7 +2,6 @@
 import AccordiaGallery from "../../components/accordia-gallery/AccordiaGallery.astro";
 import CutoutTypography from "../../components/CutoutTypography.astro";
 import Flag from "../../components/flag/Flag.astro";
-import Globe from "../../components/globe/Globe.astro";
 import HexGrid from "../../components/hex-grid/HexGrid.astro";
 import CreativeDev from "../../components/illustrations/CreativeDev.astro";
 import ElasticArrow from "../../components/illustrations/ElasticArrow.astro";
@@ -27,36 +26,63 @@ export async function getStaticPaths() {
 	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
 }
 
-const splitedText = "Building".split("");
+const buildingLetters = t("hero.building").split("");
 ---
 
-<Layout>
+<Layout lang={lang}>
   <Lens />
-  <Menu />
+  <Menu lang={lang} />
 
-  <button data-theme class="border px-4 py-1 fixed tracking-wider">Theme</button>
-  <svg aria-hidden="true" width="0" height="0" class="fixed inset-0 overflow-visible pointer-events-none">
-    <defs>
-      <clipPath id="theme-transition-clip" clipPathUnits="objectBoundingBox">
-        <path data-theme-transition-path></path>
-      </clipPath>
-    </defs>
-  </svg>
+  <button data-theme class="fixed left-4 top-4 z-50 border px-4 py-1 tracking-wider">{t("theme.toggle")}</button>
+  <div data-theme-overlay class="fixed inset-0 z-60 pointer-events-none opacity-0">
+    <svg
+      data-theme-svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      class="absolute inset-0 size-full pointer-events-none"
+      aria-hidden="true"
+    >
+      <defs>
+        <mask
+          id="theme-zigzag-mask"
+          x="-30"
+          y="-30"
+          width="160"
+          height="160"
+          maskUnits="userSpaceOnUse"
+          maskContentUnits="userSpaceOnUse"
+        >
+          <rect x="-30" y="-30" width="160" height="160" fill="black"></rect>
+          <path
+            data-theme-mask-path
+            fill="none"
+            stroke="white"
+            stroke-width="76"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </mask>
+      </defs>
+      <rect data-theme-rect x="0" y="0" width="100" height="100" fill="var(--color-foreground)" mask="url(#theme-zigzag-mask)"></rect>
+    </svg>
+  </div>
 
   <main class="min-h-dvh grid">
-    <section id="intro" class="grid gap-32 py-48 px-32 place-items-center">
-      <div class="w-2/3 mx-auto">
+    <section id="intro" class="grid gap-20 px-6 py-24 sm:px-10 lg:gap-32 lg:px-32 lg:py-48 place-items-center">
+      <div class="mx-auto w-full max-w-[min(92vw,1100px)]">
         <h1 class="sr-only">{t("hero.title")}</h1>
-        <div aria-hidden="true" class="text-9xl font-bold text-center grid">
-          <div class="flex gap-4">
+        <div
+          aria-hidden="true"
+          class="grid justify-center gap-2 text-center font-bold leading-[0.9] tracking-[-0.03em] text-[clamp(3.4rem,10vw,8rem)] sm:gap-3 lg:text-[clamp(5rem,9vw,9rem)]"
+        >
+          <div class="flex flex-wrap items-end justify-center gap-x-3 gap-y-2 sm:gap-x-4">
             <div class="overflow-hidden relative">
               <div data-motion="building">
                 {
-                  splitedText.map((letter) => (
+                  buildingLetters.map((letter) => (
                     <span
                       data-letter={letter}
                       class:list={[
-                        "inline-block -translate-y-[105%] hover:font-extralight transition-[font-weight] duration-300 ease-in-out",
+                        "inline-block -translate-y-[105%] pr-[0.04em] last:pr-0 hover:font-extralight transition-[font-weight] duration-300 ease-in-out",
                         "before:content-[attr(data-letter)] before:font-bold before:invisible before:block before:h-0",
                       ]}
                     >
@@ -66,31 +92,31 @@ const splitedText = "Building".split("");
                 }
               </div>
             </div>
-            <span>cool</span>
-            <span class="border px-4 bg-foreground text-background relative">
-              <span>stuff</span>
-              <Sparkle class="absolute -top-15 -end-20 fill-foreground w-24 h-24" />
-              <Sparkle class="absolute -top-2 -end-30 fill-foreground w-20 h-20" />
+            <span>{t("hero.cool")}</span>
+            <span class="relative border bg-foreground px-[0.18em] text-background">
+              <span>{t("hero.stuff")}</span>
+              <Sparkle
+                data-title-sparkle
+                class="absolute -end-[0.48em] -top-[0.46em] h-[0.64em] w-[0.64em] fill-foreground"
+              />
+              <Sparkle
+                data-title-sparkle
+                class="absolute -end-[0.74em] top-[0.02em] h-[0.64em] w-[0.64em] fill-foreground"
+              />
             </span>
           </div>
-          <div class="flex gap-6">
-            <ElasticArrow />
+          <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6">
+            <div class="hidden lg:block">
+              <ElasticArrow />
+            </div>
 
-            <div class="flex gap-4">
+            <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
               <div class="grid relative">
-                <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">for</span>
-                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">for </span>
+                <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">{t("hero.for")}</span>
+                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">{t("hero.for")} </span>
               </div>
-              <span>the</span>
-              <span class="relative inline-grid place-items-center">
-                <span
-                  aria-hidden="true"
-                  class="absolute left-1/2 top-1/2 -translate-x-[20%] -translate-y-[30%] opacity-25 z-0"
-                >
-                  <Globe size={220} />
-                </span>
-                <span class="relative z-10 pointer-events-none">web</span>
-              </span>
+              <span>{t("hero.the")}</span>
+              <span>{t("hero.web")}</span>
               <div class="grid relative pointer-events-none">
                 <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">.</span>
                 <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">.</span>
@@ -121,7 +147,7 @@ const splitedText = "Building".split("");
       <div class="grid grid-cols-12 gap-6 px-32">
         <div class="col-span-6">
           <h2 class="text-[200px] font-bold leading-none">
-            <SplitHeading text="Works" />
+            <SplitHeading text={t("section.works")} />
           </h2>
         </div>
       </div>
@@ -133,7 +159,7 @@ const splitedText = "Building".split("");
       <div class="grid grid-cols-12 gap-6">
         <div class="col-start-7 col-span-6 flex justify-end">
           <h2 class="text-[200px] font-bold leading-none">
-            <SplitHeading text="Services" />
+            <SplitHeading text={t("section.services")} />
           </h2>
         </div>
       </div>
@@ -145,7 +171,7 @@ const splitedText = "Building".split("");
       <div class="grid grid-cols-12 gap-6">
         <div class="col-span-6">
           <h2 class="text-[200px] font-bold leading-none">
-            <SplitHeading text="About" />
+            <SplitHeading text={t("section.about")} />
           </h2>
         </div>
       </div>
@@ -175,57 +201,56 @@ const splitedText = "Building".split("");
   </main>
 </Layout>
 
-<style is:global>
-  /* View Transitions (GSAP-driven SVG clipPath) */
-  :root {
-    --theme-transition-duration: 900ms;
-  }
 
-  ::view-transition-old(root) {
-    animation: none;
-  }
-
-  ::view-transition-new(root) {
-    clip-path: url(#theme-transition-clip);
-    animation: theme-transition-hold var(--theme-transition-duration) both;
-  }
-
-  @keyframes theme-transition-hold {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-</style>
 
 <script>
   import { events, state } from "../../lib/states";
   import { gsap } from "gsap";
 
   const btn = document.querySelector<HTMLButtonElement>("[data-theme]");
-  const transitionPath = document.querySelector<SVGPathElement>("[data-theme-transition-path]");
+  const themeOverlay = document.querySelector<HTMLElement>("[data-theme-overlay]");
+  const themeMaskPath = document.querySelector<SVGPathElement>("[data-theme-mask-path]");
+  const themeRect = document.querySelector<SVGRectElement>("[data-theme-rect]");
 
-  const RECT = "M0 0 C0 0 1 0 1 0 C1 0 1 1 1 1 C1 1 0 1 0 1 C0 1 0 0 0 0 Z";
+  const format = (value: number) => Number(value.toFixed(4));
+  const brushstrokePath = (passes = 3) => {
+    const overshoot = 20;
+    const left = -overshoot;
+    const right = 100 + overshoot;
+    const top = -overshoot;
+    const totalHeight = 100 + overshoot * 2;
+    const sweepHeight = totalHeight / passes;
 
-  const circlePath = (r: number) => {
-    const cx = 0.5;
-    const cy = 0.5;
-    const k = 0.5522847498307936;
-    const kr = k * r;
-    const fmt = (n: number) => Number(n.toFixed(6));
+    let d = `M${left} ${top}`;
+    let currentX = left;
 
-    return [
-      `M${fmt(cx + r)} ${fmt(cy)}`,
-      `C${fmt(cx + r)} ${fmt(cy + kr)} ${fmt(cx + kr)} ${fmt(cy + r)} ${fmt(cx)} ${fmt(cy + r)}`,
-      `C${fmt(cx - kr)} ${fmt(cy + r)} ${fmt(cx - r)} ${fmt(cy + kr)} ${fmt(cx - r)} ${fmt(cy)}`,
-      `C${fmt(cx - r)} ${fmt(cy - kr)} ${fmt(cx - kr)} ${fmt(cy - r)} ${fmt(cx)} ${fmt(cy - r)}`,
-      `C${fmt(cx + kr)} ${fmt(cy - r)} ${fmt(cx + r)} ${fmt(cy - kr)} ${fmt(cx + r)} ${fmt(cy)}`,
-      "Z",
-    ].join(" ");
+    for (let i = 0; i < passes; i++) {
+      const nextX = currentX === left ? right : left;
+      const controlX = currentX === left ? right + 8 : left - 8;
+      const controlY = top + sweepHeight * (i + 0.5);
+      const endY = top + sweepHeight * (i + 1);
+
+      d += ` Q${format(controlX)} ${format(controlY)} ${format(nextX)} ${format(endY)}`;
+      currentX = nextX;
+    }
+
+    return d;
   };
 
+  const setupThemeMask = () => {
+    if (!themeMaskPath) return null;
+    themeMaskPath.setAttribute("d", brushstrokePath(3));
+
+    const length = themeMaskPath.getTotalLength();
+    gsap.set(themeMaskPath, {
+      attr: { "stroke-dasharray": length, "stroke-dashoffset": length },
+    });
+    return length;
+  };
+
+  const themeMaskLength = setupThemeMask();
+
+  const THEME_DURATION = 0.82;
   let isTransitioning = false;
 
   btn?.addEventListener("click", async () => {
@@ -234,13 +259,7 @@ const splitedText = "Building".split("");
     const newTheme = state.getTheme() === "dark" ? "light" : "dark";
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const startViewTransition = (
-      document as Document & {
-        startViewTransition?: (callback: () => void) => { ready: Promise<void> };
-      }
-    ).startViewTransition;
-
-    if (!transitionPath || typeof startViewTransition !== "function" || prefersReducedMotion) {
+    if (!themeOverlay || !themeMaskPath || typeof themeMaskLength !== "number" || !themeRect || prefersReducedMotion) {
       events.emitThemeChange(newTheme);
       return;
     }
@@ -248,22 +267,41 @@ const splitedText = "Building".split("");
     isTransitioning = true;
     btn?.setAttribute("aria-busy", "true");
 
+    const isDark = newTheme === "dark";
+    const temp = document.createElement("div");
+    temp.classList.toggle("dark", isDark);
+    document.documentElement.appendChild(temp);
+    const overlayColor = getComputedStyle(temp).getPropertyValue("--color-foreground").trim();
+    temp.remove();
+
     try {
-      const START = circlePath(0.01);
-      transitionPath.setAttribute("d", START);
-
-      const transition = startViewTransition.call(document, () => {
-        events.emitThemeChange(newTheme);
-      });
-
-      await transition.ready;
+      themeRect.setAttribute("fill", overlayColor);
+      gsap.set(themeOverlay, { opacity: 1 });
+      gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
 
       await new Promise<void>((resolve) => {
-        gsap.to(transitionPath, {
-          attr: { d: RECT },
-          duration: 0.9,
-          ease: "power2.inOut",
-          onComplete: () => resolve(),
+        gsap.to(themeMaskPath, {
+          attr: { "stroke-dashoffset": 0 },
+          duration: THEME_DURATION,
+          ease: "none",
+          onComplete: () => {
+            events.emitThemeChange(newTheme);
+            resolve();
+          },
+        });
+      });
+
+      await new Promise<void>((resolve) => {
+        gsap.to(themeMaskPath, {
+          attr: { "stroke-dashoffset": -themeMaskLength },
+          duration: THEME_DURATION,
+          ease: "none",
+          onComplete: () => {
+            gsap.set(themeOverlay, { opacity: 0 });
+            gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
+            themeRect.setAttribute("fill", "var(--color-foreground)");
+            resolve();
+          },
         });
       });
     } catch {
@@ -276,6 +314,7 @@ const splitedText = "Building".split("");
   //------------------------
   const building = document.querySelector<HTMLDivElement>("[data-motion='building']")!.querySelectorAll("span");
   const motionArray = gsap.utils.toArray(building);
+  const titleSparkles = gsap.utils.toArray<SVGElement>("[data-title-sparkle]");
 
   gsap.to(motionArray, {
     duration: 1,
@@ -283,4 +322,14 @@ const splitedText = "Building".split("");
     stagger: 0.1,
     ease: "bounce",
   });
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && titleSparkles.length > 0) {
+    gsap.set(titleSparkles, { transformOrigin: "50% 50%" });
+    const sparkleTl = gsap.timeline({ repeat: -1, yoyo: true, defaults: { duration: 0.9, ease: "sine.inOut" } });
+
+    sparkleTl
+      .to(titleSparkles[0], { scale: 1.18 }, 0)
+      .to(titleSparkles[1], { scale: 0.82 }, 0)
+      ;
+  }
 </script>

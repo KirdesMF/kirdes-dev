@@ -1,0 +1,51 @@
+<section data-head-squashed-rive class="pb-48">
+  <div class="grid grid-cols-12 gap-6 px-32">
+    <div data-head-squashed-rive-frame class="col-span-full border">
+      <canvas data-head-squashed-rive-canvas class="w-full h-100"></canvas>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initManagedRive } from "../lib/rive";
+
+  type CleanupFn = () => void;
+
+  const cleanups: CleanupFn[] = [];
+
+  document.querySelectorAll<HTMLElement>("[data-head-squashed-rive]").forEach((root) => {
+    if (root.dataset.riveInit === "true") return;
+
+    const frame = root.querySelector<HTMLElement>("[data-head-squashed-rive-frame]");
+    const canvas = root.querySelector<HTMLCanvasElement>("[data-head-squashed-rive-canvas]");
+
+    if (!frame || !canvas) return;
+
+    root.dataset.riveInit = "true";
+
+    cleanups.push(
+      initManagedRive({
+        src: "/head_squashed.riv",
+        canvas,
+        resizeTarget: frame,
+        intersectionTarget: frame,
+        visibilityThreshold: 0.15,
+        autoplay: true,
+        autoBind: true,
+        stateMachines: "State Machine 1",
+        shouldDisableRiveListeners: false,
+        automaticallyHandleEvents: true,
+        onLoad: (rive) => {
+          const color = rive.viewModelInstance?.color("backgroundColor");
+
+          color?.rgb(0, 0, 0);
+        },
+      }),
+    );
+  });
+
+  window.addEventListener("beforeunload", () => {
+    cleanups.forEach((cleanup) => cleanup());
+    cleanups.length = 0;
+  });
+</script>

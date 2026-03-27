@@ -24,9 +24,11 @@ html {
 :root {
 	--white: oklch(1 0 0);
 	--black: oklch(0.329 0 0);
+	--blue: oklch(0.6137 0.1516 260.09);
 
 	--color-background: var(--white);
 	--color-foreground: var(--black);
+	--color-skin: var(--blue);
 
 	--lens-radius: 250px;
 	--mask-radius: calc(var(--lens-radius) / 2);

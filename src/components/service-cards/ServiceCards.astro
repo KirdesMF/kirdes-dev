@@ -2,18 +2,18 @@
 import ServiceCard from "./ServiceCard.astro";
 
 export type ServiceCardItem = {
-	count: number;
-	hasLine?: boolean;
-	class?: string;
+  count: number;
+  hasLine?: boolean;
+  class?: string;
 };
 
 export type Props = {
-	items?: ServiceCardItem[];
-	class?: string;
+  items?: ServiceCardItem[];
+  class?: string;
 };
 
 const { items = [{ count: 1, hasLine: false }, { count: 2 }, { count: 3 }, { count: 4 }], class: className = "" } =
-	Astro.props;
+  Astro.props;
 ---
 
 <div data-service-cards class:list={["grid grid-cols-12 gap-6", className]}>

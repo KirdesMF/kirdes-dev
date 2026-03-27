@@ -7,8 +7,11 @@ export function getLangFromURL(url: URL) {
 }
 
 export function getRouteFromURL(url: URL) {
-	const [, lang] = url.pathname.split("/");
-	return url.pathname.replace(`/${lang}/`, "");
+	const segments = url.pathname.split("/").filter(Boolean);
+	if (segments.length === 0) return "";
+
+	const [, ...routeSegments] = segments;
+	return routeSegments.join("/");
 }
 
 export function useTranslations(lang: keyof typeof ui) {

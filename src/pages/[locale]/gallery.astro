@@ -6,11 +6,11 @@ const lang = getLangFromURL(Astro.url);
 const t = useTranslations(lang);
 
 export async function getStaticPaths() {
-	return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
+  return [{ params: { locale: "en" } }, { params: { locale: "fr" } }];
 }
 ---
 
-<Layout>
+<Layout lang={lang}>
   <main class="min-h-dvh grid px-32 py-24 gap-12">
     <h1 class="text-7xl font-bold">{t("hello.gallery")}</h1>
   </main>
