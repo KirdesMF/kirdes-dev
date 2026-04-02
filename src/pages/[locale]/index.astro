@@ -62,13 +62,20 @@ const buildingLetters = t("hero.building").split("");
             stroke-linejoin="round"></path>
         </mask>
       </defs>
-      <rect data-theme-rect x="0" y="0" width="100" height="100" fill="var(--color-foreground)" mask="url(#theme-zigzag-mask)"></rect>
+      <rect
+        data-theme-rect
+        x="0"
+        y="0"
+        width="100"
+        height="100"
+        fill="var(--color-foreground)"
+        mask="url(#theme-zigzag-mask)"></rect>
     </svg>
   </div>
 
   <main class="min-h-dvh grid">
-    <section id="intro" class="grid gap-20 px-6 py-24 sm:px-10 lg:gap-32 lg:px-32 lg:py-48 place-items-center">
-      <div class="mx-auto w-full max-w-[min(92vw,1100px)]">
+    <section class="relative h-svh">
+      <div class="relative z-10 grid h-full place-items-center pointer-events-none">
         <h1 class="sr-only">{t("hero.title")}</h1>
         <div
           aria-hidden="true"
@@ -113,7 +120,9 @@ const buildingLetters = t("hero.building").split("");
             <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
               <div class="grid relative">
                 <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">{t("hero.for")}</span>
-                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">{t("hero.for")} </span>
+                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal"
+                  >{t("hero.for")}
+                </span>
               </div>
               <span>{t("hero.the")}</span>
               <span>{t("hero.web")}</span>
@@ -125,7 +134,9 @@ const buildingLetters = t("hero.building").split("");
           </div>
         </div>
       </div>
+    </section>
 
+    <section id="intro" class="grid gap-20 px-6 py-24 sm:px-10 lg:gap-32 lg:px-32 lg:py-48 place-items-center">
       <div class="grid grid-cols-12 gap-6 w-full">
         <div class="col-span-full grid">
           <CreativeDev class="fill-none stroke-foreground stroke-2" />
@@ -200,8 +211,6 @@ const buildingLetters = t("hero.building").split("");
     </footer>
   </main>
 </Layout>
-
-
 
 <script>
   import { events, state } from "../../lib/states";
@@ -327,9 +336,6 @@ const buildingLetters = t("hero.building").split("");
     gsap.set(titleSparkles, { transformOrigin: "50% 50%" });
     const sparkleTl = gsap.timeline({ repeat: -1, yoyo: true, defaults: { duration: 0.9, ease: "sine.inOut" } });
 
-    sparkleTl
-      .to(titleSparkles[0], { scale: 1.18 }, 0)
-      .to(titleSparkles[1], { scale: 0.82 }, 0)
-      ;
+    sparkleTl.to(titleSparkles[0], { scale: 1.18 }, 0).to(titleSparkles[1], { scale: 0.82 }, 0);
   }
 </script>
