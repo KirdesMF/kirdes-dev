@@ -35,8 +35,11 @@ html {
 	--lens-size: 250px;
 	--lens-radius: calc(var(--lens-size) / 2);
 	--mask-radius: var(--lens-radius);
-	--mouse-x: 0;
-	--mouse-y: 0;
+	--lens-mask-radius: var(--lens-radius);
+	--lens-viewport-x: -1000px;
+	--lens-viewport-y: -1000px;
+	--lens-local-x: -1000px;
+	--lens-local-y: -1000px;
 
 	--taquin-grid-size: 3;
 	--taquin-tile-size: 100px;
@@ -83,19 +86,55 @@ html {
 	-webkit-text-stroke: 1px var(--color-foreground);
 }
 
-@utility masked-reveal {
+@utility masked-reveal-viewport {
 	mask-image: radial-gradient(
-		circle at var(--mouse-x) var(--mouse-y),
+		circle at var(--lens-viewport-x) var(--lens-viewport-y),
+		black var(--mask-radius),
+		transparent var(--mask-radius)
+	);
+	-webkit-mask-image: radial-gradient(
+		circle at var(--lens-viewport-x) var(--lens-viewport-y),
 		black var(--mask-radius),
 		transparent var(--mask-radius)
 	);
 }
 
-@utility masked-hide {
+@utility masked-hide-viewport {
 	mask-image: radial-gradient(
-		circle at var(--mouse-x) var(--mouse-y),
+		circle at var(--lens-viewport-x) var(--lens-viewport-y),
 		transparent var(--mask-radius),
 		black var(--mask-radius)
+	);
+	-webkit-mask-image: radial-gradient(
+		circle at var(--lens-viewport-x) var(--lens-viewport-y),
+		transparent var(--mask-radius),
+		black var(--mask-radius)
+	);
+}
+
+@utility masked-reveal-local {
+	mask-image: radial-gradient(
+		circle var(--lens-mask-radius) at var(--lens-local-x) var(--lens-local-y),
+		black 99.5%,
+		transparent 100%
+	);
+	-webkit-mask-image: radial-gradient(
+		circle var(--lens-mask-radius) at var(--lens-local-x) var(--lens-local-y),
+		black 99.5%,
+		transparent 100%
+	);
+}
+
+@utility masked-hide-local {
+	mask-image: radial-gradient(
+		circle var(--lens-mask-radius) at var(--lens-local-x) var(--lens-local-y),
+		transparent 99.5%,
+		black 100%
+	);
+	-webkit-mask-image: radial-gradient(
+		circle var(--lens-mask-radius) at var(--lens-local-x) var(--lens-local-y),
+		transparent 99.5%,
+		black 100%
 	);
 }
 

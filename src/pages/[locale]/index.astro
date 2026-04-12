@@ -4,6 +4,7 @@ import CreativeDev from "../../components/illustrations/CreativeDev.astro";
 import ElasticArrow from "../../components/illustrations/ElasticArrow.astro";
 import GetInTouch from "../../components/illustrations/GetInTouch.astro";
 import Sparkle from "../../components/illustrations/Sparkle.astro";
+import CursorMask from "../../components/CursorMask.astro";
 import Lens from "../../components/Lens.astro";
 import Menu from "../../components/Menu.astro";
 import PixiEyesHero from "../../components/pixi-eyes/PixiEyesHero.astro";
@@ -115,18 +116,16 @@ const buildingLetters = t("hero.building").split("");
             </div>
 
             <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
-              <div class="grid relative">
-                <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">{t("hero.for")}</span>
-                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal"
-                  >{t("hero.for")}
-                </span>
-              </div>
+              <CursorMask>
+                <span slot="base">{t("hero.for")}</span>
+                <span slot="reveal" class="text-stroke text-transparent">{t("hero.for")}</span>
+              </CursorMask>
               <span>{t("hero.the")}</span>
               <span>{t("hero.web")}</span>
-              <div class="grid relative pointer-events-none">
-                <span data-masked class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide">.</span>
-                <span data-masked class="absolute inset-0 text-stroke text-transparent masked-reveal">.</span>
-              </div>
+              <CursorMask class="pointer-events-none">
+                <span slot="base">.</span>
+                <span slot="reveal" class="text-stroke text-transparent">.</span>
+              </CursorMask>
             </div>
           </div>
         </div>
