@@ -45,9 +45,9 @@ for (let x = -lean * 4; x < totalWidth; x += step) {
 				</div>
 
 				<div
-					data-masked
-					class="pointer-events-none absolute inset-0"
-					style="mask-image: radial-gradient(circle var(--lens-radius) at var(--mouse-x) var(--mouse-y), black 99.5%, transparent 100%); -webkit-mask-image: radial-gradient(circle var(--lens-radius) at var(--mouse-x) var(--mouse-y), black 99.5%, transparent 100%);"
+					data-stripes-mask
+					class="pointer-events-none absolute inset-0 masked-reveal-local"
+					style="--lens-mask-radius: var(--lens-radius);"
 				>
 					<div class="absolute inset-0"></div>
 					<div class="stripes-track-overlay absolute inset-y-0 left-0 flex">
