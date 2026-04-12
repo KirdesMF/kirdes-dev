@@ -1,0 +1,89 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"section"> {
+	step?: number;
+	stripeWidth?: number;
+	height?: number;
+	lean?: number;
+	totalWidth?: number;
+}
+
+const {
+	class: className,
+
+	step = 160,
+	stripeWidth = 100,
+	height = 200,
+	lean = 140,
+	totalWidth = 8000,
+	...props
+} = Astro.props;
+
+let stripePath = "";
+for (let x = -lean * 4; x < totalWidth; x += step) {
+	stripePath += `M ${x} 0 L ${x + stripeWidth} 0 L ${x + lean + stripeWidth} ${height} L ${x + lean} ${height} Z `;
+}
+---
+
+<section class:list={["w-full", className]} {...props}>
+	<div class="grid grid-cols-12 gap-6">
+		<div class="col-span-full">
+			<div class="stripes-container relative overflow-hidden cursor-crosshair" style={`height:${height}px;`}>
+				<div class="stripes-track-base absolute inset-y-0 left-0 flex">
+					{Array.from({ length: 2 }).map((_, index) => (
+            <svg
+              viewBox={`0 0 ${totalWidth} ${height}`}
+              class="h-full w-auto shrink-0"
+              preserveAspectRatio="xMinYMin slice"
+              aria-hidden={index === 1}
+            >
+            <title>striped lines</title>
+              <path d={stripePath} fill="var(--color-foreground)"></path>
+            </svg>
+          ))}
+				</div>
+
+				<div
+					data-masked
+					class="pointer-events-none absolute inset-0"
+					style="mask-image: radial-gradient(circle var(--lens-radius) at var(--mouse-x) var(--mouse-y), black 99.5%, transparent 100%); -webkit-mask-image: radial-gradient(circle var(--lens-radius) at var(--mouse-x) var(--mouse-y), black 99.5%, transparent 100%);"
+				>
+					<div class="absolute inset-0"></div>
+					<div class="stripes-track-overlay absolute inset-y-0 left-0 flex">
+						{Array.from({ length: 2 }).map((_, index) => (
+              <svg
+                viewBox={`0 0 ${totalWidth} ${height}`}
+                class="h-full w-auto shrink-0"
+                preserveAspectRatio="xMinYMin slice"
+                aria-hidden={index === 1}
+              >
+                <title>striped lines</title>
+                <defs>
+                  <pattern id={`stripes-hatch-${index}`} width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="0" x2="0" y2="8" stroke-width="1.5" class="stroke-background" ></line>
+                  </pattern>
+                </defs>
+                <path d={stripePath} fill={`url(#stripes-hatch-${index})`}></path>
+              </svg>
+            ))}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<script>
+import "./stripes-animation";
+</script>
+
+<style>
+@media (prefers-reduced-motion: reduce) {
+	.stripes-track-base,
+	.stripes-track-overlay {
+		animation: none;
+		transform: translate3d(0, 0, 0);
+	}
+}
+</style>

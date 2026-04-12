@@ -1,0 +1,27 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"div"> {}
+
+const { class: className, ...props } = Astro.props;
+---
+
+<div class:list={["relative size-full", className]} data-pixi-eyes-hero {...props}>
+  <div data-pixi-eyes-stage class="size-full"></div>
+</div>
+
+<script>
+  import { destroyPixiEyesHero, mountPixiEyesHero } from "./client";
+
+  const roots = document.querySelectorAll<HTMLElement>("[data-pixi-eyes-hero]");
+
+  roots.forEach((root) => {
+    void mountPixiEyesHero(root);
+  });
+
+  window.addEventListener("beforeunload", () => {
+    roots.forEach((root) => {
+      destroyPixiEyesHero(root);
+    });
+  });
+</script>

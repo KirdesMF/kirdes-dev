@@ -1,7 +1,7 @@
 ---
-import { defaultLang, ui } from "../i18n/ui";
-import CloseIcon from "./icons/CloseIcon.astro";
+import { defaultLang, type ui } from "../i18n/ui";
 import { useTranslations } from "../i18n/utils";
+import CloseIcon from "./icons/CloseIcon.astro";
 
 type Props = {
 	lang?: keyof typeof ui;
@@ -80,8 +80,8 @@ const t = useTranslations(lang);
 </div>
 
 <script>
-  import { events } from "../lib/states";
   import { gsap } from "gsap";
+  import { events } from "../lib/states";
 
   const format = (value: number) => Number(value.toFixed(4));
   const brushstrokePath = (passes = 3) => {

@@ -1,0 +1,140 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"span"> {
+  text: string;
+  direction?: "left-to-right" | "bottom-to-top";
+}
+
+const { class: className, text, direction = "left-to-right", ...props } = Astro.props;
+const isVertical = direction === "bottom-to-top";
+const initialPath = isVertical
+  ? "M 0 18 Q 50 0 100 18 L 100 100 L 0 100 Z"
+  : "M 18 0 Q 0 50 18 100 L 100 100 L 100 0 Z";
+---
+
+<span
+  class:list={[className, "relative inline-block overflow-hidden"]}
+  data-fill-text
+  data-fill-direction={direction}
+  {...props}
+>
+  <span class="absolute inset-0 z-0 pointer-events-none text-foreground">{text}</span>
+  <svg
+    data-fill-cover
+    class:list={[
+      "absolute z-10 pointer-events-none overflow-visible",
+      isVertical ? "inset-x-0 top-0 h-[120%] w-full" : "inset-y-0 left-0 h-full w-[120%]",
+    ]}
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+  >
+    <path data-fill-cover-path fill="var(--color-background)" d={initialPath}></path>
+  </svg>
+  <span
+    class="relative z-20 inline-block text-transparent"
+    style="-webkit-text-stroke: 2px var(--color-foreground); paint-order: stroke fill;"
+  >
+    {text}
+  </span>
+</span>
+
+<script>
+  import { gsap } from "gsap";
+
+  const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+  const reduceMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+
+  function getHorizontalCoverPath(curve: number) {
+    const edge = 18;
+    return `M ${edge} 0 Q ${curve} 50 ${edge} 100 L 100 100 L 100 0 Z`;
+  }
+
+  function getVerticalCoverPath(curve: number) {
+    const edge = 18;
+    return `M 0 ${edge} Q 50 ${curve} 100 ${edge} L 100 100 L 0 100 Z`;
+  }
+
+  function animateFill(element: HTMLElement) {
+    const cover = element.querySelector<SVGSVGElement>("[data-fill-cover]");
+    const path = element.querySelector<SVGPathElement>("[data-fill-cover-path]");
+    if (!cover || !path) return;
+
+    const direction = element.dataset.fillDirection === "bottom-to-top" ? "bottom-to-top" : "left-to-right";
+    const getPath = direction === "bottom-to-top" ? getVerticalCoverPath : getHorizontalCoverPath;
+    const axis = direction === "bottom-to-top" ? "yPercent" : "xPercent";
+    const endValue = direction === "bottom-to-top" ? -100 : 100;
+
+    if (reduceMotion) {
+      gsap.set(cover, { [axis]: endValue });
+      path.setAttribute("d", getPath(0));
+      return;
+    }
+
+    const state = { curve: -10 };
+
+    const timeline = gsap.timeline({
+      defaults: { overwrite: true },
+      onUpdate: () => {
+        path.setAttribute("d", getPath(state.curve));
+      },
+    });
+
+    timeline.to(cover, {
+      [axis]: endValue,
+      duration: 1,
+      ease: "power2.inOut",
+    });
+
+    timeline.to(
+      state,
+      {
+        curve: 10,
+        duration: 0.22,
+        ease: "power1.out",
+      },
+      0,
+    );
+
+    timeline.to(
+      state,
+      {
+        curve: 0,
+        duration: 0.78,
+        ease: "power2.out",
+      },
+      0.22,
+    );
+  }
+
+  const elements = document.querySelectorAll<HTMLElement>("[data-fill-text]");
+
+  elements.forEach((element) => {
+    if (element.dataset.fillInit === "true") return;
+    element.dataset.fillInit = "true";
+
+    const observer =
+      "IntersectionObserver" in window
+        ? new IntersectionObserver(
+            (entries) => {
+              entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                if (element.dataset.fillDone === "true") return;
+                element.dataset.fillDone = "true";
+                animateFill(element);
+                observer?.unobserve(element);
+              });
+            },
+            { threshold: 0.2 }
+          )
+        : null;
+
+    if (observer) {
+      observer.observe(element);
+    } else {
+      element.dataset.fillDone = "true";
+      animateFill(element);
+    }
+  });
+</script>

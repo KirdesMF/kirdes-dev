@@ -31,10 +31,7 @@ Features:
 - current() - returns the current index (if an animation is in-progress, it reflects the final index)
 - times - an Array of the times on the timeline where each element hits the "starting" spot. There's also a label added accordingly, so "label1" is when the 2nd element reaches the start.
 */
-export function horizontalLoop(
-	items: ArrayLike<Element>,
-	config?: HorizontalLoopConfig,
-): HorizontalLoopTimeline {
+export function horizontalLoop(items: ArrayLike<Element>, config?: HorizontalLoopConfig): HorizontalLoopTimeline {
 	const itemsArray = gsap.utils.toArray(items) as HTMLElement[];
 	const cfg = config || {};
 
@@ -54,8 +51,7 @@ export function horizontalLoop(
 	const xPercents: number[] = [];
 	let curIndex = 0;
 	const pixelsPerSecond = (cfg.speed || 1) * 100;
-	const snap: (v: number) => number =
-		cfg.snap === false ? (v: number) => v : gsap.utils.snap(cfg.snap || 1);
+	const snap: (v: number) => number = cfg.snap === false ? (v: number) => v : gsap.utils.snap(cfg.snap || 1);
 
 	let totalWidth: number;
 	let curX: number;
@@ -89,9 +85,7 @@ export function horizontalLoop(
 		item = itemsArray[i] as HTMLElement;
 		curX = (xPercents[i] / 100) * widths[i];
 		distanceToStart = item.offsetLeft + curX - startX;
-		distanceToLoop =
-			distanceToStart +
-			widths[i] * (gsap.getProperty(item, "scaleX") as number);
+		distanceToLoop = distanceToStart + widths[i] * (gsap.getProperty(item, "scaleX") as number);
 
 		tl.to(
 			item,
@@ -104,14 +98,11 @@ export function horizontalLoop(
 			.fromTo(
 				item,
 				{
-					xPercent: snap(
-						((curX - distanceToLoop + totalWidth) / widths[i]) * 100,
-					),
+					xPercent: snap(((curX - distanceToLoop + totalWidth) / widths[i]) * 100),
 				},
 				{
 					xPercent: xPercents[i],
-					duration:
-						(curX - distanceToLoop + totalWidth - curX) / pixelsPerSecond,
+					duration: (curX - distanceToLoop + totalWidth - curX) / pixelsPerSecond,
 					immediateRender: false,
 				},
 				distanceToLoop / pixelsPerSecond,

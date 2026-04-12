@@ -48,7 +48,7 @@ export class Lens {
 		const style = getComputedStyle(root);
 		const raw = style.getPropertyValue("--lens-radius").trim();
 		const numeric = parseFloat(raw);
-		const radiusPx = Number.isFinite(numeric) ? numeric : 200;
+		const radiusPx = Number.isFinite(numeric) ? numeric : 100;
 
 		// Small feather for crisp edge, capped in px so it does not get too blurry
 		const featherPx = Math.min(radiusPx * 0.1, 4);

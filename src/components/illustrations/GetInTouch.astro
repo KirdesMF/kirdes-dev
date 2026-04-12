@@ -2,12 +2,46 @@
   id="Layer_2"
   data-name="Layer 2"
   data-get-in-touch-svg
-  data-draw-svg
   xmlns="http://www.w3.org/2000/svg"
   viewBox="0 0 1920 413.69"
   class="size-full"
 >
-  <g class="fill-foreground">
+  <defs>
+    <clipPath id="get-in-touch-clip">
+      <rect
+        data-get-in-touch-clip-rect
+        x="0"
+        y="0"
+        width="0"
+        height="413.69"
+      />
+    </clipPath>
+  </defs>
+
+  <g class="stroke-foreground fill-none stroke-2">
+    <path
+      d="M0,361.13V59.25C0,16.04,27.28,0,92.05,0s92.04,16.04,92.04,59.25v96.86h-78.59V63.73c0-9.31-4.73-12.25-13.46-12.25s-13.46,2.94-13.46,12.25v286.4c0,9.31,4.72,12.25,13.46,12.25s13.46-2.94,13.46-12.25v-115.62h-20.14v-52.01h98.73v227.04h-77.37v-12.99c-7.6,10.91-29.2,17.13-47.89,17.13-35.66,0-58.83-13.23-58.83-52.55Z"
+    ></path>
+    <path d="M193.56,4.14h140v53.92h-61.41v119.76h61.41v53.92h-61.41v124.06h61.41v53.74h-140V4.14Z"></path>
+    <path d="M392.52,58.06h-49.49V4.14h177.58v53.92h-49.49v351.48h-78.59V58.06Z"></path>
+    <path d="M596.44,4.14h78.59v405.4h-78.59V4.14Z"></path>
+    <path
+      d="M684.61,4.14h104.32l39.14,270.88h1.54l-8.52-189.18V4.14h73.75v405.4h-104.32l-38.43-264.31h-1.54l7.81,185.57v78.73h-73.75V4.14Z"
+    ></path>
+    <path d="M1020.14,58.06h-49.49V4.14h177.58v53.92h-49.49v351.48h-78.59V58.06Z"></path>
+    <path
+      d="M1155.24,354.62V59.25c0-43.22,27.28-59.25,92.05-59.25s92.04,16.04,92.04,59.25v295.36c0,43.22-27.28,59.07-92.04,59.07s-92.05-15.85-92.05-59.07ZM1260.74,350.14V63.73c0-9.31-4.73-12.25-13.46-12.25s-13.46,2.94-13.46,12.25v286.4c0,9.31,4.72,12.25,13.46,12.25s13.46-2.94,13.46-12.25Z"
+    ></path>
+    <path
+      d="M1348.8,354.62V4.14h78.59v345.99c0,9.31,4.73,12.25,13.46,12.25s13.46-2.94,13.46-12.25V4.14h78.59v350.48c0,43.22-27.28,59.07-92.05,59.07s-92.04-15.85-92.04-59.07Z"
+    ></path>
+    <path
+      d="M1542.35,354.62V59.25c0-43.22,27.28-59.25,92.05-59.25s92.05,16.04,92.05,59.25v98.77h-78.59V63.73c0-9.31-4.73-12.25-13.46-12.25s-13.46,2.94-13.46,12.25v286.4c0,9.31,4.73,12.25,13.46,12.25s13.46-2.94,13.46-12.25v-94.28h78.59v98.77c0,43.22-27.28,59.07-92.05,59.07s-92.05-15.85-92.05-59.07Z"
+    ></path>
+    <path d="M1735.91,4.14h78.59v173.68h26.91V4.14h78.59v405.4h-78.59v-177.8h-26.91v177.8h-78.59V4.14Z"></path>
+  </g>
+
+  <g class="fill-foreground" clip-path="url(#get-in-touch-clip)">
     <path
       d="M0,361.13V59.25C0,16.04,27.28,0,92.05,0s92.04,16.04,92.04,59.25v96.86h-78.59V63.73c0-9.31-4.73-12.25-13.46-12.25s-13.46,2.94-13.46,12.25v286.4c0,9.31,4.72,12.25,13.46,12.25s13.46-2.94,13.46-12.25v-115.62h-20.14v-52.01h98.73v227.04h-77.37v-12.99c-7.6,10.91-29.2,17.13-47.89,17.13-35.66,0-58.83-13.23-58.83-52.55Z"
     ></path>
@@ -37,76 +71,50 @@
   const svg = document.querySelector<SVGSVGElement>("[data-get-in-touch-svg]");
   if (!svg) throw new Error("GetInTouch SVG not found");
 
-  const DRAW_REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-  const reduceDrawMotion = window.matchMedia(DRAW_REDUCED_MOTION_QUERY).matches;
+  const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+  const reduceMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
 
-  function animateDrawSvg(targetSvg: SVGSVGElement) {
-    const paths = Array.from(targetSvg.querySelectorAll<SVGPathElement>("path"));
-    if (paths.length === 0) return;
+  function animateFill(targetSvg: SVGSVGElement) {
+    const clipRect = targetSvg.querySelector<SVGRectElement>("[data-get-in-touch-clip-rect]");
+    if (!clipRect) return;
 
-    paths.forEach((path) => {
-      const computed = getComputedStyle(path);
-      const fill = computed.fill;
+    const totalWidth = 1920;
 
-      const hasFill = fill !== "none" && fill !== "transparent" && fill !== "rgba(0, 0, 0, 0)";
-
-      const length = path.getTotalLength();
-      path.style.stroke = "var(--color-foreground)";
-      path.style.strokeDasharray = `${length}`;
-      path.style.strokeDashoffset = `${length}`;
-      path.style.strokeLinecap = "round";
-      path.style.strokeLinejoin = "round";
-      if (computed.strokeWidth === "0px" || computed.strokeWidth === "0") {
-        path.style.strokeWidth = "2";
-      }
-
-      if (hasFill) {
-        path.dataset.drawHasFill = "1";
-        path.style.fillOpacity = "0";
-      } else {
-        path.dataset.drawHasFill = "0";
-      }
-
-      if (reduceDrawMotion) {
-        path.style.strokeDashoffset = "0";
-        if (hasFill) {
-          path.style.fillOpacity = "1";
-        }
-      }
-    });
-
-    if (reduceDrawMotion) return;
-
-    const filledPaths = paths.filter((p) => p.dataset.drawHasFill === "1");
-
-    const tl = gsap.timeline();
-    tl.to(paths, { strokeDashoffset: 0, duration: 1.2, ease: "power2.out", stagger: 0.08 }, 0);
-
-    if (filledPaths.length > 0) {
-      tl.to(filledPaths, { fillOpacity: 1, duration: 0.25, ease: "power1.out", stagger: 0.08 }, 0.65);
-      tl.to(filledPaths, { strokeOpacity: 0, duration: 0.25, ease: "power1.out", stagger: 0.02 }, 0.9);
+    if (reduceMotion) {
+      clipRect.setAttribute("width", `${totalWidth}`);
+      return;
     }
+
+    gsap.fromTo(
+      clipRect,
+      { attr: { width: 0 } },
+      {
+        attr: { width: totalWidth },
+        duration: 1.4,
+        ease: "power2.inOut",
+      }
+    );
   }
 
-  const drawObserver =
+  const fillObserver =
     "IntersectionObserver" in window
       ? new IntersectionObserver(
           (entries) => {
             entries.forEach((entry) => {
               if (!entry.isIntersecting) return;
-              if (svg.dataset.drawDone === "true") return;
-              svg.dataset.drawDone = "true";
-              animateDrawSvg(svg);
-              drawObserver?.unobserve(svg);
+              if (svg.dataset.fillDone === "true") return;
+              svg.dataset.fillDone = "true";
+              animateFill(svg);
+              fillObserver?.unobserve(svg);
             });
           },
-          { threshold: 0.2 },
+          { threshold: 0.2 }
         )
       : null;
 
-  if (drawObserver) {
-    drawObserver.observe(svg);
+  if (fillObserver) {
+    fillObserver.observe(svg);
   } else {
-    animateDrawSvg(svg);
+    animateFill(svg);
   }
 </script>
