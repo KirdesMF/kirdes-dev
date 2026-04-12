@@ -6,6 +6,7 @@ import GetInTouch from "../../components/illustrations/GetInTouch.astro";
 import Sparkle from "../../components/illustrations/Sparkle.astro";
 import Lens from "../../components/Lens.astro";
 import Menu from "../../components/Menu.astro";
+import PixiEyesHero from "../../components/pixi-eyes/PixiEyesHero.astro";
 import SplitHeading from "../../components/SplitHeading.astro";
 import Sunburst from "../../components/sunburst/Sunburst.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
@@ -66,8 +67,12 @@ const buildingLetters = t("hero.building").split("");
   </div>
 
   <main class="min-h-dvh grid">
-    <section class="relative h-svh">
-      <div class="relative z-10 grid h-full place-items-center pointer-events-none">
+    <section class="relative overflow-hidden">
+      <div class="relative h-[70svh] min-h-[32rem]">
+        <PixiEyesHero class="absolute inset-0" />
+      </div>
+
+      <div class="relative z-10 grid place-items-center px-6 pb-12 pt-8 sm:px-10 lg:px-16 lg:pb-20 pointer-events-none">
         <h1 class="sr-only">{t("hero.title")}</h1>
         <div
           aria-hidden="true"

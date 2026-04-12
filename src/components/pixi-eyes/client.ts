@@ -53,6 +53,11 @@ function getSceneConfig(settingsState: Record<string, number | string>) {
     initialSlitEyeMix: toNum(settingsState["slit-eye-mix"], PIXI_EYES_HERO_CONFIG.initialSlitEyeMix),
     initialSlitPupilWidth: toNum(settingsState["slit-pupil-width"], PIXI_EYES_HERO_CONFIG.initialSlitPupilWidth),
     initialSlitPupilHeight: toNum(settingsState["slit-pupil-height"], PIXI_EYES_HERO_CONFIG.initialSlitPupilHeight),
+    initialSlitMouseColor: toHex(settingsState["slit-mouse-color"], PIXI_EYES_HERO_CONFIG.initialSlitMouseColor),
+    initialSimpleMouseColor: toHex(
+      settingsState["simple-mouse-color"],
+      PIXI_EYES_HERO_CONFIG.initialSimpleMouseColor,
+    ),
     initialLayoutTransitionDuration: toNum(
       settingsState["layout-transition-duration"],
       PIXI_EYES_HERO_CONFIG.initialLayoutTransitionDuration,

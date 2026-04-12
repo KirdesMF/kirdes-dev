@@ -17,7 +17,8 @@ import {
   updateHumanPupilScale,
   updateHumanEyeDeformation,
 } from "./render/human-eye-view";
-import { applyDotEyeAppearance, updateDotEyeDeformation } from "./render/dot-eye-view";
+import { applyMonsterEyeAppearance, updateMonsterEyeDeformation } from "./render/monster-eye-view";
+import { applySimpleEyeAppearance, updateSimpleEyeDeformation } from "./render/simple-eye-view";
 
 export function updateLayoutTransition(
   eye: EyeInstance,
@@ -162,12 +163,19 @@ export function updateSingleEye(
   eye.lookX = smoothTowards(eye.lookX, desiredLook.x, lookSpeed, eyeSeconds);
   eye.lookY = smoothTowards(eye.lookY, desiredLook.y, lookSpeed, eyeSeconds);
 
-  // Update deformation based on eye type
-  if (eye.type === "dot") {
-    updateDotEyeDeformation(eye, eyeSeconds);
-  } else {
-    updateHumanEyeDeformation(eye, eyeSeconds);
-  }
+  const deformationByType: Record<EyeInstance["type"], () => void> = {
+    human: () => {
+      updateHumanEyeDeformation(eye, eyeSeconds);
+    },
+    simple: () => {
+      updateSimpleEyeDeformation(eye, eyeSeconds);
+    },
+    monster: () => {
+      updateMonsterEyeDeformation(eye, eyeSeconds);
+    },
+  };
+
+  deformationByType[eye.type]();
 
   const shouldThrottleAppearance = eye.lowDetail;
   if (
@@ -181,8 +189,8 @@ export function updateSingleEye(
 
   eye.appearanceAccumulator = 0;
 
-  // Update pupil scale animation for human eyes only
-  if (eye.type === "human") {
+  const shouldAnimateHumanPupil = eye.type === "human";
+  if (shouldAnimateHumanPupil) {
     updateHumanPupilScale(eye, runtime, eyeSeconds);
   }
 
@@ -203,17 +211,22 @@ export function updateSingleEye(
   }
   eye.irisProximity = clamp(eye.irisProximity, 0, 1);
 
-  // Apply color to appropriate element based on eye type
-  if (eye.type === "dot") {
-    // Dot eye: colored globe with small dot pupil, different mouse proximity color
-    const newTint = lerpColor(runtime.dotGlobeColor, runtime.dotMouseColor, eye.irisProximity);
-    eye.eyeFill.tint = newTint;
-    applyDotEyeAppearance(eye, runtime);
-  } else {
-    // Human eye: color the iris
-    eye.iris.tint = lerpColor(runtime.irisColor, runtime.mouseIrisColor, eye.irisProximity);
-    applyHumanPupilAppearance(eye, runtime);
-  }
+  const applyAppearanceByType: Record<EyeInstance["type"], () => void> = {
+    human: () => {
+      eye.iris.tint = lerpColor(runtime.irisColor, runtime.mouseIrisColor, eye.irisProximity);
+      applyHumanPupilAppearance(eye, runtime);
+    },
+    simple: () => {
+      eye.highlight2.tint = lerpColor(0xffffff, runtime.simpleMouseColor, eye.irisProximity);
+      applySimpleEyeAppearance(eye, runtime);
+    },
+    monster: () => {
+      eye.iris.tint = lerpColor(0x050505, runtime.slitMouseColor, eye.irisProximity);
+      applyMonsterEyeAppearance(eye, runtime);
+    },
+  };
+
+  applyAppearanceByType[eye.type]();
 }
 
 function clampMagnitude(x: number, y: number, maxLength: number): { x: number; y: number } {

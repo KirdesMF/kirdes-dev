@@ -1,4 +1,4 @@
-export type EyeType = "human" | "dot";
+export type EyeType = "human" | "simple" | "monster";
 export type LayoutShapeName = "circle" | "ring" | "heart" | "cross" | "star";
 export type CrossType = "x" | "plus";
 export type FocusEaseName = "linear" | "out-cubic" | "out-sine" | "in-out-sine";
@@ -15,6 +15,8 @@ export type EyeFieldConfig = {
   slitEyeMix?: number;
   slitPupilWidth?: number;
   slitPupilHeight?: number;
+  slitMouseColor?: number;
+  simpleMouseColor?: number;
   layoutTransitionDuration?: number;
   layoutTransitionEase?: FocusEaseName;
   layoutJitter?: number;

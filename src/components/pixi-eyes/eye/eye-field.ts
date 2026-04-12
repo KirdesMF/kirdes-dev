@@ -106,6 +106,7 @@ export function createEyeField({ count, renderer, worldBounds }: EyeFieldOptions
         positions.length,
         index + 1,
         runtime.dotEyeMix,
+        runtime.slitEyeMix,
       );
       eye.delay = staggerDelay(
         index + 1,

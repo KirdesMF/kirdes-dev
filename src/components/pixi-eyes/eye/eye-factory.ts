@@ -13,9 +13,15 @@ import {
 import { hash01, smoothstep } from "../shared/math";
 import { staggerDelay } from "./layout";
 
-function resolveEyeType(index: number, count: number, dotEyeMix: number): EyeType {
+function resolveEyeType(index: number, count: number, slitEyeMix: number, simpleEyeMix: number): EyeType {
   const hash = hash01(index * 11.337 + count * 1.73);
-  return hash < dotEyeMix ? "dot" : "human";
+  if (hash < slitEyeMix) {
+    return "monster";
+  }
+  if (hash < slitEyeMix + simpleEyeMix) {
+    return "simple";
+  }
+  return "human";
 }
 
 export function createEyeInstance(
@@ -27,19 +33,20 @@ export function createEyeInstance(
   count: number,
   index: number,
   dotEyeMix: number = DEFAULT_DOT_EYE_MIX,
+  slitEyeMix: number = 0,
 ): EyeInstance {
   const bucket = selectBucket(radius);
   const bt = textures.buckets[bucket];
 
-  const eyeType = resolveEyeType(index, count, dotEyeMix);
-  const isDot = eyeType === "dot";
+  const eyeType = resolveEyeType(index, count, slitEyeMix, dotEyeMix);
+  const isSimple = eyeType === "simple";
+  const isMonster = eyeType === "monster";
 
   const root = new Container();
   const dropShadow = new Sprite(bt.dropShadowTexture);
   const blinkGroup = new Container();
 
-  // For dot eyes: use custom texture for proper tinting
-  const eyeFill = new Sprite(isDot ? bt.slitGlobeTexture : bt.scleraFillTexture);
+  const eyeFill = new Sprite(isSimple || isMonster ? bt.slitGlobeTexture : bt.scleraFillTexture);
   eyeFill.anchor.set(0.5);
 
   const eyeOutline = new Sprite(bt.scleraOutlineTexture);
@@ -48,21 +55,31 @@ export function createEyeInstance(
   const irisGroup = new Container();
   const pupilGroup = new Container();
 
-  // For dot eyes: no iris texture, just globe + small dot pupil
   const iris = new Sprite(bt.irisFillTexture);
   const pupil = new Sprite(bt.roundPupilTexture);
   const highlight = new Sprite(bt.roundHighlightTexture);
-  const highlight2 = new Sprite(bt.roundHighlightTexture); // Second smaller highlight for cartoon effect
+  const highlight2 = new Sprite(bt.roundHighlightTexture);
 
-  if (isDot) {
-    // For dot eyes: no iris, small dot pupil + cartoon highlights
+  if (isSimple) {
+    iris.texture = bt.irisFillTexture;
+    pupil.texture = bt.roundPupilTexture;
+    highlight.texture = bt.simpleInnerRingTexture;
+    highlight2.texture = bt.simpleDashedRingTexture;
     pupil.visible = true;
+    iris.visible = true;
     highlight.visible = true;
     highlight2.visible = true;
+  } else if (isMonster) {
+    iris.texture = bt.irisFillTexture;
+    pupil.texture = bt.monsterPupilTexture;
+    pupil.visible = true;
+    iris.visible = true;
+    highlight.visible = false;
+    highlight2.visible = false;
   } else {
     iris.tint = DEFAULT_IRIS_COLOR;
     iris.visible = true;
-    highlight2.visible = false; // Only one highlight for human eyes
+    highlight2.visible = false;
   }
   dropShadow.anchor.set(0.5);
   eyeFill.anchor.set(0.5);
@@ -76,29 +93,15 @@ export function createEyeInstance(
 
   pupilGroup.addChild(pupil, highlight, highlight2);
 
-  if (isDot) {
-    // For dot eyes: no iris, pupil goes directly in root
-    root.addChild(
-      dropShadow,
-      eyeFill, // Globe color - behind everything
-      eyeShadow,
-      pupilGroup, // Pupil + highlight
-      globeHighlight,
-      blinkGroup,
-      eyeOutline,
-    );
-  } else {
-    // For human eyes: iris + pupil in irisGroup
+  if (isSimple) {
+    root.addChild(dropShadow, eyeFill, irisGroup, eyeShadow, globeHighlight, blinkGroup, eyeOutline);
+    irisGroup.addChild(iris, highlight2, pupilGroup);
+  } else if (isMonster) {
     irisGroup.addChild(iris, pupilGroup);
-    root.addChild(
-      dropShadow,
-      eyeFill,
-      irisGroup,
-      eyeShadow,
-      globeHighlight,
-      blinkGroup,
-      eyeOutline,
-    );
+    root.addChild(dropShadow, eyeFill, irisGroup, eyeShadow, globeHighlight, blinkGroup, eyeOutline);
+  } else {
+    irisGroup.addChild(iris, pupilGroup);
+    root.addChild(dropShadow, eyeFill, irisGroup, eyeShadow, globeHighlight, blinkGroup, eyeOutline);
   }
 
   const scale = Math.max(radius / Math.max(maxRadius, 0.001), 0.001);

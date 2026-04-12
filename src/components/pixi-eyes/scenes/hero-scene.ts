@@ -19,6 +19,8 @@ interface HeroSceneOptions {
   initialSlitEyeMix: number;
   initialSlitPupilWidth: number;
   initialSlitPupilHeight: number;
+  initialSlitMouseColor: number;
+  initialSimpleMouseColor: number;
   initialLayoutTransitionDuration: number;
   initialLayoutTransitionEase: FocusEaseName;
   initialLayoutJitter: number;
@@ -78,6 +80,8 @@ export const createHeroScene = async ({
   initialSlitEyeMix,
   initialSlitPupilWidth,
   initialSlitPupilHeight,
+  initialSlitMouseColor,
+  initialSimpleMouseColor,
   initialLayoutTransitionDuration,
   initialLayoutTransitionEase,
   initialLayoutJitter,
@@ -142,6 +146,8 @@ export const createHeroScene = async ({
     slitEyeMix: initialSlitEyeMix,
     slitPupilWidth: initialSlitPupilWidth,
     slitPupilHeight: initialSlitPupilHeight,
+    slitMouseColor: initialSlitMouseColor,
+    simpleMouseColor: initialSimpleMouseColor,
     layoutTransitionDuration: initialLayoutTransitionDuration,
     layoutTransitionEase: initialLayoutTransitionEase,
     layoutJitter: initialLayoutJitter,
@@ -260,6 +266,8 @@ export const createHeroScene = async ({
       slitEyeMix?: number;
       slitPupilWidth?: number;
       slitPupilHeight?: number;
+      slitMouseColor?: number;
+      simpleMouseColor?: number;
       layoutTransitionDuration?: number;
       layoutTransitionEase?: FocusEaseName;
       layoutJitter?: number;

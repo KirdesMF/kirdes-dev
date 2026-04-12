@@ -134,6 +134,26 @@ export function updateConfig(
     runtime.roundHighlightColor = config.roundHighlightColor;
     result.shouldRefreshAppearance = true;
   }
+  if (config.slitEyeMix !== undefined) {
+    runtime.slitEyeMix = Math.max(0, Math.min(1, config.slitEyeMix));
+    result.shouldRebuild = true;
+  }
+  if (config.slitPupilWidth !== undefined) {
+    runtime.slitPupilWidth = Math.max(0.05, Math.min(0.8, config.slitPupilWidth));
+    result.shouldRefreshAppearance = true;
+  }
+  if (config.slitPupilHeight !== undefined) {
+    runtime.slitPupilHeight = Math.max(0.2, Math.min(1.4, config.slitPupilHeight));
+    result.shouldRefreshAppearance = true;
+  }
+  if (config.slitMouseColor !== undefined && Number.isFinite(config.slitMouseColor)) {
+    runtime.slitMouseColor = config.slitMouseColor;
+    result.shouldRefreshAppearance = true;
+  }
+  if (config.simpleMouseColor !== undefined && Number.isFinite(config.simpleMouseColor)) {
+    runtime.simpleMouseColor = config.simpleMouseColor;
+    result.shouldRefreshAppearance = true;
+  }
   if (config.dotEyeMix !== undefined) {
     runtime.dotEyeMix = Math.max(0, Math.min(1, config.dotEyeMix));
     result.shouldRebuild = true;

@@ -112,6 +112,11 @@ export type EyeFieldRuntime = {
   roundHighlightRotationDegrees: number;
   roundHighlightOpacity: number;
   roundHighlightColor: number;
+  slitEyeMix: number;
+  slitPupilWidth: number;
+  slitPupilHeight: number;
+  slitMouseColor: number;
+  simpleMouseColor: number;
   dotEyeMix: number;
   dotPupilRatio: number;
   dotGlobeColor: number;

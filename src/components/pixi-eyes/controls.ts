@@ -133,42 +133,6 @@ export const CONTROL_DEFINITIONS: ControlDefinition[] = [
     section: "Layout",
   },
   {
-    id: "dot-eye-mix",
-    label: "Dot Mix",
-    type: "number",
-    min: 0,
-    max: 1,
-    step: 0.05,
-    fractionDigits: 2,
-    default: 0.0,
-    section: "Dot Eye",
-  },
-  {
-    id: "dot-pupil-ratio",
-    label: "Dot Size",
-    type: "number",
-    min: 0.05,
-    max: 0.5,
-    step: 0.01,
-    fractionDigits: 2,
-    default: 0.15,
-    section: "Dot Eye",
-  },
-  {
-    id: "dot-globe-color",
-    label: "Globe Base",
-    type: "color",
-    default: "#e8f0f8",
-    section: "Dot Eye",
-  },
-  {
-    id: "dot-mouse-color",
-    label: "Mouse Proximity",
-    type: "color",
-    default: "#4ecdc4",
-    section: "Dot Eye",
-  },
-  {
     id: "layout-transition-duration",
     label: "Shape Move",
     type: "number",
@@ -545,21 +509,21 @@ export const CONTROL_DEFINITIONS: ControlDefinition[] = [
   },
   {
     id: "slit-mouse-color",
-    label: "Slit Mouse",
+    label: "Cat Hover",
     type: "color",
-    default: "#ff6b6b",
-    section: "Round Light",
+    default: "#ff3b30",
+    section: "Appearance",
+  },
+  {
+    id: "simple-mouse-color",
+    label: "Dash Hover",
+    type: "color",
+    default: "#34c759",
+    section: "Appearance",
   },
 ];
 
-export const SECTIONS = [
-  "Field",
-  "Layout",
-  "Dot Eye",
-  "Appearance",
-  "Motion",
-  "Round Light",
-] as const;
+export const SECTIONS = ["Field", "Layout", "Appearance", "Motion", "Round Light"] as const;
 export type SectionName = (typeof SECTIONS)[number];
 
 export function sanitizeHexColor(value: string | undefined, fallback: string): string {

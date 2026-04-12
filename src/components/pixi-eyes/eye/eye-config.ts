@@ -83,6 +83,13 @@ export const PUPIL_INNER_TRAVEL = 6.5;
 export const PUPIL_IRIS_RATIO = 0.65; // Pupil travels 65% of iris distance for natural movement
 export const CIRCLE_KAPPA = 0.5522847498307936;
 
+// Monster/slit eye constants
+export const DEFAULT_SLIT_EYE_MIX = 0.35;
+export const DEFAULT_SLIT_PUPIL_WIDTH = 0.18;
+export const DEFAULT_SLIT_PUPIL_HEIGHT = 0.68;
+export const DEFAULT_SLIT_MOUSE_COLOR = 0xff3b30;
+export const DEFAULT_SIMPLE_MOUSE_COLOR = 0x34c759;
+
 // Dot eye constants
 export const DEFAULT_DOT_EYE_MIX = 0.0; // 0% dot eyes by default
 export const DEFAULT_DOT_PUPIL_RATIO = 0.15; // 15% of iris radius (small dot)

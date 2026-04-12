@@ -8,6 +8,8 @@ export const PIXI_EYES_HERO_CONFIG = {
   initialSlitEyeMix: 0.35,
   initialSlitPupilWidth: 0.18,
   initialSlitPupilHeight: 0.68,
+  initialSlitMouseColor: 0xff3b30,
+  initialSimpleMouseColor: 0x34c759,
   initialLayoutTransitionDuration: 0.5,
   initialLayoutTransitionEase: "linear",
   initialLayoutJitter: 0,
