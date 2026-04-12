@@ -28,10 +28,13 @@ html {
 
 	--color-background: var(--white);
 	--color-foreground: var(--black);
+	--color-fixed-background: var(--white);
+	--color-fixed-foreground: var(--black);
 	--color-skin: var(--blue);
 
-	--lens-radius: 250px;
-	--mask-radius: calc(var(--lens-radius) / 2);
+	--lens-size: 250px;
+	--lens-radius: calc(var(--lens-size) / 2);
+	--mask-radius: var(--lens-radius);
 	--mouse-x: 0;
 	--mouse-y: 0;
 
@@ -44,6 +47,8 @@ html {
 :root.dark {
 	--color-background: var(--black);
 	--color-foreground: var(--white);
+	--color-fixed-background: var(--white);
+	--color-fixed-foreground: var(--black);
 }
 
 @theme {
@@ -55,7 +60,7 @@ html {
 	--inset-shadow-cutout: inset 0 0 20px var(--color-foreground);
 	--inset-shadow-cutout-deep: inset 0 0 30px var(--color-foreground);
 
-	--spacing-lens-radius: var(--lens-radius);
+	--spacing-lens-radius: var(--lens-size);
 
 	--background-image-stripes: repeating-linear-gradient(
 		45deg,

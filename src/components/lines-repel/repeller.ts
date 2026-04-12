@@ -19,10 +19,7 @@ export class Repeller {
 		this.radius = radius;
 	}
 
-	draw(
-		ctx: CanvasRenderingContext2D,
-		config?: { color: string; alpha: number },
-	) {
+	draw(ctx: CanvasRenderingContext2D, config?: { color: string; alpha: number }) {
 		if (this.radius <= 0) return;
 		ctx.save();
 		ctx.globalAlpha = config?.alpha || 0;

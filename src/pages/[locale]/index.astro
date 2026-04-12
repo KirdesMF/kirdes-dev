@@ -1,8 +1,5 @@
 ---
 import AccordiaGallery from "../../components/accordia-gallery/AccordiaGallery.astro";
-import CutoutTypography from "../../components/CutoutTypography.astro";
-import Flag from "../../components/flag/Flag.astro";
-import HexGrid from "../../components/hex-grid/HexGrid.astro";
 import CreativeDev from "../../components/illustrations/CreativeDev.astro";
 import ElasticArrow from "../../components/illustrations/ElasticArrow.astro";
 import GetInTouch from "../../components/illustrations/GetInTouch.astro";
@@ -10,12 +7,7 @@ import Sparkle from "../../components/illustrations/Sparkle.astro";
 import Lens from "../../components/Lens.astro";
 import Menu from "../../components/Menu.astro";
 import SplitHeading from "../../components/SplitHeading.astro";
-import ServiceCards from "../../components/service-cards/ServiceCards.astro";
-import SmearText from "../../components/smear-text/SmearText.astro";
 import Sunburst from "../../components/sunburst/Sunburst.astro";
-import Taquin from "../../components/Taquin.astro";
-import Vortex from "../../components/Vortex.astro";
-import WaveText from "../../components/wave-text/WaveText.astro";
 import { getLangFromURL, useTranslations } from "../../i18n/utils";
 import Layout from "../../layouts/Layout.astro";
 
@@ -33,7 +25,7 @@ const buildingLetters = t("hero.building").split("");
   <Lens />
   <Menu lang={lang} />
 
-  <button data-theme class="fixed left-4 top-4 z-50 border px-4 py-1 tracking-wider">{t("theme.toggle")}</button>
+  <button type="button" data-theme class="fixed left-4 top-4 z-50 border px-4 py-1 tracking-wider">{t("theme.toggle")}</button>
   <div data-theme-overlay class="fixed inset-0 z-60 pointer-events-none opacity-0">
     <svg
       data-theme-svg
@@ -146,11 +138,6 @@ const buildingLetters = t("hero.building").split("");
           <Sunburst />
         </div>
 
-        <div class="col-span-full relative border h-112.5">
-          <div class="absolute inset-0 size-full bg-background">
-            <SmearText />
-          </div>
-        </div>
       </div>
     </section>
 
@@ -166,18 +153,6 @@ const buildingLetters = t("hero.building").split("");
       <AccordiaGallery />
     </section>
 
-    <section id="process" class="pb-48 px-32">
-      <div class="grid grid-cols-12 gap-6">
-        <div class="col-start-7 col-span-6 flex justify-end">
-          <h2 class="text-[200px] font-bold leading-none">
-            <SplitHeading text={t("section.services")} />
-          </h2>
-        </div>
-      </div>
-
-      <ServiceCards class="h-svh" />
-    </section>
-
     <section id="about" class="pb-48 px-32">
       <div class="grid grid-cols-12 gap-6">
         <div class="col-span-6">
@@ -187,22 +162,10 @@ const buildingLetters = t("hero.building").split("");
         </div>
       </div>
 
-      <div class="grid grid-cols-12 gap-6">
-        <div class="col-start-8">
-          <Taquin />
-        </div>
-      </div>
-
-      <HexGrid />
     </section>
 
     <footer id="footer" class="px-32">
       <div class="h-svh grid grid-rows-[2fr_1fr] gap-6">
-        <div class="col-span-full relative border">
-          <div class="absolute inset-0 size-full">
-            <WaveText />
-          </div>
-        </div>
 
         <div class="col-span-full relative">
           <GetInTouch />
@@ -213,8 +176,8 @@ const buildingLetters = t("hero.building").split("");
 </Layout>
 
 <script>
-  import { events, state } from "../../lib/states";
   import { gsap } from "gsap";
+  import { events, state } from "../../lib/states";
 
   const btn = document.querySelector<HTMLButtonElement>("[data-theme]");
   const themeOverlay = document.querySelector<HTMLElement>("[data-theme-overlay]");
@@ -222,7 +185,7 @@ const buildingLetters = t("hero.building").split("");
   const themeRect = document.querySelector<SVGRectElement>("[data-theme-rect]");
 
   const format = (value: number) => Number(value.toFixed(4));
-  const brushstrokePath = (passes = 3) => {
+  function brushstrokePath(passes = 3) {
     const overshoot = 20;
     const left = -overshoot;
     const right = 100 + overshoot;
@@ -246,7 +209,7 @@ const buildingLetters = t("hero.building").split("");
     return d;
   };
 
-  const setupThemeMask = () => {
+  function setupThemeMask() {
     if (!themeMaskPath) return null;
     themeMaskPath.setAttribute("d", brushstrokePath(3));
 
@@ -321,8 +284,8 @@ const buildingLetters = t("hero.building").split("");
   });
 
   //------------------------
-  const building = document.querySelector<HTMLDivElement>("[data-motion='building']")!.querySelectorAll("span");
-  const motionArray = gsap.utils.toArray(building);
+  const building = document.querySelector<HTMLDivElement>("[data-motion='building']")?.querySelectorAll("span");
+  const motionArray = gsap.utils.toArray(building ?? []);
   const titleSparkles = gsap.utils.toArray<SVGElement>("[data-title-sparkle]");
 
   gsap.to(motionArray, {
