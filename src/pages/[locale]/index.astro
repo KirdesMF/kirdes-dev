@@ -1,10 +1,10 @@
 ---
 import AccordiaGallery from "../../components/accordia-gallery/AccordiaGallery.astro";
+import CursorMask from "../../components/CursorMask.astro";
 import CreativeDev from "../../components/illustrations/CreativeDev.astro";
 import ElasticArrow from "../../components/illustrations/ElasticArrow.astro";
 import GetInTouch from "../../components/illustrations/GetInTouch.astro";
 import Sparkle from "../../components/illustrations/Sparkle.astro";
-import CursorMask from "../../components/CursorMask.astro";
 import Lens from "../../components/Lens.astro";
 import Menu from "../../components/Menu.astro";
 import PixiEyesHero from "../../components/pixi-eyes/PixiEyesHero.astro";
@@ -24,66 +24,67 @@ const buildingLetters = t("hero.building").split("");
 ---
 
 <Layout lang={lang}>
-  <Lens />
-  <Menu lang={lang} />
+	<Lens />
+	<Menu lang={lang} />
 
-  <button type="button" data-theme class="fixed left-4 top-4 z-50 border px-4 py-1 tracking-wider">{t("theme.toggle")}</button>
-  <div data-theme-overlay class="fixed inset-0 z-60 pointer-events-none opacity-0">
-    <svg
-      data-theme-svg
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      class="absolute inset-0 size-full pointer-events-none"
-      aria-hidden="true"
-    >
-      <defs>
-        <mask
-          id="theme-zigzag-mask"
-          x="-30"
-          y="-30"
-          width="160"
-          height="160"
-          maskUnits="userSpaceOnUse"
-          maskContentUnits="userSpaceOnUse"
-        >
-          <rect x="-30" y="-30" width="160" height="160" fill="black"></rect>
-          <path
-            data-theme-mask-path
-            fill="none"
-            stroke="white"
-            stroke-width="76"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-        </mask>
-      </defs>
-      <rect
-        data-theme-rect
-        x="0"
-        y="0"
-        width="100"
-        height="100"
-        fill="var(--color-foreground)"
-        mask="url(#theme-zigzag-mask)"></rect>
-    </svg>
-  </div>
+	<button type="button" data-theme class="fixed left-4 top-4 z-50 border px-4 py-1 tracking-wider">
+		{t("theme.toggle")}
+	</button>
+	<div data-theme-overlay class="fixed inset-0 z-60 pointer-events-none opacity-0">
+		<svg
+			data-theme-svg
+			viewBox="0 0 100 100"
+			preserveAspectRatio="none"
+			class="absolute inset-0 size-full pointer-events-none"
+			aria-hidden="true"
+		>
+			<defs>
+				<mask
+					id="theme-zigzag-mask"
+					x="-30"
+					y="-30"
+					width="160"
+					height="160"
+					maskUnits="userSpaceOnUse"
+					maskContentUnits="userSpaceOnUse"
+				>
+					<rect x="-30" y="-30" width="160" height="160" fill="black"></rect>
+					<path
+						data-theme-mask-path
+						fill="none"
+						stroke="white"
+						stroke-width="76"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					></path>
+				</mask>
+			</defs>
+			<rect
+				data-theme-rect
+				x="0"
+				y="0"
+				width="100"
+				height="100"
+				fill="var(--color-foreground)"
+				mask="url(#theme-zigzag-mask)"
+			></rect>
+		</svg>
+	</div>
 
-  <main class="min-h-dvh grid">
-    <section class="relative overflow-hidden">
-      <div class="relative h-[70svh] min-h-[32rem]">
-        <PixiEyesHero class="absolute inset-0" />
-      </div>
+	<main class="min-h-dvh grid">
+		<section class="relative overflow-hidden">
+			<div class="relative h-[70svh] min-h-128"><PixiEyesHero class="absolute inset-0" /></div>
 
-      <div class="relative z-10 grid place-items-center px-6 pb-12 pt-8 sm:px-10 lg:px-16 lg:pb-20 pointer-events-none">
-        <h1 class="sr-only">{t("hero.title")}</h1>
-        <div
-          aria-hidden="true"
-          class="grid justify-center gap-2 text-center font-bold leading-[0.9] tracking-[-0.03em] text-[clamp(3.4rem,10vw,8rem)] sm:gap-3 lg:text-[clamp(5rem,9vw,9rem)]"
-        >
-          <div class="flex flex-wrap items-end justify-center gap-x-3 gap-y-2 sm:gap-x-4">
-            <div class="overflow-hidden relative">
-              <div data-motion="building">
-                {
-                  buildingLetters.map((letter) => (
+			<div class="relative z-10 grid place-items-center px-6 pb-12 pt-8 sm:px-10 lg:px-16 lg:pb-20 pointer-events-none">
+				<h1 class="sr-only">{t("hero.title")}</h1>
+				<div
+					aria-hidden="true"
+					class="grid justify-center gap-2 text-center font-bold leading-[0.9] tracking-[-0.03em] text-[clamp(3.4rem,10vw,8rem)] sm:gap-3 lg:text-[clamp(5rem,9vw,9rem)]"
+				>
+					<div class="flex flex-wrap items-end justify-center gap-x-3 gap-y-2 sm:gap-x-4">
+						<div class="overflow-hidden relative">
+							<div data-motion="building">
+								{buildingLetters.map((letter) => (
                     <span
                       data-letter={letter}
                       class:list={[
@@ -93,216 +94,200 @@ const buildingLetters = t("hero.building").split("");
                     >
                       {letter}
                     </span>
-                  ))
-                }
-              </div>
-            </div>
-            <span>{t("hero.cool")}</span>
-            <span class="relative border bg-foreground px-[0.18em] text-background">
-              <span>{t("hero.stuff")}</span>
-              <Sparkle
-                data-title-sparkle
-                class="absolute -end-[0.48em] -top-[0.46em] h-[0.64em] w-[0.64em] fill-foreground"
-              />
-              <Sparkle
-                data-title-sparkle
-                class="absolute -end-[0.74em] top-[0.02em] h-[0.64em] w-[0.64em] fill-foreground"
-              />
-            </span>
-          </div>
-          <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6">
-            <div class="hidden lg:block">
-              <ElasticArrow />
-            </div>
+                  ))}
+							</div>
+						</div>
+						<span>{t("hero.cool")}</span>
+						<span class="relative border bg-foreground px-[0.18em] text-background">
+							<span>{t("hero.stuff")}</span>
+							<Sparkle
+								data-title-sparkle
+								class="absolute -end-[0.48em] -top-[0.46em] h-[0.64em] w-[0.64em] fill-foreground"
+							/>
+							<Sparkle
+								data-title-sparkle
+								class="absolute -end-[0.74em] top-[0.02em] h-[0.64em] w-[0.64em] fill-foreground"
+							/>
+						</span>
+					</div>
+					<div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-6">
+						<div class="hidden lg:block"><ElasticArrow /></div>
 
-            <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
-              <CursorMask>
-                <span slot="base">{t("hero.for")}</span>
-                <span slot="reveal" class="text-stroke text-transparent">{t("hero.for")}</span>
-              </CursorMask>
-              <span>{t("hero.the")}</span>
-              <span>{t("hero.web")}</span>
-              <CursorMask class="pointer-events-none">
-                <span slot="base">.</span>
-                <span slot="reveal" class="text-stroke text-transparent">.</span>
-              </CursorMask>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+						<div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 sm:gap-x-4">
+							<CursorMask>
+								<span slot="base">{t("hero.for")}</span>
+								<span slot="reveal" class="text-stroke text-transparent">{t("hero.for")}</span>
+							</CursorMask>
+							<span>{t("hero.the")}</span>
+							<span>{t("hero.web")}</span>
+							<CursorMask class="pointer-events-none">
+								<span slot="base">.</span>
+								<span slot="reveal" class="text-stroke text-transparent">.</span>
+							</CursorMask>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 
-    <section id="intro" class="grid gap-20 px-6 py-24 sm:px-10 lg:gap-32 lg:px-32 lg:py-48 place-items-center">
-      <div class="grid grid-cols-12 gap-6 w-full">
-        <div class="col-span-full grid">
-          <CreativeDev class="fill-none stroke-foreground stroke-2" />
-        </div>
+		<section id="intro" class="grid gap-20 px-6 py-24 sm:px-10 lg:gap-32 lg:px-32 lg:py-48 place-items-center">
+			<div class="grid grid-cols-12 gap-6 w-full">
+				<div class="col-span-full grid"><CreativeDev class="fill-none stroke-foreground stroke-2" /></div>
 
-        <div class="col-span-full -mt-20">
-          <Sunburst />
-        </div>
+				<div class="col-span-full -mt-20"><Sunburst /></div>
+			</div>
+		</section>
 
-      </div>
-    </section>
+		<section id="works" class="pb-48">
+			<div class="grid grid-cols-12 gap-6 px-32">
+				<div class="col-span-6">
+					<h2 class="text-[200px] font-bold leading-none"><SplitHeading text={t("section.works")} /></h2>
+				</div>
+			</div>
 
-    <section id="works" class="pb-48">
-      <div class="grid grid-cols-12 gap-6 px-32">
-        <div class="col-span-6">
-          <h2 class="text-[200px] font-bold leading-none">
-            <SplitHeading text={t("section.works")} />
-          </h2>
-        </div>
-      </div>
+			<AccordiaGallery />
+		</section>
 
-      <AccordiaGallery />
-    </section>
+		<section id="about" class="pb-48 px-32">
+			<div class="grid grid-cols-12 gap-6">
+				<div class="col-span-6">
+					<h2 class="text-[200px] font-bold leading-none"><SplitHeading text={t("section.about")} /></h2>
+				</div>
+			</div>
+		</section>
 
-    <section id="about" class="pb-48 px-32">
-      <div class="grid grid-cols-12 gap-6">
-        <div class="col-span-6">
-          <h2 class="text-[200px] font-bold leading-none">
-            <SplitHeading text={t("section.about")} />
-          </h2>
-        </div>
-      </div>
-
-    </section>
-
-    <footer id="footer" class="px-32">
-      <div class="h-svh grid grid-rows-[2fr_1fr] gap-6">
-
-        <div class="col-span-full relative">
-          <GetInTouch />
-        </div>
-      </div>
-    </footer>
-  </main>
+		<footer id="footer" class="px-32">
+			<div class="h-svh grid grid-rows-[2fr_1fr] gap-6">
+				<div class="col-span-full relative"><GetInTouch /></div>
+			</div>
+		</footer>
+	</main>
 </Layout>
 
 <script>
-  import { gsap } from "gsap";
-  import { events, state } from "../../lib/states";
+import { gsap } from "gsap";
+import { events, state } from "../../lib/states";
 
-  const btn = document.querySelector<HTMLButtonElement>("[data-theme]");
-  const themeOverlay = document.querySelector<HTMLElement>("[data-theme-overlay]");
-  const themeMaskPath = document.querySelector<SVGPathElement>("[data-theme-mask-path]");
-  const themeRect = document.querySelector<SVGRectElement>("[data-theme-rect]");
+const btn = document.querySelector<HTMLButtonElement>("[data-theme]");
+const themeOverlay = document.querySelector<HTMLElement>("[data-theme-overlay]");
+const themeMaskPath = document.querySelector<SVGPathElement>("[data-theme-mask-path]");
+const themeRect = document.querySelector<SVGRectElement>("[data-theme-rect]");
 
-  const format = (value: number) => Number(value.toFixed(4));
-  function brushstrokePath(passes = 3) {
-    const overshoot = 20;
-    const left = -overshoot;
-    const right = 100 + overshoot;
-    const top = -overshoot;
-    const totalHeight = 100 + overshoot * 2;
-    const sweepHeight = totalHeight / passes;
+const format = (value: number) => Number(value.toFixed(4));
+function brushstrokePath(passes = 3) {
+	const overshoot = 20;
+	const left = -overshoot;
+	const right = 100 + overshoot;
+	const top = -overshoot;
+	const totalHeight = 100 + overshoot * 2;
+	const sweepHeight = totalHeight / passes;
 
-    let d = `M${left} ${top}`;
-    let currentX = left;
+	let d = `M${left} ${top}`;
+	let currentX = left;
 
-    for (let i = 0; i < passes; i++) {
-      const nextX = currentX === left ? right : left;
-      const controlX = currentX === left ? right + 8 : left - 8;
-      const controlY = top + sweepHeight * (i + 0.5);
-      const endY = top + sweepHeight * (i + 1);
+	for (let i = 0; i < passes; i++) {
+		const nextX = currentX === left ? right : left;
+		const controlX = currentX === left ? right + 8 : left - 8;
+		const controlY = top + sweepHeight * (i + 0.5);
+		const endY = top + sweepHeight * (i + 1);
 
-      d += ` Q${format(controlX)} ${format(controlY)} ${format(nextX)} ${format(endY)}`;
-      currentX = nextX;
-    }
+		d += ` Q${format(controlX)} ${format(controlY)} ${format(nextX)} ${format(endY)}`;
+		currentX = nextX;
+	}
 
-    return d;
-  };
+	return d;
+}
 
-  function setupThemeMask() {
-    if (!themeMaskPath) return null;
-    themeMaskPath.setAttribute("d", brushstrokePath(3));
+function setupThemeMask() {
+	if (!themeMaskPath) return null;
+	themeMaskPath.setAttribute("d", brushstrokePath(3));
 
-    const length = themeMaskPath.getTotalLength();
-    gsap.set(themeMaskPath, {
-      attr: { "stroke-dasharray": length, "stroke-dashoffset": length },
-    });
-    return length;
-  };
+	const length = themeMaskPath.getTotalLength();
+	gsap.set(themeMaskPath, {
+		attr: { "stroke-dasharray": length, "stroke-dashoffset": length },
+	});
+	return length;
+}
 
-  const themeMaskLength = setupThemeMask();
+const themeMaskLength = setupThemeMask();
 
-  const THEME_DURATION = 0.82;
-  let isTransitioning = false;
+const THEME_DURATION = 0.82;
+let isTransitioning = false;
 
-  btn?.addEventListener("click", async () => {
-    if (isTransitioning) return;
+btn?.addEventListener("click", async () => {
+	if (isTransitioning) return;
 
-    const newTheme = state.getTheme() === "dark" ? "light" : "dark";
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const newTheme = state.getTheme() === "dark" ? "light" : "dark";
+	const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (!themeOverlay || !themeMaskPath || typeof themeMaskLength !== "number" || !themeRect || prefersReducedMotion) {
-      events.emitThemeChange(newTheme);
-      return;
-    }
+	if (!themeOverlay || !themeMaskPath || typeof themeMaskLength !== "number" || !themeRect || prefersReducedMotion) {
+		events.emitThemeChange(newTheme);
+		return;
+	}
 
-    isTransitioning = true;
-    btn?.setAttribute("aria-busy", "true");
+	isTransitioning = true;
+	btn?.setAttribute("aria-busy", "true");
 
-    const isDark = newTheme === "dark";
-    const temp = document.createElement("div");
-    temp.classList.toggle("dark", isDark);
-    document.documentElement.appendChild(temp);
-    const overlayColor = getComputedStyle(temp).getPropertyValue("--color-foreground").trim();
-    temp.remove();
+	const isDark = newTheme === "dark";
+	const temp = document.createElement("div");
+	temp.classList.toggle("dark", isDark);
+	document.documentElement.appendChild(temp);
+	const overlayColor = getComputedStyle(temp).getPropertyValue("--color-foreground").trim();
+	temp.remove();
 
-    try {
-      themeRect.setAttribute("fill", overlayColor);
-      gsap.set(themeOverlay, { opacity: 1 });
-      gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
+	try {
+		themeRect.setAttribute("fill", overlayColor);
+		gsap.set(themeOverlay, { opacity: 1 });
+		gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
 
-      await new Promise<void>((resolve) => {
-        gsap.to(themeMaskPath, {
-          attr: { "stroke-dashoffset": 0 },
-          duration: THEME_DURATION,
-          ease: "none",
-          onComplete: () => {
-            events.emitThemeChange(newTheme);
-            resolve();
-          },
-        });
-      });
+		await new Promise<void>((resolve) => {
+			gsap.to(themeMaskPath, {
+				attr: { "stroke-dashoffset": 0 },
+				duration: THEME_DURATION,
+				ease: "none",
+				onComplete: () => {
+					events.emitThemeChange(newTheme);
+					resolve();
+				},
+			});
+		});
 
-      await new Promise<void>((resolve) => {
-        gsap.to(themeMaskPath, {
-          attr: { "stroke-dashoffset": -themeMaskLength },
-          duration: THEME_DURATION,
-          ease: "none",
-          onComplete: () => {
-            gsap.set(themeOverlay, { opacity: 0 });
-            gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
-            themeRect.setAttribute("fill", "var(--color-foreground)");
-            resolve();
-          },
-        });
-      });
-    } catch {
-    } finally {
-      btn?.removeAttribute("aria-busy");
-      isTransitioning = false;
-    }
-  });
+		await new Promise<void>((resolve) => {
+			gsap.to(themeMaskPath, {
+				attr: { "stroke-dashoffset": -themeMaskLength },
+				duration: THEME_DURATION,
+				ease: "none",
+				onComplete: () => {
+					gsap.set(themeOverlay, { opacity: 0 });
+					gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
+					themeRect.setAttribute("fill", "var(--color-foreground)");
+					resolve();
+				},
+			});
+		});
+	} catch {
+	} finally {
+		btn?.removeAttribute("aria-busy");
+		isTransitioning = false;
+	}
+});
 
-  //------------------------
-  const building = document.querySelector<HTMLDivElement>("[data-motion='building']")?.querySelectorAll("span");
-  const motionArray = gsap.utils.toArray(building ?? []);
-  const titleSparkles = gsap.utils.toArray<SVGElement>("[data-title-sparkle]");
+//------------------------
+const building = document.querySelector<HTMLDivElement>("[data-motion='building']")?.querySelectorAll("span");
+const motionArray = gsap.utils.toArray(building ?? []);
+const titleSparkles = gsap.utils.toArray<SVGElement>("[data-title-sparkle]");
 
-  gsap.to(motionArray, {
-    duration: 1,
-    y: "0%",
-    stagger: 0.1,
-    ease: "bounce",
-  });
+gsap.to(motionArray, {
+	duration: 1,
+	y: "0%",
+	stagger: 0.1,
+	ease: "bounce",
+});
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && titleSparkles.length > 0) {
-    gsap.set(titleSparkles, { transformOrigin: "50% 50%" });
-    const sparkleTl = gsap.timeline({ repeat: -1, yoyo: true, defaults: { duration: 0.9, ease: "sine.inOut" } });
+if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && titleSparkles.length > 0) {
+	gsap.set(titleSparkles, { transformOrigin: "50% 50%" });
+	const sparkleTl = gsap.timeline({ repeat: -1, yoyo: true, defaults: { duration: 0.9, ease: "sine.inOut" } });
 
-    sparkleTl.to(titleSparkles[0], { scale: 1.18 }, 0).to(titleSparkles[1], { scale: 0.82 }, 0);
-  }
+	sparkleTl.to(titleSparkles[0], { scale: 1.18 }, 0).to(titleSparkles[1], { scale: 0.82 }, 0);
+}
 </script>

@@ -86,6 +86,19 @@ html {
 	-webkit-text-stroke: 1px var(--color-foreground);
 }
 
+@utility text-hatched-fill {
+	color: transparent;
+	background-image: repeating-linear-gradient(
+		-45deg,
+		var(--color-foreground) 0,
+		var(--color-foreground) 0.75px,
+		transparent 0.75px,
+		transparent 5.66px
+	);
+	background-clip: text;
+	-webkit-background-clip: text;
+}
+
 @utility masked-reveal-viewport {
 	mask-image: radial-gradient(
 		circle at var(--lens-viewport-x) var(--lens-viewport-y),

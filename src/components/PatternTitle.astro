@@ -1,0 +1,267 @@
+---
+export type Props = {
+  text: string;
+  class?: string;
+};
+
+const { text, class: className } = Astro.props;
+const rootId = `pattern-title-${crypto.randomUUID()}`;
+const fillClipId = `${rootId}-fill-clip`;
+const hatchFillClipId = `${rootId}-hatch-fill-clip`;
+const hatchTextClipId = `${rootId}-hatch-text-clip`;
+const estimatedWidthEm = Math.max(text.length * 0.72, 2);
+---
+
+<span
+  class:list={["relative inline-block align-top", className]}
+  data-pattern-title-root
+  style={`--lens-mask-radius: var(--lens-radius); inline-size: ${estimatedWidthEm}em; block-size: 1em;`}
+>
+  <span class="sr-only">{text}</span>
+
+  <svg
+    data-pattern-title-svg
+    data-pattern-title-svg-kind="outline"
+    class="absolute inset-0 block size-full overflow-visible"
+    style="font: inherit; letter-spacing: inherit;"
+    aria-hidden="true"
+  >
+    <g data-pattern-title-content>
+      <text
+        data-pattern-title-text
+        x="0"
+        y="0"
+        dominant-baseline="text-before-edge"
+        fill="transparent"
+        stroke="currentColor"
+        stroke-width="1.25"
+        paint-order="stroke"
+      >
+        {text}
+      </text>
+    </g>
+  </svg>
+
+  <svg
+    data-pattern-title-svg
+    data-pattern-title-svg-kind="solid"
+    class="pointer-events-none absolute inset-0 block size-full overflow-visible masked-hide-local"
+    style="font: inherit; letter-spacing: inherit;"
+    aria-hidden="true"
+  >
+    <defs>
+      <clipPath id={fillClipId}>
+        <rect data-pattern-title-fill-clip-rect x="0" y="0" width="0" height="0" />
+      </clipPath>
+    </defs>
+    <g clip-path={`url(#${fillClipId})`}>
+      <g data-pattern-title-content>
+        <text x="0" y="0" dominant-baseline="text-before-edge" fill="currentColor">{text}</text>
+      </g>
+    </g>
+  </svg>
+
+  <svg
+    data-pattern-title-svg
+    data-pattern-title-svg-kind="hatch"
+    class="pointer-events-none absolute inset-0 block size-full overflow-visible masked-reveal-local text-foreground"
+    style="font: inherit; letter-spacing: inherit; color: var(--color-foreground);"
+    aria-hidden="true"
+  >
+    <defs>
+      <clipPath id={hatchFillClipId}>
+        <rect data-pattern-title-hatch-clip-rect x="0" y="0" width="0" height="0" />
+      </clipPath>
+      <clipPath id={hatchTextClipId}>
+        <g data-pattern-title-clip-content>
+          <text x="0" y="0" dominant-baseline="text-before-edge">{text}</text>
+        </g>
+      </clipPath>
+    </defs>
+    <g clip-path={`url(#${hatchFillClipId})`}>
+      <g clip-path={`url(#${hatchTextClipId})`}>
+        <rect data-pattern-title-pattern-rect x="0" y="0" width="100%" height="100%" fill="url(#pattern-frame-striped)" />
+      </g>
+    </g>
+  </svg>
+</span>
+
+<script>
+  import { gsap } from "gsap";
+  import { bindLocalLensMask } from "./lens/local-mask";
+
+  const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+  const PATTERN_TITLE_SELECTOR = "[data-pattern-title-root]";
+  const VIEW_THRESHOLD = 0.2;
+  const FILL_DURATION = 1.4;
+  const FILL_EASE = "power2.inOut";
+  const PADDING_PX = 4;
+
+  let observer: IntersectionObserver | null = null;
+  const cleanups = new WeakMap<HTMLElement, () => void>();
+
+  function shouldReduceMotion(): boolean {
+    return window.matchMedia?.(REDUCED_MOTION_QUERY)?.matches ?? false;
+  }
+
+  function measurePatternTitle(root: HTMLElement): void {
+    const measureText = root.querySelector<SVGTextElement>("[data-pattern-title-text]");
+    const svgs = Array.from(root.querySelectorAll<SVGSVGElement>("[data-pattern-title-svg]"));
+    const contentGroups = Array.from(root.querySelectorAll<SVGGElement>("[data-pattern-title-content]"));
+    const clipGroups = Array.from(root.querySelectorAll<SVGGElement>("[data-pattern-title-clip-content]"));
+    const clipRects = Array.from(
+      root.querySelectorAll<SVGRectElement>(
+        "[data-pattern-title-fill-clip-rect], [data-pattern-title-hatch-clip-rect]",
+      ),
+    );
+    const patternRect = root.querySelector<SVGRectElement>("[data-pattern-title-pattern-rect]");
+
+    if (!measureText || svgs.length === 0 || contentGroups.length === 0 || clipGroups.length === 0 || clipRects.length === 0 || !patternRect) {
+      return;
+    }
+
+    const box = measureText.getBBox();
+    const width = Math.ceil(box.width + PADDING_PX * 2);
+    const height = Math.ceil(box.height + PADDING_PX * 2);
+    const offsetX = Math.round(PADDING_PX - box.x);
+    const offsetY = Math.round(PADDING_PX - box.y);
+    const transform = `translate(${offsetX} ${offsetY})`;
+
+    root.style.inlineSize = `${width}px`;
+    root.style.blockSize = `${height}px`;
+
+    svgs.forEach((svg) => {
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.setAttribute("width", `${width}`);
+      svg.setAttribute("height", `${height}`);
+    });
+
+    contentGroups.forEach((group) => {
+      group.setAttribute("transform", transform);
+    });
+
+    clipGroups.forEach((group) => {
+      group.setAttribute("transform", transform);
+    });
+
+    clipRects.forEach((clipRect) => {
+      clipRect.setAttribute("height", `${height}`);
+      if (root.dataset.patternTitleDone === "true") {
+        clipRect.setAttribute("width", `${width}`);
+      }
+    });
+
+    patternRect.setAttribute("width", `${width}`);
+    patternRect.setAttribute("height", `${height}`);
+  }
+
+  function animateFill(root: HTMLElement): void {
+    const clipRects = Array.from(
+      root.querySelectorAll<SVGRectElement>(
+        "[data-pattern-title-fill-clip-rect], [data-pattern-title-hatch-clip-rect]",
+      ),
+    );
+    const width = root.getBoundingClientRect().width;
+
+    if (clipRects.length === 0 || width <= 0) {
+      return;
+    }
+
+    if (root.dataset.patternTitleDone === "true") {
+      return;
+    }
+
+    root.dataset.patternTitleDone = "true";
+    gsap.fromTo(
+      clipRects,
+      { attr: { width: 0 } },
+      {
+        attr: { width },
+        duration: FILL_DURATION,
+        ease: FILL_EASE,
+      },
+    );
+  }
+
+  function initPatternTitle(root: HTMLElement, reduceMotion: boolean): void {
+    if (root.dataset.patternTitleInit === "true") {
+      return;
+    }
+
+    root.dataset.patternTitleInit = "true";
+    cleanups.set(root, bindLocalLensMask({ container: root, target: root, mode: "always" }));
+    measurePatternTitle(root);
+
+    if (reduceMotion) {
+      root.dataset.patternTitleDone = "true";
+      measurePatternTitle(root);
+    }
+  }
+
+  function setupPatternTitles(): void {
+    const roots = Array.from(document.querySelectorAll<HTMLElement>(PATTERN_TITLE_SELECTOR));
+    if (roots.length === 0) {
+      return;
+    }
+
+    const reduceMotion = shouldReduceMotion();
+    roots.forEach((root) => {
+      initPatternTitle(root, reduceMotion);
+    });
+
+    const remeasureAll = () => {
+      roots.forEach((root) => {
+        measurePatternTitle(root);
+      });
+    };
+
+    document.fonts?.ready.then(remeasureAll);
+    window.addEventListener("resize", remeasureAll);
+
+    if (reduceMotion) {
+      return;
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      roots.forEach((root) => {
+        animateFill(root);
+      });
+      return;
+    }
+
+    if (!observer) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+              return;
+            }
+
+            const root = entry.target as HTMLElement;
+            animateFill(root);
+            observer?.unobserve(root);
+          });
+        },
+        { threshold: VIEW_THRESHOLD },
+      );
+    }
+
+    roots.forEach((root) => {
+      if (root.dataset.patternTitleObserved === "true") {
+        return;
+      }
+
+      root.dataset.patternTitleObserved = "true";
+      observer?.observe(root);
+    });
+
+    window.addEventListener("beforeunload", () => {
+      roots.forEach((root) => {
+        cleanups.get(root)?.();
+      });
+      window.removeEventListener("resize", remeasureAll);
+    });
+  }
+
+  setupPatternTitles();
+</script>
