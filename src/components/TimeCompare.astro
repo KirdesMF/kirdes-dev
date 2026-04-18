@@ -1,0 +1,125 @@
+---
+import { defaultLang, type ui } from "../i18n/ui";
+import { useTranslations } from "../i18n/utils";
+
+type Props = {
+	lang?: keyof typeof ui;
+	timeZone?: string;
+	location?: string;
+};
+
+const { lang = defaultLang, timeZone = "Europe/Paris", location = "Paris" } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<div
+	data-time-compare
+	data-locale={lang}
+	data-time-zone={timeZone}
+	data-ahead-label={t("time.ahead")}
+	data-behind-label={t("time.behind")}
+	data-same-label={t("time.same")}
+	class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 rounded-full border bg-background/90 px-4 py-2 text-xs uppercase tracking-[0.14em] backdrop-blur-sm"
+>
+	<span class="opacity-60">{location}</span>
+	<span class="font-medium">
+		{t("time.me")}: <span data-time-home>--:--</span>
+	</span>
+	<span aria-hidden="true" class="opacity-40">/</span>
+	<span class="font-medium">
+		{t("time.you")}: <span data-time-visitor>--:--</span>
+	</span>
+	<span data-time-delta class="opacity-60">{t("time.same")}</span>
+</div>
+
+<script>
+	const timeCompareWindow = window as Window & {
+		__timeCompareInit?: boolean;
+		__timeCompareTimer?: number;
+	};
+	const timeCompareNodes = document.querySelectorAll<HTMLElement>("[data-time-compare]");
+
+	const parseParts = (parts: Intl.DateTimeFormatPart[]) => {
+		const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+		return {
+			year: Number(values.year),
+			month: Number(values.month),
+			day: Number(values.day),
+			hour: Number(values.hour),
+			minute: Number(values.minute),
+			second: Number(values.second),
+		};
+	};
+
+	const getOffsetMinutes = (date: Date, timeZone: string) => {
+		const parts = new Intl.DateTimeFormat("en-CA", {
+			timeZone,
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: false,
+		}).formatToParts(date);
+		const { year, month, day, hour, minute, second } = parseParts(parts);
+		const utcTime = Date.UTC(year, month - 1, day, hour, minute, second);
+		return (utcTime - date.getTime()) / 60000;
+	};
+
+	const getDeltaLabel = (deltaMinutes: number, labels: { ahead: string; behind: string; same: string }) => {
+		if (Math.abs(deltaMinutes) < 1) return labels.same;
+		const hours = Math.abs(deltaMinutes) / 60;
+		const formattedHours = Number.isInteger(hours) ? String(hours) : hours.toFixed(1);
+		return deltaMinutes > 0 ? `+${formattedHours}h ${labels.ahead}` : `${formattedHours}h ${labels.behind}`;
+	};
+
+	const updateTimeCompare = (node: HTMLElement) => {
+		const locale = node.dataset.locale ?? "en";
+		const timeZone = node.dataset.timeZone ?? "Europe/Paris";
+		const homeTimeNode = node.querySelector<HTMLElement>("[data-time-home]");
+		const visitorTimeNode = node.querySelector<HTMLElement>("[data-time-visitor]");
+		const deltaNode = node.querySelector<HTMLElement>("[data-time-delta]");
+		if (!homeTimeNode || !visitorTimeNode) return;
+
+		const now = new Date();
+		const formatter = new Intl.DateTimeFormat(locale, {
+			hour: "2-digit",
+			minute: "2-digit",
+			hour12: false,
+		});
+		const homeFormatter = new Intl.DateTimeFormat(locale, {
+			hour: "2-digit",
+			minute: "2-digit",
+			hour12: false,
+			timeZone,
+		});
+
+		homeTimeNode.textContent = homeFormatter.format(now);
+		visitorTimeNode.textContent = formatter.format(now);
+
+		const localOffsetMinutes = -now.getTimezoneOffset();
+		const homeOffsetMinutes = getOffsetMinutes(now, timeZone);
+		deltaNode?.replaceChildren(
+			document.createTextNode(
+				getDeltaLabel(homeOffsetMinutes - localOffsetMinutes, {
+					ahead: node.dataset.aheadLabel ?? "ahead of you",
+					behind: node.dataset.behindLabel ?? "behind you",
+					same: node.dataset.sameLabel ?? "same time as you",
+				}),
+			),
+		);
+	};
+
+	if (timeCompareNodes.length > 0 && !timeCompareWindow.__timeCompareInit) {
+		timeCompareWindow.__timeCompareInit = true;
+		const tick = () => {
+			document.querySelectorAll<HTMLElement>("[data-time-compare]").forEach(updateTimeCompare);
+		};
+
+		tick();
+		timeCompareWindow.__timeCompareTimer = window.setInterval(tick, 1000);
+	} else if (timeCompareNodes.length > 0) {
+		timeCompareNodes.forEach(updateTimeCompare);
+	}
+</script>
