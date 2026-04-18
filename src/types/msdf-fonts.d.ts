@@ -45,7 +45,7 @@
       // Font exports
       export type WaveTextData = MSDFFontData;
 
-      declare module '//assets/msdf/*.json' {
+      declare module '/assets/msdf/*.json' {
         const fontData: MSDFFontData;
         export default fontData;
       }

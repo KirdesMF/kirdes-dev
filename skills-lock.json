@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "vertical-codebase": {
+      "source": "KirdesMF/agent-skills",
+      "sourceType": "github",
+      "computedHash": "157811ac56381387b5f1c13b291ddfa6c036514f7c0b6d98b51d77aed62db2de"
+    }
+  }
+}
