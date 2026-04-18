@@ -2,7 +2,6 @@
 import "../styles/global.css";
 import GridBackground from "../components/grid/GridBackground.astro";
 import Header from "../components/Header.astro";
-import LanguagePicker from "../components/LanguagePicker.astro";
 import SvgPatternDefs from "../components/SvgPatternDefs.astro";
 import ThemeScript from "../components/ThemeScript.astro";
 
@@ -28,8 +27,7 @@ const { lang = "en", title = "Cédric Gourville portfolio" } = Astro.props;
   <body class="bg-background text-foreground font-body font-light overflow-x-hidden">
     <SvgPatternDefs />
     <GridBackground />
-    <!-- <Header/> -->
-    <LanguagePicker />
+    <Header lang={lang} />
     <slot />
   </body>
 </html>

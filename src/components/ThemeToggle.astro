@@ -1,0 +1,164 @@
+---
+import { defaultLang, type ui } from "../i18n/ui";
+import { useTranslations } from "../i18n/utils";
+
+type Props = {
+	lang?: keyof typeof ui;
+};
+
+const { lang = defaultLang } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<button type="button" data-theme class="fixed left-4 top-4 z-50 border px-4 py-1 tracking-wider">
+	{t("theme.toggle")}
+</button>
+<div data-theme-overlay class="fixed inset-0 z-60 pointer-events-none opacity-0">
+	<svg
+		data-theme-svg
+		viewBox="0 0 100 100"
+		preserveAspectRatio="none"
+		class="absolute inset-0 size-full pointer-events-none"
+		aria-hidden="true"
+	>
+		<defs>
+			<mask
+				id="theme-zigzag-mask"
+				x="-30"
+				y="-30"
+				width="160"
+				height="160"
+				maskUnits="userSpaceOnUse"
+				maskContentUnits="userSpaceOnUse"
+			>
+				<rect x="-30" y="-30" width="160" height="160" fill="black"></rect>
+				<path
+					data-theme-mask-path
+					fill="none"
+					stroke="white"
+					stroke-width="76"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				></path>
+			</mask>
+		</defs>
+		<rect
+			data-theme-rect
+			x="0"
+			y="0"
+			width="100"
+			height="100"
+			fill="var(--color-foreground)"
+			mask="url(#theme-zigzag-mask)"
+		></rect>
+	</svg>
+</div>
+
+<script>
+import { gsap } from "gsap";
+import { events, state } from "../lib/states";
+
+const btn = document.querySelector<HTMLButtonElement>("[data-theme]");
+const themeOverlay = document.querySelector<HTMLElement>("[data-theme-overlay]");
+const themeMaskPath = document.querySelector<SVGPathElement>("[data-theme-mask-path]");
+const themeRect = document.querySelector<SVGRectElement>("[data-theme-rect]");
+
+const format = (value: number) => Number(value.toFixed(4));
+function brushstrokePath(passes = 3) {
+	const overshoot = 20;
+	const left = -overshoot;
+	const right = 100 + overshoot;
+	const top = -overshoot;
+	const totalHeight = 100 + overshoot * 2;
+	const sweepHeight = totalHeight / passes;
+
+	let d = `M${left} ${top}`;
+	let currentX = left;
+
+	for (let i = 0; i < passes; i++) {
+		const nextX = currentX === left ? right : left;
+		const controlX = currentX === left ? right + 8 : left - 8;
+		const controlY = top + sweepHeight * (i + 0.5);
+		const endY = top + sweepHeight * (i + 1);
+
+		d += ` Q${format(controlX)} ${format(controlY)} ${format(nextX)} ${format(endY)}`;
+		currentX = nextX;
+	}
+
+	return d;
+}
+
+function setupThemeMask() {
+	if (!themeMaskPath) return null;
+	themeMaskPath.setAttribute("d", brushstrokePath(3));
+
+	const length = themeMaskPath.getTotalLength();
+	gsap.set(themeMaskPath, {
+		attr: { "stroke-dasharray": length, "stroke-dashoffset": length },
+	});
+	return length;
+}
+
+const themeMaskLength = setupThemeMask();
+
+const THEME_DURATION = 0.82;
+let isTransitioning = false;
+
+btn?.addEventListener("click", async () => {
+	if (isTransitioning) return;
+
+	const newTheme = state.getTheme() === "dark" ? "light" : "dark";
+	const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+	if (!themeOverlay || !themeMaskPath || typeof themeMaskLength !== "number" || !themeRect || prefersReducedMotion) {
+		events.emitThemeChange(newTheme);
+		return;
+	}
+
+	isTransitioning = true;
+	btn?.setAttribute("aria-busy", "true");
+
+	const isDark = newTheme === "dark";
+	const temp = document.createElement("div");
+	temp.classList.toggle("dark", isDark);
+	document.documentElement.appendChild(temp);
+	const overlayColor = getComputedStyle(temp).getPropertyValue("--color-foreground").trim();
+	temp.remove();
+
+	try {
+		themeRect.setAttribute("fill", overlayColor);
+		gsap.set(themeOverlay, { opacity: 1 });
+		gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
+
+		await new Promise<void>((resolve) => {
+			gsap.to(themeMaskPath, {
+				attr: { "stroke-dashoffset": 0 },
+				duration: THEME_DURATION,
+				ease: "none",
+				onComplete: () => {
+					events.emitThemeChange(newTheme);
+					resolve();
+				},
+			});
+		});
+
+		await new Promise<void>((resolve) => {
+			gsap.to(themeMaskPath, {
+				attr: { "stroke-dashoffset": -themeMaskLength },
+				duration: THEME_DURATION,
+				ease: "none",
+				onComplete: () => {
+					gsap.set(themeOverlay, { opacity: 0 });
+					gsap.set(themeMaskPath, { attr: { "stroke-dashoffset": themeMaskLength } });
+					themeRect.setAttribute("fill", "var(--color-foreground)");
+					resolve();
+				},
+			});
+		});
+	} catch {
+	} finally {
+		btn?.removeAttribute("aria-busy");
+		isTransitioning = false;
+	}
+});
+</script>
