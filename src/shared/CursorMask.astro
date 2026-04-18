@@ -1,0 +1,57 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+interface Props extends HTMLAttributes<"span"> {
+  radius?: string | number;
+  mode?: "always" | "hover";
+}
+
+const { class: className, radius, mode = "always", ...props } = Astro.props;
+const radiusValue = typeof radius === "number" ? `${radius}px` : radius;
+---
+
+<span
+  class:list={["relative inline-grid", className]}
+  data-cursor-mask-root
+  data-cursor-mask-mode={mode}
+  style={radiusValue ? `--lens-mask-radius: ${radiusValue};` : undefined}
+  {...props}
+>
+  <span class="col-start-1 col-end-2 row-start-1 row-end-2 masked-hide-local">
+    <slot name="base" />
+  </span>
+  <span class="pointer-events-none absolute inset-0 masked-reveal-local">
+    <slot name="reveal" />
+  </span>
+</span>
+
+<script>
+  import { bindLocalLensMask } from "../visual-effects/lens/local-mask";
+
+  const cleanups = new WeakMap<HTMLElement, () => void>();
+  const roots = document.querySelectorAll<HTMLElement>("[data-cursor-mask-root]");
+
+  roots.forEach((root) => {
+    if (root.dataset.cursorMaskBound === "true") {
+      return;
+    }
+
+    root.dataset.cursorMaskBound = "true";
+    const mode = root.dataset.cursorMaskMode === "hover" ? "hover" : "always";
+    const cleanup = bindLocalLensMask({
+      container: root,
+      target: root,
+      mode,
+    });
+
+    cleanups.set(root, cleanup);
+  });
+
+  window.addEventListener("beforeunload", () => {
+    roots.forEach((root) => {
+      cleanups.get(root)?.();
+      cleanups.delete(root);
+      delete root.dataset.cursorMaskBound;
+    });
+  });
+</script>
